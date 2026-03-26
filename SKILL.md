@@ -1,5 +1,5 @@
 ---
-name: novel-writor
+name: chaseNovel
 description: 当用户要策划、起稿、续写、改写或管理中文网文平台连载，并且关注章节节奏、章尾钩子、伏笔回收、设定连续性与追读留存时使用。
 ---
 

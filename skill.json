@@ -1,6 +1,6 @@
 {
-  "id": "novel-writor",
-  "name": "中文网文平台连载创作助手",
+  "id": "chaseNovel",
+  "name": "chaseNovel",
   "description": "当用户要策划、起稿、续写、改写或管理中文网文平台连载，并且关注章节节奏、章尾钩子、伏笔回收、设定连续性、角色弧推进、承诺兑现与追读留存时使用。",
   "version": "1.0.0",
   "activation": {
