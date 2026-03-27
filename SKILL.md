@@ -378,6 +378,9 @@ novel_{书名}/
 │   ├── foreshadowing.md
 │   ├── payoff_board.md
 │   ├── style.md
+│   ├── self_checks/
+│   │   ├── ch005_minor_self_check.md
+│   │   └── ch010_major_self_check.md
 │   └── summaries/
 │       ├── recent.md
 │       ├── mid.md
@@ -423,6 +426,7 @@ novel_{书名}/
 - `foreshadowing.md`：伏笔埋设、状态、回收窗口
 - `payoff_board.md`：读者承诺、兑现窗口、超期风险、卷内兑现优先级
 - `style.md`：文风、句式、节奏、禁忌表达、题材偏好
+- `self_checks/`：每 5 章 / 10 章的周期体检报告，记录节奏、重复、角色、承诺与纠偏动作
 - `recent.md`：近章摘要，防重复、防错位、防遗忘
 
 ### 核心记忆文件最小模板
@@ -435,6 +439,7 @@ novel_{书名}/
 - `foreshadowing.md` 最小模板：详见 `templates/foreshadowing.md`
 - `payoff_board.md` 最小模板：详见 `templates/payoff-board.md`
 - 长期风格模板：详见 `templates/style.md` 与 `templates/style-defaults.md`
+- 周期自检模板：详见 `templates/self-check-small.md` 与 `templates/self-check-large.md`
 
 ### 初始化建议
 
@@ -466,6 +471,7 @@ novel_{书名}/
 - 涉及前后事件对齐 → 读 `timeline.md`
 - 觉得可能重复 → 读 `summaries/recent.md` + 最近 `repeat_report.md`
 - 断更恢复/会话恢复 → 读 `findings.md` + `recent.md` + `next_context.md`
+- 触发 5 章 / 10 章周期自检 → 读最近 `self_checks/` 与对应窗口内章节正文
 
 不要每次全量加载所有文件；只读取当前章节真正需要的上下文。
 
@@ -546,7 +552,11 @@ novel_{书名}/
 9. 扫描重复风险
 10. 扫描风格偏移
 11. 扫描是否提前越过 `plan.md` 的关键节点
-12. 生成门禁产物：
+12. 判定是否触发周期自检：
+   - `chapter_no % 10 == 0` → 触发**大自检**
+   - `chapter_no % 5 == 0` 且不命中 10 → 触发**小自检**
+   - 触发后先落自检报告，再继续批量写或确认下一章
+13. 生成门禁产物：
    - `memory_update.md`
    - `consistency_report.md`
    - `repeat_report.md`
@@ -554,13 +564,103 @@ novel_{书名}/
    - `proof_report.md`
    - `edit_report.md`
    - `result.json`
-13. 若 `passed=true`：
+14. 若 `passed=true`：
    - 更新检索索引
    - 输出审核稿
-14. 若 `passed=false`：
+15. 若 `passed=false`：
    - 明确失败原因
    - 指出需修项
    - 等待 `/修`
+
+---
+
+## 周期自检机制
+
+### 触发规则
+
+- 第 5 / 15 / 25 / 35 ... 章：执行一次**小自检**
+- 第 10 / 20 / 30 / 40 ... 章：执行一次**大自检**
+- 若同时命中 5 和 10，只做**大自检**，不重复跑两次
+- `/批量写 N` 若跨过触发章，必须在触发章停住，先完成自检，再继续后续章节
+
+### 小自检
+
+适用于最近 5 章的轻量体检，重点看“有没有开始拖”“有没有开始重复”“有没有该还不还”。
+
+必读：
+
+- `plan.md`
+- `state.md`
+- `arc_progress.md`
+- `payoff_board.md`
+- `summaries/recent.md`
+- 最近 5 章正文
+
+必须回答：
+
+- 最近 5 章是否都具备明确章节功能
+- 最近 5 章是否至少有 2 次可感知小兑现或局面变化
+- 是否出现连续 2 章以上弱反馈、平收或同类钩子
+- 哪条角色弧 / 关系弧已经停滞
+- 哪个承诺已进入高风险拖欠
+- 下一章必须换哪种反馈路径
+
+输出位置：
+
+- `00_memory/self_checks/ch{NNN}_minor_self_check.md`
+
+### 大自检
+
+适用于最近 10 章的阶段体检，重点看“当前卷是不是还在往前走”“人物与承诺有没有集体失衡”。
+
+必读：
+
+- `plan.md`
+- `state.md`
+- `arc_progress.md`
+- `character_arcs.md`
+- `foreshadowing.md`
+- `payoff_board.md`
+- `timeline.md`
+- `summaries/recent.md`
+- 最近 10 章正文
+
+必须回答：
+
+- 当前卷 / 当前阶段是否仍在推进
+- 最近 10 章的高低潮分布是否失衡
+- 是否存在连续 3 章以上同质体验
+- 哪些角色弧、关系弧已经停滞或失真
+- 设定同步、伏笔状态、时间线是否仍然稳定
+- 下个 10 章窗口必须兑现什么，否则会明显伤追读
+
+输出位置：
+
+- `00_memory/self_checks/ch{NNN}_major_self_check.md`
+
+### 自动触发方式
+
+优先使用本地脚本判定自检节点：
+
+```bash
+python scripts/chapter_self_check.py --project "novel_书名"
+python scripts/chapter_self_check.py --project "novel_书名" --chapter-no 10 --json
+```
+
+执行要求：
+
+- 正文确认写入后立刻运行一次
+- 脚本若回报 `checkpoint_due=minor|major`，必须同步生成并填写对应自检报告
+- 脚本会顺手刷新 `state.md` 中的“周期自检”状态块
+- 若宿主支持 post-write / post-confirm hooks，可把此脚本直接挂上；不依赖特定 hook 平台
+
+### Claude hooks 落点
+
+- Hook 包装器：`hooks/posttooluse_chapter_self_check.py`
+- Claude 配置片段：`hooks/claude-settings.local.json`
+- 推荐接到 Claude 的 `PostToolUse`，匹配 `Edit|Write|MultiEdit`
+- Hook 只在命中 `03_chapters/*.md` 时触发；改记忆文件、模板文件、普通文档不会误触
+- 命中后由包装器反调 `scripts/chapter_self_check.py --project <小说项目根目录>`
 
 ---
 
@@ -721,6 +821,9 @@ python novel-writor/scripts/novel_writor.py context --project "novel_书名" --c
 python novel-writor/scripts/novel_writor.py search --project "novel_书名" --q "某个角色名"
 python novel-writor/scripts/novel_writor.py resume --project "novel_书名"
 python novel-writor/scripts/novel_writor.py pack --project "novel_书名" --chapter-no 2 --extra "本章节奏：升；重点回收一个伏笔"
+python scripts/chapter_self_check.py --project "novel_书名" --chapter-no 5
+python scripts/chapter_self_check.py --project "novel_书名" --json
+python hooks/posttooluse_chapter_self_check.py
 ```
 
 ### 对话侧常用指令

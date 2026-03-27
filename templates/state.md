@@ -37,6 +37,17 @@
 - 续写恢复：运行 `novel_writor.py resume` 生成 `00_memory/retrieval/resume.md`
 - 写作任务包：运行 `novel_writor.py pack --chapter-no X` 生成 `prompt_pack_chXXX.md`
 
+<!-- SELF_CHECK_TRACKER_START -->
+## 周期自检
+- 小自检节律：每 5 章触发一次
+- 大自检节律：每 10 章触发一次（覆盖当次小自检）
+- 上次小自检：未执行
+- 上次大自检：未执行
+- 下次小自检触发章：第005章
+- 下次大自检触发章：第010章
+- 最近一次判定：尚未执行
+<!-- SELF_CHECK_TRACKER_END -->
+
 ## 重复风险记录
 - 近期高频情节模式：—
 - 近期高频场景：—

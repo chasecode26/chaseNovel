@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"C:\\Users\\lc\\.claude\\skills\\chaseNovel\\hooks\\posttooluse_chapter_self_check.py\"",
+            "timeout": 30
+          }
+        ],
+        "description": "chaseNovel: trigger periodic self-check after chapter edits in 03_chapters"
+      }
+    ]
+  }
+}
