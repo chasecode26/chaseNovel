@@ -556,18 +556,27 @@ novel_{书名}/
    - `chapter_no % 10 == 0` → 触发**大自检**
    - `chapter_no % 5 == 0` 且不命中 10 → 触发**小自检**
    - 触发后先落自检报告，再继续批量写或确认下一章
-13. 生成门禁产物：
-   - `memory_update.md`
-   - `consistency_report.md`
-   - `repeat_report.md`
-   - `style_report.md`
+13. 生成门禁产物（分级）：
+
+   **每章必做（轻量）：**
+   - 更新 `state.md`（当前进度、主冲突、下一章方向）
+   - 更新章节摘要（`summaries/recent.md`）
+   - 输出本章结果变化一句话总结
+
+   **仅当出现问题时才生成：**
+   - `consistency_report.md`：发现设定/人物矛盾时
+   - `repeat_report.md`：疑似重复桥段或同质钩子时
+   - `style_report.md`：风格明显漂移时
+
+   **仅在周期自检或用户要求时生成：**
    - `proof_report.md`
    - `edit_report.md`
    - `result.json`
-14. 若 `passed=true`：
-   - 更新检索索引
+
+14. 若无问题：
    - 输出审核稿
-15. 若 `passed=false`：
+   - 说明下一章方向
+15. 若发现问题：
    - 明确失败原因
    - 指出需修项
    - 等待 `/修`
