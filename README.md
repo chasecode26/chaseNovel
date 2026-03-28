@@ -14,10 +14,11 @@
 ## 目录结构
 
 - `SKILL.md`：主技能文件
+- `references/`：按需加载的长规则、长模板与诊断说明
 - `skill.json`：技能元数据
 - `scripts/`：自动判定 5/10 章自检触发的辅助脚本
 - `hooks/`：Claude `PostToolUse` hook 包装器与配置片段
-- `templates/`：写作模板与参考资料
+- `templates/`：写作模板、题材技法库、章卡示例与记忆文件骨架
 
 ## 用途
 
