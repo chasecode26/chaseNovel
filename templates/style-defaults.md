@@ -278,6 +278,8 @@
 ```
 
 若主线明显偏“边关争霸 / 男频爽文”，再补读 `templates/substyles/bianguan-zhengba-nanpin.md`，把军权兑现、边地现实、朝令掣肘和男频爽点单独拉高。
+若平台目标明确偏番茄、章节需要更强抓人和反馈密度，再补读 `templates/substyles/fanqie-kuai-fankui-shuangdian.md`。
+若主线里有克制、慢热、互相递刀的关系线，再补读 `templates/substyles/manre-gongmou-ganqingxian.md`。
 
 ## 轻喜剧/沙雕模板
 ```markdown

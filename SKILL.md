@@ -221,6 +221,8 @@ novel_{书名}/
 - 固定输出模板、风险信号、成功标准 → 先读 `references/output-contracts.md`，再按命令补读 `references/contracts/*.md`
 - 需要具体题材的写法重点、失误清单与短对照范文 → 先读 `templates/genre-writing-guide.md`，再按题材补读 `templates/genres/*.md`
 - 若是古代权谋里偏边关争霸、养兵夺权、黄袍加身的男频路线 → 补读 `templates/substyles/bianguan-zhengba-nanpin.md`
+- 若平台目标偏番茄、需要每章更强的结果反馈和章尾钩子 → 补读 `templates/substyles/fanqie-kuai-fankui-shuangdian.md`
+- 若主线里有克制、慢热、互相递刀的关系推进 → 补读 `templates/substyles/manre-gongmou-ganqingxian.md`
 - 需要更细的题材技法、桥段写法、多视角控制、节奏小工具 → 读 `templates/writing_playbook.md`
 
 不要每次全量加载所有文件；只读取当前章节真正需要的上下文。
