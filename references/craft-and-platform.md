@@ -315,6 +315,7 @@
 - 开篇抓人、章节推进、章尾钩子、番茄风格写法：详见 `templates/writing-techniques.md`
 - 差例 / 好例 / 为什么的短对照范文：详见 `templates/writing-examples.md`
 - 16 类题材对应的写法重点、常见失误、推进技巧与短对照范文：先读 `templates/genre-writing-guide.md`，再按题材下钻到 `templates/genres/*.md`
+- 古代权谋里偏边关争霸、养兵夺权、男频立威：补读 `templates/substyles/bianguan-zhengba-nanpin.md`
 - 多视角切换、节奏与信息投放、题材专项技法、小工具：详见 `templates/writing_playbook.md`
 - `/写` 前可直接套用的完整章卡示例：详见 `templates/chapter-card-examples.md`
 - 适合场景：`/一键开书` 前找切入点、`/写` 前补章卡、卡文时找解法、修改章节时找提速方案
