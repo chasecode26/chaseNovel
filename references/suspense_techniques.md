@@ -1,5 +1,4 @@
 # 悬念设计与爽点触发库 (Suspense & Payoff Modules)
-基于飞书攻略中最为核心的技巧提取，可以在 `plan.md` 阶段或 `chapter-card-examples.md` 阶段频繁调用。
 
 ## 一、 悬念设计3大门派 (63种套路归纳核心)
 

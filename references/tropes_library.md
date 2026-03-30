@@ -1,4 +1,4 @@
-# 飞书宝典：主角人设与情感套路技法库 (Tropes & Archetypes Library)
+# 主角人设与情感套路技法库 (Tropes & Archetypes Library)
 此文件作为 `chaseNovel` 中写人设、写情感线、写虐点与爽点时的强制检阅素材。
 
 ## 一、 20条经典虐点/情感起伏曲线 (用于言情/女频/跌宕起伏片段)
