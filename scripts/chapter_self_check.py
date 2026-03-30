@@ -214,13 +214,38 @@ def load_template(templates_root: Path, name: str) -> str:
     return (templates_root / name).read_text(encoding="utf-8")
 
 
+def check_ai_flavor(content: str) -> list[str]:
+    black_list = [
+        "像...一样", "仿佛", "由于", "导致了", "事实上",
+        "那一刻", "就在这时", "此时此刻", "不禁", "不由得",
+        "闪过一丝", "值得注意的是", "不得不说", "可以说",
+        "不容置疑", "坚定地", "深邃"
+    ]
+    warnings = []
+    for word in black_list:
+        if "..." in word:
+            parts = word.split("...")
+            if parts[0] in content and parts[1] in content:
+                warnings.append(word)
+        elif word in content:
+            warnings.append(word)
+    return warnings
+
 def format_chapter_list(chapters: list[tuple[int, Path]], project_dir: Path) -> str:
     if not chapters:
         return "- 本轮章节正文尚未落盘，请手动补充本次窗口内章节。"
-    return "\n".join(
-        f"- 第{chapter_no:03d}章：`{rel_path(path, project_dir)}`"
-        for chapter_no, path in chapters
-    )
+    
+    lines = []
+    for chapter_no, path in chapters:
+        try:
+            content = path.read_text(encoding="utf-8")
+            warnings = check_ai_flavor(content)
+            warn_str = f" [!WARNING] AI味词汇: {','.join(warnings)}" if warnings else ""
+        except Exception:
+            warn_str = ""
+            
+        lines.append(f"- 第{chapter_no:03d}章：`{rel_path(path, project_dir)}`{warn_str}")
+    return "\n".join(lines)
 
 
 def write_report(
