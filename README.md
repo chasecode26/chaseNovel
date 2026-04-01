@@ -30,6 +30,7 @@
 - `templates/`：各类题材的专业提示词、剧情套路库、结局/战力表。
 - `templates/genres/`：16类题材子库分离式加载。
 - `scripts/`：自动触发的 Python 小脚本，检查章节门禁（自动检测 AI 词汇），出具周期体检报告。
+- `scripts/chapter_gate.py`：章节级连续性门禁。单章写完即可生成 `04_gate/chXXX/continuity_report.md` 与 `result.json`，专查时间线、伏笔、布置失忆。
 
 ## 适用场景
 

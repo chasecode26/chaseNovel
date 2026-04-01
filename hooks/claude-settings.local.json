@@ -10,7 +10,7 @@
             "timeout": 30
           }
         ],
-        "description": "chaseNovel: trigger periodic self-check after chapter edits in 03_chapters"
+        "description": "chaseNovel: trigger periodic self-check and chapter continuity gate after chapter edits in 03_chapters"
       }
     ]
   }

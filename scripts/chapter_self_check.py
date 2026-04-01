@@ -13,6 +13,11 @@ CHAPTER_PATTERN = re.compile(r"第0*(\d+)章")
 TRACKER_START = "<!-- SELF_CHECK_TRACKER_START -->"
 TRACKER_END = "<!-- SELF_CHECK_TRACKER_END -->"
 REPORT_PATTERN = re.compile(r"ch(\d{3,})_(minor|major)_self_check\.md$")
+DANGER_KEYWORDS = (
+    "遇刺", "刺杀", "刺客", "追杀", "围杀", "跟踪", "暴露", "身份",
+    "搜查", "搜捕", "潜入", "危机", "危险", "截杀", "埋伏", "伏杀"
+)
+DEFAULT_EMPTY_VALUES = {"", "—", "无", "暂无", "未设定", "未开始", "0"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -214,6 +219,124 @@ def load_template(templates_root: Path, name: str) -> str:
     return (templates_root / name).read_text(encoding="utf-8")
 
 
+def read_text_if_exists(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8")
+
+
+def extract_line_value(content: str, label: str) -> str:
+    match = re.search(rf"{re.escape(label)}：(.+)", content)
+    if not match:
+        return ""
+    return match.group(1).strip()
+
+
+def normalize_value(value: str) -> str:
+    return value.strip().strip("`").strip()
+
+
+def is_effectively_empty(value: str) -> bool:
+    return normalize_value(value) in DEFAULT_EMPTY_VALUES
+
+
+def extract_markdown_table_rows(content: str, heading: str) -> list[list[str]]:
+    pattern = re.compile(
+        rf"##\s+{re.escape(heading)}\s*\n(?P<body>.*?)(?:\n##\s+|\Z)",
+        re.DOTALL,
+    )
+    match = pattern.search(content)
+    if not match:
+        return []
+
+    rows: list[list[str]] = []
+    for line in match.group("body").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if set(stripped.replace("|", "").replace("-", "").replace(":", "").strip()) == set():
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if not cells:
+            continue
+        rows.append(cells)
+    return rows
+
+
+def has_non_placeholder_row(rows: list[list[str]]) -> bool:
+    if len(rows) <= 1:
+        return False
+    for row in rows[1:]:
+        if any(not is_effectively_empty(cell) and "暂无" not in cell for cell in row):
+            return True
+    return False
+
+
+def extract_chapter_contents(chapters: list[tuple[int, Path]]) -> list[tuple[int, str]]:
+    contents: list[tuple[int, str]] = []
+    for chapter_no, path in chapters:
+        try:
+            contents.append((chapter_no, path.read_text(encoding="utf-8")))
+        except Exception:
+            contents.append((chapter_no, ""))
+    return contents
+
+
+def detect_danger_chapters(chapter_contents: list[tuple[int, str]]) -> list[int]:
+    result: list[int] = []
+    for chapter_no, content in chapter_contents:
+        if any(keyword in content for keyword in DANGER_KEYWORDS):
+            result.append(chapter_no)
+    return result
+
+
+def build_auto_warnings(project_dir: Path, scoped_chapters: list[tuple[int, Path]]) -> str:
+    warnings: list[str] = []
+    state_content = read_text_if_exists(project_dir / "00_memory" / "state.md")
+    timeline_content = read_text_if_exists(project_dir / "00_memory" / "timeline.md")
+    foreshadowing_content = read_text_if_exists(project_dir / "00_memory" / "foreshadowing.md")
+    chapter_contents = extract_chapter_contents(scoped_chapters)
+    danger_chapters = detect_danger_chapters(chapter_contents)
+
+    absolute_time = extract_line_value(state_content, "当前绝对时间")
+    relative_time = extract_line_value(state_content, "距上章过去")
+    if is_effectively_empty(absolute_time):
+        warnings.append("`state.md` 缺少有效的“当前绝对时间”，高风险导致年份/纪年写乱。")
+    if is_effectively_empty(relative_time):
+        warnings.append("`state.md` 缺少有效的“距上章过去”，高风险导致章节先后顺序失真。")
+
+    timeline_rows = extract_markdown_table_rows(timeline_content, "主线时间线")
+    if len(timeline_rows) <= 2:
+        warnings.append("`timeline.md` 的主线时间线仍为空或只有表头，无法为跳时、回忆、年龄变化提供校验锚点。")
+
+    arrangement_rows = extract_markdown_table_rows(state_content, "当前有效布置")
+    has_arrangements = has_non_placeholder_row(arrangement_rows)
+    if danger_chapters and not has_arrangements:
+        chapter_labels = "、".join(f"第{num:03d}章" for num in danger_chapters)
+        warnings.append(f"{chapter_labels} 出现高风险场景关键词，但 `state.md` 没有可用的“当前有效布置”，容易出现后手失忆。")
+
+    foreshadow_rows = extract_markdown_table_rows(foreshadowing_content, "活跃伏笔")
+    has_active_foreshadowing = has_non_placeholder_row(foreshadow_rows)
+    if danger_chapters and not has_active_foreshadowing:
+        warnings.append("当前窗口出现高风险场景，但 `foreshadowing.md` 没有活跃伏笔记录，无法自动核对旧伏笔是否该触发。")
+
+    trigger_missing = False
+    failure_missing = False
+    for row in foreshadow_rows[1:]:
+        if len(row) < 9:
+            continue
+        trigger_missing = trigger_missing or is_effectively_empty(row[4])
+        failure_missing = failure_missing or is_effectively_empty(row[5])
+    if trigger_missing:
+        warnings.append("`foreshadowing.md` 存在活跃伏笔未填写“触发条件”，后续容易出现该触发时没触发。")
+    if failure_missing:
+        warnings.append("`foreshadowing.md` 存在活跃伏笔未填写“失效条件”，后续容易出现无法解释为什么没生效。")
+
+    if not warnings:
+        return "- 未检测到明显的时间线/伏笔连续性硬伤。"
+    return "\n".join(f"- [!WARNING] {item}" for item in warnings)
+
+
 def check_ai_flavor(content: str) -> list[str]:
     black_list = [
         "像...一样", "仿佛", "由于", "导致了", "事实上",
@@ -260,6 +383,7 @@ def write_report(
     width = 10 if checkpoint == "major" else 5
     start, end = chapter_window(chapter_no, width)
     scoped_chapters = select_window_chapters(chapters, start, end)
+    auto_warnings = build_auto_warnings(project_dir, scoped_chapters)
     report_dir = project_dir / "00_memory" / "self_checks"
     report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / f"ch{chapter_no:03d}_{checkpoint}_self_check.md"
@@ -282,6 +406,7 @@ def write_report(
         timeline_rel=rel_path(project_dir / "00_memory" / "timeline.md", project_dir),
         findings_rel=rel_path(project_dir / "00_memory" / "findings.md", project_dir),
         chapter_list=format_chapter_list(scoped_chapters, project_dir),
+        auto_warnings=auto_warnings,
     )
 
     if created and not dry_run:
