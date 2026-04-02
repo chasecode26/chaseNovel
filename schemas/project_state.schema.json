@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "chaseNovel Project State Snapshot",
+  "type": "object",
+  "required": [
+    "project",
+    "generated_at",
+    "current_chapter",
+    "active_volume",
+    "reports"
+  ],
+  "properties": {
+    "project": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "current_chapter": { "type": "integer", "minimum": 0 },
+    "active_volume": { "type": "string" },
+    "active_arc": { "type": "string" },
+    "pending_foreshadow_count": { "type": "integer", "minimum": 0 },
+    "overdue_foreshadow_count": { "type": "integer", "minimum": 0 },
+    "reports": {
+      "type": "object",
+      "properties": {
+        "next_context": { "type": "string" },
+        "dashboard_markdown": { "type": "string" },
+        "dashboard_json": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

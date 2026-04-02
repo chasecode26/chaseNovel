@@ -7,8 +7,10 @@ const os = require("os");
 const REQUIRED_ENTRIES = [
   "hooks",
   "references",
+  "schemas",
   "scripts",
   "templates",
+  "ARCHITECTURE.md",
   "skill.json",
   "SKILL.md",
   "README.md",

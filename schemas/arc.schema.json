@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "chaseNovel Arc Status",
+  "type": "object",
+  "required": ["id", "name", "status"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "start_chapter": { "type": "integer", "minimum": 0 },
+    "end_chapter": { "type": ["integer", "null"], "minimum": 0 },
+    "owner": { "type": "string" },
+    "next_shift_window": { "type": ["integer", "null"], "minimum": 0 },
+    "status": { "type": "string", "enum": ["planned", "active", "paused", "resolved"] }
+  },
+  "additionalProperties": true
+}

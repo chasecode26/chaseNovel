@@ -36,6 +36,19 @@ function printHelp() {
   npx chase-novel-skill update [--target <dir>] [--force]
   npx chase-novel-skill doctor [--target <dir>]
 
+Local workflow:
+  npx chase context --project <dir> [--chapter <n>]
+  npx chase foreshadow --project <dir> [--chapter <n>]
+  npx chase dashboard --project <dir>
+  npx chase arc --project <dir>
+  npx chase timeline --project <dir>
+  npx chase repeat --project <dir>
+  npx chase memory --project <dir> [--chapter <n>]
+  npx chase gate --project <dir> [--chapter-no <n>]
+  npx chase batch --project <dir> [--from <n> --to <n>]
+  npx chase bootstrap --project <dir> [--force]
+  npx chase run --project <dir> [--chapter <n>] [--steps <csv>]
+
 Defaults:
   target = ~/.claude/skills/chaseNovel`);
 }

@@ -4,12 +4,15 @@
   "description": "One-command installer and doctor CLI for the chaseNovel Claude skill.",
   "license": "MIT",
   "bin": {
-    "chase-novel-skill": "./bin/chase-novel-skill.js"
+    "chase-novel-skill": "./bin/chase-novel-skill.js",
+    "chase": "./bin/chase.js"
   },
   "files": [
+    "ARCHITECTURE.md",
     "bin",
     "hooks",
     "references",
+    "schemas",
     "scripts",
     "technique-kb",
     "templates",
@@ -22,6 +25,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "doctor:project": "node ./bin/chase.js doctor --project .",
     "doctor": "node ./bin/chase-novel-skill.js doctor",
     "install:local": "node ./bin/chase-novel-skill.js install"
   },
