@@ -1,0 +1,42 @@
+{
+  "id": "genre_farming_slice_001",
+  "scope": "genre",
+  "name": "种田文口吻基线",
+  "genre": "种田文",
+  "narration_rules": [
+    "日常必须附带可感知积累：收成、关系、手艺、资源、名声至少推进一项。",
+    "低烈度不等于无冲突，优先使用时间、成本、天气、订单和人情压力制造张力。",
+    "温度感来自具体劳作和相处细节，不来自空泛抒情。"
+  ],
+  "forbidden_phrases": [
+    "空气里弥漫着"
+  ],
+  "caution_phrases": [
+    "此刻",
+    "只见",
+    "不禁"
+  ],
+  "forbidden_words": [],
+  "caution_words": [
+    "治愈",
+    "温馨",
+    "宁静"
+  ],
+  "allowed_phrases": [],
+  "allowed_authorial_patterns": [],
+  "preferred_patterns": [
+    "劳作细节",
+    "收成反馈",
+    "关系升温"
+  ],
+  "thresholds": {
+    "authorial_narration_tolerance": 0,
+    "soft_authorial_tolerance": 1,
+    "abstract_word_tolerance": 3,
+    "repeated_phrase_tolerance": 2,
+    "lyrical_paragraph_tolerance": 2
+  },
+  "notes": [
+    "适合作为种田、经营、慢热日常向项目的题材兜底。"
+  ]
+}

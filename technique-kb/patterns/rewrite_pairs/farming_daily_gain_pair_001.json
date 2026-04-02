@@ -1,0 +1,28 @@
+{
+  "id": "pair_farming_daily_gain_001",
+  "kind": "rewrite_pair",
+  "title": "种田日常流水账改写对照",
+  "tags": [
+    "rewrite_pair",
+    "farming_progress",
+    "line_edit"
+  ],
+  "applicable_genres": [
+    "种田文"
+  ],
+  "trigger_phrases": [
+    "日子就这样平静地过去",
+    "生活似乎慢慢好起来了"
+  ],
+  "bad_example": "日子就这样平静地过去，生活似乎慢慢好起来了。",
+  "good_example": "这一茬菜总算能摘了。钱虽不多，却足够把上个月欠下的油盐账先平掉一半。",
+  "problem": "原句没有具体积累。",
+  "rewrite_strategy": [
+    "把时间流逝改成可见收获",
+    "让改善先解决一个眼前缺口",
+    "保留生活感，但别丢结果"
+  ],
+  "notes": [
+    "适合修复日常空转。"
+  ]
+}

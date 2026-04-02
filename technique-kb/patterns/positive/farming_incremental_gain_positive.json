@@ -1,0 +1,24 @@
+{
+  "id": "pos_farming_incremental_gain_001",
+  "kind": "positive",
+  "title": "种田文的小积累可被看见",
+  "tags": [
+    "farming_progress",
+    "incremental_gain",
+    "daily_payoff"
+  ],
+  "applicable_genres": [
+    "种田文"
+  ],
+  "bad_example": "今天又是平静而温暖的一天。",
+  "good_example": "新搭好的灶台终于不再漏烟，第一锅豆腐出锅时，连隔壁婶子都主动来问明天还卖不卖。",
+  "problem": "坏句只有氛围，没有种田文最关键的积累反馈。",
+  "rewrite_strategy": [
+    "把温度感换成手艺、收成或人际反应",
+    "让每个日常场景留下一点进账或关系变化",
+    "保留生活感，但别让变化失踪"
+  ],
+  "notes": [
+    "适合经营、家常、集市类场景。"
+  ]
+}

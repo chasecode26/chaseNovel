@@ -1,0 +1,26 @@
+{
+  "id": "pos_grounded_pressure_001",
+  "kind": "positive",
+  "title": "落地式压迫感",
+  "tags": [
+    "pressure",
+    "grounded_detail",
+    "viewpoint_narration"
+  ],
+  "applicable_genres": [
+    "玄幻/修仙",
+    "末世",
+    "悬疑/推理"
+  ],
+  "bad_example": "那股压迫感让人几乎喘不过气。",
+  "good_example": "他刚要开口，胸口先像被什么堵住，连吸气都短了一截。",
+  "problem": "坏句只告诉读者结果，没有给出角色的实际承受方式。",
+  "rewrite_strategy": [
+    "把压迫感改成身体或动作层的阻滞",
+    "让感受贴角色，而不是贴作者"
+  ],
+  "notes": [
+    "用于替换空泛压迫词",
+    "强调身体负荷和动作迟滞"
+  ]
+}

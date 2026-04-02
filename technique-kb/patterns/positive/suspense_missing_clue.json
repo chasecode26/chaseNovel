@@ -1,0 +1,24 @@
+{
+  "id": "pos_suspense_clue_001",
+  "kind": "positive",
+  "title": "悬疑场景的缺口式线索写法",
+  "tags": [
+    "positive_pattern",
+    "suspense",
+    "clue_gap"
+  ],
+  "applicable_genres": [
+    "悬疑/推理",
+    "无限流/副本流"
+  ],
+  "bad_example": "事情透着一股说不出的古怪。",
+  "good_example": "桌上的档案少了一页，偏偏是最该留下证据的那一页。",
+  "problem": "坏句把悬疑写成抽象气氛，没有留下可复述的缺口。",
+  "rewrite_strategy": [
+    "先给一个具体缺口",
+    "让角色先记录疑点，不急着宣布结论"
+  ],
+  "notes": [
+    "适合悬疑段落从抽象不对劲改成可追踪疑点"
+  ]
+}

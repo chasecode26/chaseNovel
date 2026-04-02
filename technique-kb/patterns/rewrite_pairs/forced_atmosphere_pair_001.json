@@ -1,0 +1,25 @@
+{
+  "id": "pair_forced_atmosphere_001",
+  "kind": "rewrite_pair",
+  "title": "强行渲染气氛改写对照",
+  "tags": [
+    "rewrite_pair",
+    "forced_atmosphere",
+    "line_edit"
+  ],
+  "applicable_genres": [
+    "悬疑/推理",
+    "都市/系统流"
+  ],
+  "bad_example": "此刻，空气里弥漫着令人窒息的宿命感。",
+  "good_example": "走廊尽头的灯闪了两下，他站在门口，呼吸先紧了一分。",
+  "problem": "原句同时命中禁写句式、抽象大词和作者式结论。",
+  "rewrite_strategy": [
+    "删除空泛时间提示词",
+    "改写为具体环境异常",
+    "把宿命感替换成可感知征兆"
+  ],
+  "notes": [
+    "适合 suggest 模式拼接整章建议稿时优先参考"
+  ]
+}

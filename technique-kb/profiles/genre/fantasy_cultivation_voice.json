@@ -1,0 +1,45 @@
+{
+  "id": "genre_fantasy_cultivation_001",
+  "scope": "genre",
+  "name": "玄幻/修仙口吻基线",
+  "genre": "玄幻/修仙",
+  "narration_rules": [
+    "力量提升必须伴随代价、阻力或可见反馈，不要只说变强了。",
+    "战斗优先写试探、克制、反制和结算，不要只堆名词。",
+    "世界规则分批释放，每次解释都要服务当前冲突。"
+  ],
+  "forbidden_phrases": [
+    "仿佛整个世界都",
+    "空气里弥漫着"
+  ],
+  "caution_phrases": [
+    "此刻",
+    "不禁",
+    "只见"
+  ],
+  "forbidden_words": [
+    "宿命"
+  ],
+  "caution_words": [
+    "浩瀚",
+    "窒息",
+    "威压"
+  ],
+  "allowed_phrases": [],
+  "allowed_authorial_patterns": [],
+  "preferred_patterns": [
+    "异象反馈",
+    "身体负荷",
+    "战斗结算"
+  ],
+  "thresholds": {
+    "authorial_narration_tolerance": 0,
+    "soft_authorial_tolerance": 1,
+    "abstract_word_tolerance": 2,
+    "repeated_phrase_tolerance": 1,
+    "lyrical_paragraph_tolerance": 1
+  },
+  "notes": [
+    "适合作为玄幻、修仙、升级流项目的题材兜底。"
+  ]
+}

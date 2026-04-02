@@ -1,0 +1,29 @@
+{
+  "id": "neg_farming_daily_flat_001",
+  "kind": "negative",
+  "title": "种田日常只有温馨没有进展",
+  "tags": [
+    "daily_flat",
+    "slice_of_life_stall",
+    "no_progress"
+  ],
+  "applicable_genres": [
+    "种田文"
+  ],
+  "trigger_phrases": [
+    "日子就这样平静地过去",
+    "气氛温馨而宁静",
+    "生活似乎慢慢好起来了"
+  ],
+  "bad_example": "日子就这样平静地过去，气氛温馨而宁静，生活似乎慢慢好起来了。",
+  "good_example": "这批豆子总算发了芽，虽说还不够填满仓房，但至少下个月的盐钱不用再赊了。",
+  "problem": "只写感觉转好，没有把种田文最重要的积累感落成具体收获或缺口缓解。",
+  "rewrite_strategy": [
+    "补一个具体收益：收成、订单、手艺、关系或名声",
+    "让日常结尾挂出新的成本、天气或人情压力",
+    "用劳作细节替代抽象温馨"
+  ],
+  "notes": [
+    "适合修复种田文流水账。"
+  ]
+}

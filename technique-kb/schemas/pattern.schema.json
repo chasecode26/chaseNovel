@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chaseNovel.local/technique-kb/pattern.schema.json",
+  "title": "Technique Pattern",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "title",
+    "tags",
+    "applicable_genres",
+    "problem",
+    "rewrite_strategy"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["negative", "positive", "rewrite_pair"]
+    },
+    "title": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "applicable_genres": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "trigger_phrases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bad_example": {
+      "type": "string"
+    },
+    "good_example": {
+      "type": "string"
+    },
+    "problem": {
+      "type": "string"
+    },
+    "rewrite_strategy": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

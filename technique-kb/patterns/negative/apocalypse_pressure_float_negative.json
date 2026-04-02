@@ -1,0 +1,29 @@
+{
+  "id": "neg_apocalypse_pressure_float_001",
+  "kind": "negative",
+  "title": "末世压迫感只靠绝望大词硬压",
+  "tags": [
+    "pressure_float",
+    "forced_atmosphere",
+    "survival_without_stakes"
+  ],
+  "applicable_genres": [
+    "末世"
+  ],
+  "trigger_phrases": [
+    "绝望的气息",
+    "空气中弥漫着死亡",
+    "所有人都快要窒息"
+  ],
+  "bad_example": "空气中弥漫着死亡与绝望，所有人都快要窒息。",
+  "good_example": "发电机只够再撑两个小时，门外的撞击声却一阵比一阵近，连最沉得住气的人都开始去摸最后那盒子弹。",
+  "problem": "只写末世气氛，没有把资源、时间和队伍状态落成具体威胁。",
+  "rewrite_strategy": [
+    "补资源倒计时或缺口数字",
+    "补外部威胁逼近的具体迹象",
+    "让角色在压力下做出取舍"
+  ],
+  "notes": [
+    "适合修复末世文常见的空喊绝望。"
+  ]
+}

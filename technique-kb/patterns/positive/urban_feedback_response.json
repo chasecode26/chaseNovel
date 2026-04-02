@@ -1,0 +1,23 @@
+{
+  "id": "pos_urban_feedback_001",
+  "kind": "positive",
+  "title": "都市系统流的即时反馈写法",
+  "tags": [
+    "positive_pattern",
+    "urban_system",
+    "immediate_feedback"
+  ],
+  "applicable_genres": [
+    "都市/系统流"
+  ],
+  "bad_example": "主角感到一阵前所未有的压迫与震撼。",
+  "good_example": "提示框刚弹出来，周围人的视线已经跟着变了，他连犹豫的空隙都没剩下。",
+  "problem": "坏句只写主观感受，没有把系统反馈落到现实反应上。",
+  "rewrite_strategy": [
+    "优先写系统反馈带来的现实变化",
+    "让周围人的反应和主角动作同步出现"
+  ],
+  "notes": [
+    "适合都市/系统流在 suggest 模式下提供正向改写方向"
+  ]
+}

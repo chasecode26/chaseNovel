@@ -1,0 +1,28 @@
+{
+  "id": "pair_system_reward_001",
+  "kind": "rewrite_pair",
+  "title": "系统播报过长改写对照",
+  "tags": [
+    "rewrite_pair",
+    "system_reward",
+    "line_edit"
+  ],
+  "applicable_genres": [
+    "都市/系统流"
+  ],
+  "trigger_phrases": [
+    "系统提示音响起",
+    "当前面板如下"
+  ],
+  "bad_example": "系统提示音响起，当前面板如下，请宿主查收全部奖励说明。",
+  "good_example": "提示弹出来时，他先盯住那条最关键的奖励。等他把内容扫完，反击对面的方案已经成了形。",
+  "problem": "原句信息密度高但戏剧性低。",
+  "rewrite_strategy": [
+    "压缩播报",
+    "让主角先筛选关键奖励",
+    "把奖励转成动作或反制"
+  ],
+  "notes": [
+    "适合系统流的行级重写。"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "chase-novel-skill",
+  "version": "1.4.0",
+  "description": "One-command installer and doctor CLI for the chaseNovel Claude skill.",
+  "license": "MIT",
+  "bin": {
+    "chase-novel-skill": "./bin/chase-novel-skill.js"
+  },
+  "files": [
+    "bin",
+    "hooks",
+    "references",
+    "scripts",
+    "technique-kb",
+    "templates",
+    "skill.json",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "doctor": "node ./bin/chase-novel-skill.js doctor",
+    "install:local": "node ./bin/chase-novel-skill.js install"
+  },
+  "keywords": [
+    "claude-skill",
+    "novel",
+    "writing",
+    "chaseNovel"
+  ]
+}

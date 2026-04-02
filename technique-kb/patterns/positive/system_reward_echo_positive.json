@@ -1,0 +1,24 @@
+{
+  "id": "pos_system_reward_echo_001",
+  "kind": "positive",
+  "title": "系统奖励先改写现实再补说明",
+  "tags": [
+    "system_reward",
+    "reality_echo",
+    "instant_feedback"
+  ],
+  "applicable_genres": [
+    "都市/系统流"
+  ],
+  "bad_example": "奖励很多，他很震惊。",
+  "good_example": "看到那条精准命中的奖励时，他先笑了。原本要花三天堵的漏洞，现在今晚就能反手给对面一刀。",
+  "problem": "坏句只有主观震惊，没有现实回声。",
+  "rewrite_strategy": [
+    "把奖励和眼前缺口绑定",
+    "优先写执行或反制动作",
+    "再补简短情绪反应"
+  ],
+  "notes": [
+    "适合系统流中任务结算和打脸节点。"
+  ]
+}

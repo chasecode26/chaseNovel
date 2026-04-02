@@ -1,0 +1,28 @@
+{
+  "id": "pair_apocalypse_scarcity_001",
+  "kind": "rewrite_pair",
+  "title": "末世绝望空喊改写对照",
+  "tags": [
+    "rewrite_pair",
+    "apocalypse_scarcity",
+    "line_edit"
+  ],
+  "applicable_genres": [
+    "末世"
+  ],
+  "trigger_phrases": [
+    "空气中弥漫着死亡",
+    "所有人都快要窒息"
+  ],
+  "bad_example": "空气中弥漫着死亡与绝望，所有人都快要窒息。",
+  "good_example": "仓库里只剩最后一箱罐头，外面的撞门声却越来越近。有人已经悄悄把手伸向了那把上膛的枪。",
+  "problem": "原句没有具体威胁。",
+  "rewrite_strategy": [
+    "换成资源见底",
+    "补外部威胁逼近",
+    "再给队伍内部裂痕"
+  ],
+  "notes": [
+    "适合末世文压迫场景。"
+  ]
+}

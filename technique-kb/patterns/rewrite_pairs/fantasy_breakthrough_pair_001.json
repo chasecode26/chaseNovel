@@ -1,0 +1,28 @@
+{
+  "id": "pair_fantasy_breakthrough_001",
+  "kind": "rewrite_pair",
+  "title": "玄幻突破宣告改写对照",
+  "tags": [
+    "rewrite_pair",
+    "cultivation_breakthrough",
+    "line_edit"
+  ],
+  "applicable_genres": [
+    "玄幻/修仙"
+  ],
+  "trigger_phrases": [
+    "气势陡然暴涨",
+    "力量疯狂攀升"
+  ],
+  "bad_example": "他的气势陡然暴涨，力量疯狂攀升，仿佛已经不可阻挡。",
+  "good_example": "真气撞开关窍的刹那，他脚下的石板先裂开了一圈。原本压着他打的刀势也在这一息里慢了下来。",
+  "problem": "原句只有宣告，没有兑现。",
+  "rewrite_strategy": [
+    "删掉作者式夸张判词",
+    "补突破瞬间的身体或环境反馈",
+    "让对手反应证明升级有效"
+  ],
+  "notes": [
+    "适合 suggest 模式替换玄幻突破空句。"
+  ]
+}

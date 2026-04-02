@@ -1,0 +1,45 @@
+{
+  "id": "genre_urban_system_001",
+  "scope": "genre",
+  "name": "都市/系统流口吻基线",
+  "genre": "都市/系统流",
+  "narration_rules": [
+    "优先短句和即时反馈",
+    "少作者判词，多现实结果",
+    "系统信息要短，不要播报成说明书",
+    "系统奖励必须尽快折算成现实好处、风险变化或打脸结果"
+  ],
+  "forbidden_phrases": [
+    "空气里弥漫着"
+  ],
+  "caution_phrases": [
+    "此刻",
+    "不禁",
+    "只见"
+  ],
+  "forbidden_words": [
+    "宿命",
+    "窒息"
+  ],
+  "caution_words": [
+    "震惊",
+    "沉重"
+  ],
+  "allowed_phrases": [],
+  "allowed_authorial_patterns": [],
+  "preferred_patterns": [
+    "现实反应",
+    "即时反馈",
+    "动作结果"
+  ],
+  "thresholds": {
+    "authorial_narration_tolerance": 0,
+    "soft_authorial_tolerance": 1,
+    "abstract_word_tolerance": 2,
+    "repeated_phrase_tolerance": 1,
+    "lyrical_paragraph_tolerance": 1
+  },
+  "notes": [
+    "适合作为 style.md 缺失时的题材兜底"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "pos_fantasy_breakthrough_feedback_001",
+  "kind": "positive",
+  "title": "玄幻突破后立刻兑现",
+  "tags": [
+    "cultivation_breakthrough",
+    "power_payoff",
+    "combat_feedback"
+  ],
+  "applicable_genres": [
+    "玄幻/修仙"
+  ],
+  "bad_example": "他终于突破了，变得更强了。",
+  "good_example": "壁障碎开的那一瞬，他原本发麻的右臂重新蓄满力道，下一刀便把压着他打的长枪硬生生震偏了三寸。",
+  "problem": "坏句没有呈现突破后的真实优势。",
+  "rewrite_strategy": [
+    "突破后马上给一笔战斗或处境反馈",
+    "力量变化优先体现在动作和结果",
+    "少写宣告式总结"
+  ],
+  "notes": [
+    "适合玄幻战斗和突破场景。"
+  ]
+}

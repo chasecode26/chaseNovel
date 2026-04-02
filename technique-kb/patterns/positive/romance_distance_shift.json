@@ -1,0 +1,27 @@
+{
+  "id": "pos_romance_distance_001",
+  "kind": "positive",
+  "title": "感情线的距离变化写法",
+  "tags": [
+    "positive_pattern",
+    "romance",
+    "distance_shift"
+  ],
+  "applicable_genres": [
+    "甜宠/总裁文",
+    "言情",
+    "校园/青春成长",
+    "仙侠恋爱/古言甜虐"
+  ],
+  "bad_example": "她忽然觉得自己心动得厉害。",
+  "good_example": "她刚抬眼，他已经先停了半步，两个人谁都没碰到谁，气氛却悄悄绷紧了。",
+  "problem": "坏句只写情绪结论，没有把关系变化落在距离和动作上。",
+  "rewrite_strategy": [
+    "先写距离变化",
+    "再写微动作和目光",
+    "最后留下未说透的余波"
+  ],
+  "notes": [
+    "适合 romance 场景从独白改成互动"
+  ]
+}

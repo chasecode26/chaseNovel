@@ -1,0 +1,54 @@
+{
+  "id": "book_bianguan_yangbing_banian_fuhuang_biwo_huangpaojiashen",
+  "scope": "book",
+  "name": "边关养兵八年，父皇逼我黄袍加身",
+  "genre": "历史/权谋",
+  "narration_rules": [
+    "边关线先写军令、兵心、站位和伤亡结果，再补情绪性评语。",
+    "皇城博弈优先让人物对白、态度和资源变化落地，不靠旁白替读者总结。",
+    "允许短促转场词存在，但同一章内不能连续拿它们硬顶气口。"
+  ],
+  "forbidden_phrases": [
+    "空气里弥漫着",
+    "仿佛整个世界都",
+    "某种说不清",
+    "仿佛命运",
+    "压抑得让人"
+  ],
+  "caution_phrases": [
+    "不禁",
+    "只见",
+    "此刻",
+    "心中暗道",
+    "这一刻"
+  ],
+  "forbidden_words": [],
+  "caution_words": [
+    "沉重",
+    "窒息",
+    "阴冷",
+    "诡异"
+  ],
+  "allowed_phrases": [
+    "此刻",
+    "这一刻"
+  ],
+  "allowed_authorial_patterns": [],
+  "preferred_patterns": [
+    "动作结果",
+    "军令压迫",
+    "权力站位",
+    "兵心反馈"
+  ],
+  "thresholds": {
+    "authorial_narration_tolerance": 0,
+    "soft_authorial_tolerance": 1,
+    "abstract_word_tolerance": 3,
+    "repeated_phrase_tolerance": 2,
+    "lyrical_paragraph_tolerance": 1
+  },
+  "notes": [
+    "本书偏边关争霸男频权谋，允许少量短促转场词，但不接受空泛氛围词连续连发。",
+    "“此刻/这一刻”在本书中允许作为短促转场词存在，但不应承担真正的气氛渲染功能。"
+  ]
+}

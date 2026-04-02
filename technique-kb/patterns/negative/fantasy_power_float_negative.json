@@ -1,0 +1,29 @@
+{
+  "id": "neg_fantasy_power_float_001",
+  "kind": "negative",
+  "title": "玄幻升级只喊强大不写兑现",
+  "tags": [
+    "power_float",
+    "forced_atmosphere",
+    "upgrade_without_payoff"
+  ],
+  "applicable_genres": [
+    "玄幻/修仙"
+  ],
+  "trigger_phrases": [
+    "气势陡然暴涨",
+    "威压弥漫",
+    "力量疯狂攀升"
+  ],
+  "bad_example": "他的气势陡然暴涨，威压弥漫四方，整个人仿佛脱胎换骨。",
+  "good_example": "真气撞开最后一处关窍时，他脚下的青砖先裂了一寸，原本压着他打的对手当场慢了半拍。",
+  "problem": "只宣布升级和威压，没有把突破后的真实变化落到身体、环境或对手反馈。",
+  "rewrite_strategy": [
+    "把境界变化落在经脉、丹田、兵器或环境异动上",
+    "补一笔对手或旁观者的即时反馈",
+    "让升级直接改写当前胜负或选择"
+  ],
+  "notes": [
+    "适合拦截空喊变强的玄幻句式。"
+  ]
+}

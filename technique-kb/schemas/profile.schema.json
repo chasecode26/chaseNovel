@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chaseNovel.local/technique-kb/profile.schema.json",
+  "title": "Voice Profile",
+  "type": "object",
+  "required": [
+    "id",
+    "scope",
+    "name",
+    "genre",
+    "narration_rules",
+    "forbidden_phrases",
+    "forbidden_words"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["genre", "book"]
+    },
+    "name": {
+      "type": "string"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "narration_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "forbidden_phrases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "caution_phrases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "forbidden_words": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "caution_words": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_phrases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_authorial_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferred_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "authorial_narration_tolerance": {
+          "type": "integer"
+        },
+        "soft_authorial_tolerance": {
+          "type": "integer"
+        },
+        "abstract_word_tolerance": {
+          "type": "integer"
+        },
+        "repeated_phrase_tolerance": {
+          "type": "integer"
+        },
+        "lyrical_paragraph_tolerance": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

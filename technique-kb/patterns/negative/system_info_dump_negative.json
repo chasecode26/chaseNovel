@@ -1,0 +1,29 @@
+{
+  "id": "neg_system_info_dump_001",
+  "kind": "negative",
+  "title": "系统流只播报不推动剧情",
+  "tags": [
+    "system_info_dump",
+    "no_real_feedback",
+    "info_overwrite"
+  ],
+  "applicable_genres": [
+    "都市/系统流"
+  ],
+  "trigger_phrases": [
+    "系统提示音响起",
+    "宿主请注意",
+    "当前面板如下"
+  ],
+  "bad_example": "系统提示音响起，当前面板如下，宿主请注意查看全部奖励说明。",
+  "good_example": "提示弹出的第一时间，他先盯住那条能补齐缺口的奖励。下一秒，原本卡死的局面终于有了下手点。",
+  "problem": "系统播报占掉篇幅，却没有让奖励转化成现实动作、打脸结果或风险变化。",
+  "rewrite_strategy": [
+    "只保留与眼前冲突最相关的系统条目",
+    "补主角的立刻执行或判断",
+    "让奖励在当场改写局面"
+  ],
+  "notes": [
+    "适合拦截说明书式系统段落。"
+  ]
+}

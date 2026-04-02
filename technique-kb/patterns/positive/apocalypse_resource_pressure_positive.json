@@ -1,0 +1,24 @@
+{
+  "id": "pos_apocalypse_resource_pressure_001",
+  "kind": "positive",
+  "title": "末世压力来自资源和人心同时收紧",
+  "tags": [
+    "apocalypse_scarcity",
+    "resource_pressure",
+    "survival_stakes"
+  ],
+  "applicable_genres": [
+    "末世"
+  ],
+  "bad_example": "末世的压力让所有人都很绝望。",
+  "good_example": "药箱里只剩两支退烧针，偏偏高烧的人有三个。队里最稳的老刘都沉默了，谁都知道这次不可能全带走。",
+  "problem": "坏句没有把末世感落在生存选择和队伍裂痕上。",
+  "rewrite_strategy": [
+    "先给稀缺物资或倒计时",
+    "再给队伍内部反应",
+    "最后逼出选择和代价"
+  ],
+  "notes": [
+    "适合据点、逃亡、搜刮物资场景。"
+  ]
+}

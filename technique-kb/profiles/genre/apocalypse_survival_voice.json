@@ -1,0 +1,45 @@
+{
+  "id": "genre_apocalypse_survival_001",
+  "scope": "genre",
+  "name": "末世流口吻基线",
+  "genre": "末世",
+  "narration_rules": [
+    "每章至少保留一种真实压力：资源稀缺、时间紧迫、信息缺口。",
+    "危险感优先落在环境、敌人和代价，不靠作者宣布绝望。",
+    "收益必须带新风险，避免纯爽无后果。"
+  ],
+  "forbidden_phrases": [
+    "仿佛整个世界都",
+    "空气里弥漫着"
+  ],
+  "caution_phrases": [
+    "此刻",
+    "只见",
+    "不禁"
+  ],
+  "forbidden_words": [
+    "宿命"
+  ],
+  "caution_words": [
+    "绝望",
+    "阴冷",
+    "窒息"
+  ],
+  "allowed_phrases": [],
+  "allowed_authorial_patterns": [],
+  "preferred_patterns": [
+    "资源倒计时",
+    "环境压迫",
+    "代价落地"
+  ],
+  "thresholds": {
+    "authorial_narration_tolerance": 0,
+    "soft_authorial_tolerance": 1,
+    "abstract_word_tolerance": 2,
+    "repeated_phrase_tolerance": 1,
+    "lyrical_paragraph_tolerance": 1
+  },
+  "notes": [
+    "适合作为尸潮、生存、据点经营、异能末世项目的题材兜底。"
+  ]
+}
