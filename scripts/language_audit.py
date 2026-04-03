@@ -471,6 +471,9 @@ def detect_scene_recipe_hits(
         "farming_progress": ("庄稼", "田里", "收成", "苗", "作坊", "集市", "订单", "灶台"),
         "system_reward": ("系统", "面板", "任务", "奖励", "经验", "等级", "提示"),
         "apocalypse_scarcity": ("物资", "弹药", "感染", "尸群", "据点", "药品", "断电", "发电机"),
+        "opening_grab": ("异常", "危机", "机会", "压迫", "羞辱", "追杀", "系统", "末世", "翻身"),
+        "golden_three_progress": ("行动", "反击", "入局", "推进", "目标", "承诺", "路线", "强敌", "站队"),
+        "chapter_hook": ("结果", "暴露", "真相", "选择", "名额", "机缘", "强敌", "下一步", "站队"),
     }
     for index, paragraph in enumerate(paragraphs, start=1):
         for recipe in scene_recipes:

@@ -17,6 +17,12 @@ DANGER_KEYWORDS = (
     "搜查", "搜捕", "潜入", "危机", "危险", "截杀", "埋伏", "伏杀"
 )
 DEFAULT_EMPTY_VALUES = {"", "—", "无", "暂无", "未设定", "未开始", "0"}
+GOLDEN_THREE_EVENT_KEYWORDS = {
+    1: ("危机", "机会", "羞辱", "异常", "冲突", "追杀", "压迫", "末世", "系统", "入局"),
+    2: ("反击", "行动", "选择", "应对", "破局", "尝试", "兑现", "入局", "推进"),
+    3: ("目标", "承诺", "路线", "野心", "长期", "阶段", "机缘", "强敌", "站队"),
+}
+GOLDEN_THREE_HOOK_KEYWORDS = ("危机", "暴露", "强敌", "选择", "真相", "身份", "机缘", "名额", "下一步", "站队")
 
 
 def parse_args() -> argparse.Namespace:
@@ -200,6 +206,26 @@ def detect_danger_keywords(content: str) -> list[str]:
     return [keyword for keyword in DANGER_KEYWORDS if keyword in content]
 
 
+def evaluate_golden_three_progress(chapter_no: int, chapter_content: str) -> list[str]:
+    if chapter_no not in (1, 2, 3):
+        return []
+
+    warnings: list[str] = []
+    keywords = GOLDEN_THREE_EVENT_KEYWORDS[chapter_no]
+    if not any(keyword in chapter_content for keyword in keywords):
+        if chapter_no == 1:
+            warnings.append("第1章未明显识别到危机 / 机会 / 压迫 / 异常信号，开篇抓手可能偏弱。")
+        elif chapter_no == 2:
+            warnings.append("第2章未明显识别到行动推进 / 破局 / 选择信号，主角主动性可能不足。")
+        else:
+            warnings.append("第3章未明显识别到长期目标 / 路线 / 强敌 / 站队信号，长期承诺可能没有立住。")
+
+    tail = "\n".join(line.strip() for line in chapter_content.splitlines() if line.strip())[-180:]
+    if chapter_no == 3 and not any(keyword in tail for keyword in GOLDEN_THREE_HOOK_KEYWORDS):
+        warnings.append("第3章结尾未明显识别到强钩子信号，可能拖不动第4章。")
+    return warnings
+
+
 def chapter_text_matches(chapter_text: str, chapter_no: int) -> bool:
     match = CHAPTER_PATTERN.search(chapter_text)
     if not match:
@@ -330,6 +356,8 @@ def build_gate_analysis(
 
     if not chapter_content.strip():
         blockers.append("目标章节正文为空，无法执行 continuity gate。")
+
+    warnings.extend(evaluate_golden_three_progress(chapter_no, chapter_content))
 
     continuity_verdict = "pass"
     if blockers:

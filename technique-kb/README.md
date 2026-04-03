@@ -48,6 +48,9 @@ technique-kb/
 - 危险
 - 悬疑
 - 打斗
+- 开篇抓手
+- 黄金三章递进
+- 章尾钩子
 
 ### profile
 
@@ -80,6 +83,18 @@ technique-kb/
 - `recipes/scene/*.json`
 - `profiles/genre/*.json`
 - `profiles/book/*.json`
+
+当前已补入可直接复用的新配方：
+
+- `recipes/scene/opening_grab_scene_recipe.json`
+- `recipes/scene/golden_three_progress_scene_recipe.json`
+- `recipes/scene/chapter_hook_scene_recipe.json`
+
+这些条目用于承接：
+
+- 第一章抓手
+- 黄金三章递进
+- 章尾钩子路线
 
 ## book profile 使用约定
 

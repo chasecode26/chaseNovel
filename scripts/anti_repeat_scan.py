@@ -11,10 +11,13 @@ from pathlib import Path
 
 
 HOOK_PATTERNS = {
-    "threat": ("危机", "危险", "杀", "追", "出事", "暴露"),
-    "reveal": ("真相", "发现", "原来", "身份", "秘密"),
-    "emotion": ("心乱", "沉默", "对视", "靠近", "分开"),
-    "reward": ("突破", "到账", "升级", "奖励", "收获"),
+    "结果未揭晓型": ("结果", "揭晓", "胜负", "到底成没成", "考核", "比试", "奖励", "到账", "名单", "名次"),
+    "危机压顶型": ("危机", "危险", "杀", "追", "暴露", "出事", "围杀", "追杀", "搜查", "强敌", "失守"),
+    "选择逼近型": ("二选一", "选择", "站队", "取舍", "代价", "该不该", "必须选", "要不要"),
+    "信息反转型": ("真相", "发现", "原来", "身份", "秘密", "翻案", "不对", "死了", "旧案", "另一层"),
+    "关系突变型": ("心乱", "沉默", "对视", "靠近", "分开", "决裂", "护短", "站队", "掉马", "翻脸"),
+    "资源争夺型": ("突破", "升级", "收获", "机缘", "传承", "名额", "物资", "资格", "订单", "资源"),
+    "欲望升级型": ("不够", "更大", "下一步", "野心", "争", "翻身", "上位", "长期目标", "想要更多"),
 }
 
 CONFLICT_PATTERNS = {
@@ -118,6 +121,82 @@ def classify_dimension(text: str, pattern_map: dict[str, tuple[str, ...]], fallb
 
 def classify_hook(text: str) -> str:
     return classify_dimension(text, HOOK_PATTERNS)
+
+
+def analyze_golden_three(entries: list[dict[str, str]]) -> dict[str, object]:
+    relevant = []
+    for entry in entries:
+        try:
+            chapter_no = int(entry["chapter"])
+        except (TypeError, ValueError):
+            continue
+        if 1 <= chapter_no <= 3:
+            relevant.append((chapter_no, entry))
+    relevant.sort(key=lambda item: item[0])
+
+    warnings: list[str] = []
+    summary: list[dict[str, str]] = []
+    if not relevant:
+        return {"summary": summary, "warnings": warnings}
+
+    chapter_map = {chapter_no: entry for chapter_no, entry in relevant}
+    expected = [no for no in (1, 2, 3) if no in chapter_map]
+
+    for chapter_no in expected:
+        entry = chapter_map[chapter_no]
+        core_event = extract_summary_field(entry["body"], "核心事件")
+        carry_out = extract_summary_field(entry["body"], "启下")
+        character_change = extract_summary_field(entry["body"], "人物变化")
+        hook = classify_hook(" ".join((carry_out, entry["body"])))
+        summary.append({
+            "chapter": str(chapter_no),
+            "core_event": core_event,
+            "carry_out": carry_out,
+            "character_change": character_change,
+            "hook": hook,
+        })
+
+    if 1 in chapter_map:
+        chapter1 = chapter_map[1]
+        first_event = extract_summary_field(chapter1["body"], "核心事件")
+        if not first_event:
+            warnings.append("第1章摘要缺少“核心事件”，无法确认开篇抓手是否落地。")
+
+    if 2 in chapter_map:
+        chapter2 = chapter_map[2]
+        second_event = extract_summary_field(chapter2["body"], "核心事件")
+        second_change = extract_summary_field(chapter2["body"], "人物变化")
+        second_carry = extract_summary_field(chapter2["body"], "启下")
+        if not any((second_event, second_change, second_carry)):
+            warnings.append("第2章摘要过空，无法确认主角是否已经开始行动。")
+        elif not second_event and not second_change:
+            warnings.append("第2章未明显体现“行动推进”或“局面显形”，黄金三章中段偏虚。")
+
+    if 3 in chapter_map:
+        chapter3 = chapter_map[3]
+        third_carry = extract_summary_field(chapter3["body"], "启下")
+        third_event = extract_summary_field(chapter3["body"], "核心事件")
+        third_hook = classify_hook(" ".join((third_carry, chapter3["body"])))
+        if not third_carry:
+            warnings.append("第3章摘要缺少“启下”，无法确认长期承诺是否已挂到第4章。")
+        if third_hook == "unknown":
+            warnings.append("第3章未识别到明确章尾钩子类型，黄金三章收束偏弱。")
+        if not third_event:
+            warnings.append("第3章摘要缺少“核心事件”，长期承诺可能没有落到局面变化。")
+
+    if 1 in chapter_map and 2 in chapter_map:
+        first_event = extract_summary_field(chapter_map[1]["body"], "核心事件")
+        second_event = extract_summary_field(chapter_map[2]["body"], "核心事件")
+        if first_event and second_event and first_event == second_event:
+            warnings.append("第1-2章“核心事件”文本完全重复，开篇推进可能停在同一层。")
+
+    if 2 in chapter_map and 3 in chapter_map:
+        second_carry = extract_summary_field(chapter_map[2]["body"], "启下")
+        third_carry = extract_summary_field(chapter_map[3]["body"], "启下")
+        if second_carry and third_carry and second_carry == third_carry:
+            warnings.append("第2-3章“启下”重复，第三章没有把承诺再往上抬。")
+
+    return {"summary": summary, "warnings": warnings}
 
 
 def normalize_tag(text: str) -> str:
@@ -233,10 +312,19 @@ def suggest_actions(payload: dict[str, object]) -> list[str]:
         suggestions.append("关系线不要继续嘴硬拉扯，改成信任推进、误会炸裂或利益绑定。")
     if scene_counter.get("铺垫", 0) >= 4:
         suggestions.append("下一章不要再铺垫，必须给局面变化、资源结果或明确摊牌。")
-    if hook_counter.get("threat", 0) >= 3:
-        suggestions.append("章尾钩子别再只写危险逼近，改成结果揭晓、关系突变或选择压顶。")
+    if hook_counter.get("危机压顶型", 0) >= 3:
+        suggestions.append("章尾钩子别再只写危险逼近，改成结果未揭晓型、关系突变型或选择逼近型。")
+    if hook_counter.get("结果未揭晓型", 0) >= 3:
+        suggestions.append("别连续卡结果揭晓，下一章改用危机压顶型、关系突变型或信息反转型。")
+    if hook_counter.get("关系突变型", 0) >= 3:
+        suggestions.append("关系钩子别连刷，改用资源争夺型、信息反转型或结果未揭晓型打断节奏。")
     if any(count >= 3 for count in pair_counter.values()):
         suggestions.append("换主要人物组合，让边缘角色、对手或新搭档进入场景，打断固定互动模板。")
+
+    golden_three = payload.get("golden_three", {})
+    golden_three_warnings = golden_three.get("warnings", []) if isinstance(golden_three, dict) else []
+    if golden_three_warnings:
+        suggestions.append("开篇前三章未完全拉开层级，回看黄金三章：第1章抓入场，第2章推动行动，第3章挂长期承诺。")
 
     if not suggestions:
         suggestions.append("当前未发现高强度重复，可继续写，但仍需盯住下一章的结果类型和钩子换法。")
@@ -288,6 +376,7 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     entries = split_summary_entries(read_text(recent_path))
     analysis = detect_repeat_risks(entries)
     body_analysis = detect_body_patterns(project_dir)
+    golden_three = analyze_golden_three(entries)
     payload = {
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -303,7 +392,8 @@ def build_payload(project_dir: Path) -> dict[str, object]:
         "opener_counter": analysis["opener_counter"],
         "body_openers": body_analysis["body_openers"],
         "body_hooks": body_analysis["body_hooks"],
-        "warnings": analysis["warnings"] + body_analysis["warnings"],
+        "golden_three": golden_three,
+        "warnings": analysis["warnings"] + body_analysis["warnings"] + list(golden_three["warnings"]),
     }
     payload["suggestions"] = suggest_actions(payload)
     payload["warning_count"] = len(payload["warnings"])
@@ -326,8 +416,23 @@ def render_markdown(payload: dict[str, object]) -> str:
         f"- 场景功能：`{json.dumps(payload['scene_counter'], ensure_ascii=False)}`",
         f"- 正文结尾钩子：`{json.dumps(payload['body_hooks'], ensure_ascii=False)}`",
         "",
-        "## 六维快照",
+        "## 开篇三章快照",
     ]
+    golden_three = payload.get("golden_three", {})
+    golden_three_summary = golden_three.get("summary", []) if isinstance(golden_three, dict) else []
+    if golden_three_summary:
+        for item in golden_three_summary:
+            lines.append(
+                f"- 第{item['chapter']}章：核心事件={item['core_event'] or '未写'} / "
+                f"启下={item['carry_out'] or '未写'} / 钩子={item['hook']}"
+            )
+    else:
+        lines.append("- 无")
+
+    lines.extend([
+        "",
+        "## 六维快照",
+    ])
     chapter_dimensions = payload.get("chapter_dimensions", [])
     if chapter_dimensions:
         for item in chapter_dimensions[-5:]:

@@ -15,6 +15,33 @@
 
 - `references/advanced-template-map.md`
   用来定位卷纲、反派、长期转场、感情线、结局等进阶模板
+- `references/opening-sample-library.md`
+  用来对照高质量作品的第一章路线，学习开篇抓人、信息顺序与卖点建立
+- `references/opening-sample-specialties.md`
+  用来对照历史权谋、末世囤货、仙侠苟道等偏好题材的开篇路线专题
+- `templates/opening-route-cheatsheet.md`
+  用来在 `/一键开书` 前快速选择第一章路线，而不是直接闷头写
+- `templates/golden-three-route-cheatsheet.md`
+  用来把开篇主路线扩成黄金三章功能链，避免只会抓第一章，不会接第二第三章
+- `templates/hook-route-cheatsheet.md`
+  用来在 `/写` 前快速选择章尾钩子路线，避免连续几章用同一种断尾
+
+当前 `/一键开书` 固定产物已经要求显式输出：
+
+- 开篇主路线
+- 第一章最先立住什么
+- 第一章绝不能先写什么
+- 黄金三章草案
+- 黄金三章自动推荐依据
+- 第三章长期承诺
+- 第三章章尾钩子类型
+
+当前 `/写` 章卡也应显式输出：
+
+- 章尾钩子类型
+- 章尾钩子自动推荐依据
+- 为什么这一钩子适合本章
+- 本章章尾钩子
 
 ## 核心能力
 
@@ -24,6 +51,12 @@
 - 门禁：对单章或批量章节做 continuity、重复度、语言质量检查
 - 长线维护：伏笔、承诺、角色弧、时间线、卷节奏
 - 题材补强：15 类题材模板 + 3 类子风格模板，按需补读，不再一次性整包加载
+
+当前工程脚本已同步支持：
+
+- 黄金三章递进检查：第 1 章抓入场、第 2 章推行动、第 3 章挂长期承诺
+- 章尾钩子七型识别：结果未揭晓 / 危机压顶 / 选择逼近 / 信息反转 / 关系突变 / 资源争夺 / 欲望升级
+- 开篇期轻量预警：`chapter_gate.py` 会对第 1-3 章给出抓手、推进、承诺类 warning
 
 ## 推荐使用顺序
 
@@ -51,6 +84,8 @@ python scripts/chapter_self_check.py --project "novel_书名" --chapter-no 10
 
 - `project_doctor.py` 用于检查单个小说项目目录是否完整、状态是否异常
 - `workflow_runner.py` 用于按默认顺序串起 `doctor -> context -> memory -> foreshadow -> arc -> timeline -> repeat -> dashboard`，并生成 `05_reports/pipeline_report.{md,json}`
+- `chapter_gate.py` 除常规 continuity gate 外，也会对第 1-3 章做黄金三章轻量校验
+- `anti_repeat_scan.py` 会扫描近章钩子分布，并额外输出 `golden_three` 开篇三章递进快照
 - `toolchain_smoke.py` 用于验证当前技能仓库的工程链路是否可用；脚本会创建临时项目并在退出时自动清理，不保留测试内容
 - `npm run verify:toolchain` 是 `toolchain_smoke.py` 的 npm 包装入口
 
