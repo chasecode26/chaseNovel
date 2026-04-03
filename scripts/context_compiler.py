@@ -9,6 +9,13 @@ from datetime import datetime
 from pathlib import Path
 
 
+PLACEHOLDER_PATTERNS = (
+    re.compile(r"\{[A-Z0-9_]+\}"),
+    re.compile(r"第_{2,}章"),
+    re.compile(r"第\{[A-Z0-9_]+\}章"),
+)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Compile the minimum next-chapter context for a chaseNovel project."
@@ -35,6 +42,56 @@ def detect_current_chapter(state_text: str) -> int:
 def extract_line(text: str, label: str) -> str:
     match = re.search(rf"{re.escape(label)}[:：]\s*(.+)", text)
     return match.group(1).strip() if match else ""
+
+
+def has_placeholder(text: str) -> bool:
+    normalized = text.strip()
+    if not normalized:
+        return False
+    return any(pattern.search(normalized) for pattern in PLACEHOLDER_PATTERNS)
+
+
+def useful_lines(text: str, limit: int) -> list[str]:
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or has_placeholder(line):
+            continue
+        if line.startswith("#") or line.startswith(">"):
+            continue
+        if line.startswith("<!--") or line.startswith("-->"):
+            continue
+        if line.startswith("|"):
+            continue
+        if re.fullmatch(r"\|[-:\s|]+\|?", line):
+            continue
+        lines.append(line)
+        if len(lines) >= limit:
+            break
+    return lines
+
+
+def extract_next_goal(state_text: str) -> str:
+    direct = extract_line(state_text, "- 下章预告") or extract_line(state_text, "下章预告")
+    if direct and not has_placeholder(direct):
+        return direct
+
+    section_match = re.search(
+        r"##\s*下章预告\s*(.*?)(?:\n##\s+|\Z)",
+        state_text,
+        re.S,
+    )
+    if not section_match:
+        return ""
+
+    section_text = section_match.group(1)
+    result = (
+        extract_line(section_text, "- 计划内容")
+        or extract_line(section_text, "计划内容")
+        or extract_line(section_text, "- 章节号")
+        or extract_line(section_text, "章节号")
+    )
+    return "" if has_placeholder(result) else result
 
 
 def first_nonempty_lines(text: str, limit: int) -> list[str]:
@@ -106,7 +163,7 @@ def build_markdown(project_dir: Path, target_chapter: int) -> str:
 
     active_volume = extract_line(state_text, "- 当前卷") or extract_line(state_text, "当前卷")
     active_arc = extract_line(state_text, "- 当前弧") or extract_line(state_text, "当前弧")
-    next_goal = extract_line(state_text, "- 下章预告") or extract_line(state_text, "下章预告")
+    next_goal = extract_next_goal(state_text)
 
     sections = [
         f"# Next Context - 第{target_chapter:03d}章",
@@ -118,22 +175,22 @@ def build_markdown(project_dir: Path, target_chapter: int) -> str:
         f"- 下章目标：{next_goal or '待明确'}",
         "",
         "## 全书主线摘要",
-        *([f"- {line}" for line in first_nonempty_lines(plan_text, 8)] or ["- 缺少 plan.md 摘要"]),
+        *([f"- {line}" for line in useful_lines(plan_text, 8)] or ["- 缺少 plan.md 摘要"]),
         "",
         "## 当前状态摘要",
-        *([f"- {line}" for line in first_nonempty_lines(state_text, 12)] or ["- 缺少 state.md 摘要"]),
+        *([f"- {line}" for line in useful_lines(state_text, 12)] or ["- 缺少 state.md 摘要"]),
         "",
         "## 卷级推进摘要",
-        *([f"- {line}" for line in first_nonempty_lines(arc_text, 10)] or ["- 缺少 arc_progress.md 摘要"]),
+        *([f"- {line}" for line in useful_lines(arc_text, 10)] or ["- 缺少 arc_progress.md 摘要"]),
         "",
         "## 待跟进发现",
-        *([f"- {line}" for line in first_nonempty_lines(findings_text, 8)] or ["- 暂无 findings.md"]),
+        *([f"- {line}" for line in useful_lines(findings_text, 8)] or ["- 暂无 findings.md"]),
         "",
         "## 近章摘要",
-        *([f"- {line}" for line in first_nonempty_lines(recent_text, 10)] or ["- 暂无 recent.md"]),
+        *([f"- {line}" for line in useful_lines(recent_text, 10)] or ["- 暂无 recent.md"]),
         "",
         "## 书级声音约束",
-        *([f"- {line}" for line in first_nonempty_lines(voice_text or style_text, 10)] or ["- 暂无 voice/style 约束"]),
+        *([f"- {line}" for line in useful_lines(voice_text or style_text, 10)] or ["- 暂无 voice/style 约束"]),
         "",
         "## 本章到期伏笔",
         *([f"- {item_id}" for item_id in due_ids] or ["- 当前无到期伏笔"]),
@@ -159,9 +216,23 @@ def main() -> int:
 
     result = {
         "project": project_dir.as_posix(),
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "status": "pass",
         "chapter": target_chapter,
         "output": output_path.as_posix(),
+        "warnings": [],
+        "warning_count": 0,
+        "report_paths": {
+            "markdown": output_path.as_posix(),
+        },
     }
+    if not collect_latest_chapter_excerpt(project_dir):
+        result["warnings"].append("当前没有正文章节，上一章摘录将为空。")
+    if not load_due_foreshadow_ids(project_dir, target_chapter):
+        result["warnings"].append("当前未识别到到期伏笔。")
+    result["warning_count"] = len(result["warnings"])
+    if result["warnings"]:
+        result["status"] = "warn"
 
     if not args.dry_run:
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -170,6 +241,8 @@ def main() -> int:
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
+        print(f"status={result['status']}")
+        print(f"warning_count={result['warning_count']}")
         print(f"chapter={target_chapter}")
         print(f"output={output_path.as_posix()}")
     return 0

@@ -9,6 +9,13 @@ from datetime import datetime
 from pathlib import Path
 
 
+PLACEHOLDER_PATTERNS = (
+    re.compile(r"\{[A-Z0-9_]+\}"),
+    re.compile(r"第_{2,}章"),
+    re.compile(r"第\{[A-Z0-9_]+\}章"),
+)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate a lightweight arc tracking report for a chaseNovel project."
@@ -23,6 +30,20 @@ def read_text(path: Path) -> str:
     if not path.exists():
         return ""
     return path.read_text(encoding="utf-8").lstrip("\ufeff")
+
+
+def has_placeholder(text: str) -> bool:
+    normalized = text.strip()
+    if not normalized:
+        return False
+    return any(pattern.search(normalized) for pattern in PLACEHOLDER_PATTERNS)
+
+
+def clean_value(text: str, fallback: str = "未识别") -> str:
+    normalized = text.strip()
+    if not normalized or has_placeholder(normalized):
+        return fallback
+    return normalized
 
 
 def parse_table_rows(text: str) -> list[list[str]]:
@@ -91,16 +112,25 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     active_arc_match = re.search(r"当前弧[:：]\s*(.+)", state_text)
     characters = parse_character_arcs(memory_dir)
     stalled = [item for item in characters if any(flag in item["risk"] for flag in ("停滞", "重复", "失真"))]
+    warnings: list[str] = []
+    if not characters:
+        warnings.append("角色弧表为空，当前只能做轻量结构检查。")
+    if stalled:
+        warnings.append(f"检测到 {len(stalled)} 个角色弧存在停滞/重复/失真风险。")
+    status = "warn" if warnings else "pass"
 
     return {
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "status": status,
         "current_chapter": int(current_chapter_match.group(1)) if current_chapter_match else 0,
-        "active_arc": active_arc_match.group(1).strip() if active_arc_match else "未识别",
+        "active_arc": clean_value(active_arc_match.group(1) if active_arc_match else ""),
         "character_arcs": characters,
         "relation_arcs": parse_relation_arcs(memory_dir),
         "stalled_arc_count": len(stalled),
         "stalled_characters": [item["character"] for item in stalled],
+        "warnings": warnings,
+        "warning_count": len(warnings),
     }
 
 
@@ -142,6 +172,10 @@ def main() -> int:
     reports_dir = project_dir / "05_reports"
     md_path = reports_dir / "arc_health.md"
     json_path = reports_dir / "arc_health.json"
+    payload["report_paths"] = {
+        "markdown": md_path.as_posix(),
+        "json": json_path.as_posix(),
+    }
     if not args.dry_run:
         reports_dir.mkdir(parents=True, exist_ok=True)
         md_path.write_text(render_markdown(payload), encoding="utf-8")
@@ -149,9 +183,11 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
+        print(f"status={payload['status']}")
+        print(f"warning_count={payload['warning_count']}")
         print(f"stalled_arc_count={payload['stalled_arc_count']}")
-        print(f"markdown={md_path.as_posix()}")
-        print(f"json={json_path.as_posix()}")
+        print(f"markdown={payload['report_paths']['markdown']}")
+        print(f"json={payload['report_paths']['json']}")
     return 0
 
 

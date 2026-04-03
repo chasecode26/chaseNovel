@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+
+
+REQUIRED_DIRS = [
+    "00_memory",
+    "00_memory/retrieval",
+    "00_memory/summaries",
+    "01_outline",
+    "02_knowledge",
+    "03_chapters",
+    "04_gate",
+]
+
+REQUIRED_FILES = [
+    "00_memory/plan.md",
+    "00_memory/state.md",
+    "00_memory/arc_progress.md",
+    "00_memory/characters.md",
+    "00_memory/character_arcs.md",
+    "00_memory/timeline.md",
+    "00_memory/foreshadowing.md",
+    "00_memory/payoff_board.md",
+    "00_memory/style.md",
+    "00_memory/voice.md",
+    "00_memory/scene_preferences.md",
+    "00_memory/findings.md",
+    "00_memory/summaries/recent.md",
+]
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run structural health checks for a chaseNovel project."
+    )
+    parser.add_argument("--project", required=True, help="Path to the novel project root")
+    parser.add_argument("--json", action="store_true", help="Print JSON result")
+    parser.add_argument("--dry-run", action="store_true", help="Do not write report files")
+    return parser.parse_args()
+
+
+def read_text(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8").lstrip("\ufeff")
+
+
+def chapter_count(project_dir: Path) -> int:
+    chapters_dir = project_dir / "03_chapters"
+    if not chapters_dir.exists():
+        return 0
+    count = 0
+    for path in chapters_dir.iterdir():
+        if path.is_file() and re.search(r"\d+", path.stem):
+            count += 1
+    return count
+
+
+def detect_current_chapter(state_text: str) -> int | None:
+    match = re.search(r"当前章节[:：]\s*第?(\d+)章", state_text)
+    return int(match.group(1)) if match else None
+
+
+def build_payload(project_dir: Path) -> dict[str, object]:
+    missing_dirs = [item for item in REQUIRED_DIRS if not (project_dir / item).exists()]
+    missing_files = [item for item in REQUIRED_FILES if not (project_dir / item).exists()]
+
+    state_text = read_text(project_dir / "00_memory" / "state.md")
+    current_chapter = detect_current_chapter(state_text)
+    chapters = chapter_count(project_dir)
+
+    warnings: list[str] = []
+    if chapters == 0:
+        warnings.append("当前项目还没有正文文件，无法做连续性与反重复回归。")
+    if current_chapter is None:
+        warnings.append("state.md 中未识别到“当前章节”，上下文编译会退回默认章节。")
+    elif chapters and current_chapter > chapters + 1:
+        warnings.append(f"state.md 当前章节为第{current_chapter}章，但正文目录仅检测到 {chapters} 章，状态可能超前。")
+    if not (project_dir / "00_memory" / "retrieval" / "next_context.md").exists():
+        warnings.append("缺少 next_context.md；建议运行 context_compiler.py 或 chase context。")
+
+    status = "pass"
+    if missing_dirs or missing_files:
+        status = "fail"
+    elif warnings:
+        status = "warn"
+
+    return {
+        "project": project_dir.as_posix(),
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "status": status,
+        "missing_dirs": missing_dirs,
+        "missing_files": missing_files,
+        "chapter_count": chapters,
+        "current_chapter": current_chapter,
+        "warnings": warnings,
+        "warning_count": len(warnings),
+    }
+
+
+def render_markdown(payload: dict[str, object]) -> str:
+    lines = [
+        "# 项目体检报告",
+        "",
+        f"- 项目：`{payload['project']}`",
+        f"- 生成时间：`{payload['generated_at']}`",
+        f"- 体检结论：`{payload['status'].upper()}`",
+        f"- 已识别章节数：`{payload['chapter_count']}`",
+        f"- state 当前章节：`{payload['current_chapter'] if payload['current_chapter'] is not None else '未识别'}`",
+        "",
+        "## 缺失目录",
+    ]
+    if payload["missing_dirs"]:
+        lines.extend([f"- {item}" for item in payload["missing_dirs"]])
+    else:
+        lines.append("- 无")
+
+    lines.extend(["", "## 缺失文件"])
+    if payload["missing_files"]:
+        lines.extend([f"- {item}" for item in payload["missing_files"]])
+    else:
+        lines.append("- 无")
+
+    lines.extend(["", "## 预警"])
+    if payload["warnings"]:
+        lines.extend([f"- {item}" for item in payload["warnings"]])
+    else:
+        lines.append("- 无")
+    return "\n".join(lines) + "\n"
+
+
+def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
+    args = parse_args()
+    project_dir = Path(args.project).resolve()
+    payload = build_payload(project_dir)
+    reports_dir = project_dir / "05_reports"
+    md_path = reports_dir / "doctor.md"
+    json_path = reports_dir / "doctor.json"
+    payload["report_paths"] = {
+        "markdown": md_path.as_posix(),
+        "json": json_path.as_posix(),
+    }
+
+    if not args.dry_run:
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        md_path.write_text(render_markdown(payload), encoding="utf-8")
+        json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        print(f"status={payload['status']}")
+        print(f"warning_count={payload['warning_count']}")
+        print(f"chapters={payload['chapter_count']}")
+        print(f"report={payload['report_paths']['markdown']}")
+    return 1 if payload["status"] == "fail" else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

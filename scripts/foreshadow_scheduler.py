@@ -166,6 +166,18 @@ def main() -> int:
         "due": groups["due"],
         "overdue": groups["overdue"],
         "active": groups["active"][:50],
+        "warnings": [],
+        "warning_count": 0,
+    }
+    if not rows:
+        payload["warnings"].append("伏笔表为空，当前没有可调度条目。")
+    if groups["overdue"]:
+        payload["warnings"].append(f"存在 {len(groups['overdue'])} 条超期伏笔，应优先处理。")
+    payload["warning_count"] = len(payload["warnings"])
+    payload["status"] = "warn" if payload["warnings"] else "pass"
+    payload["report_paths"] = {
+        "markdown": md_path.as_posix(),
+        "json": json_path.as_posix(),
     }
 
     if not args.dry_run:
@@ -176,11 +188,13 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
+        print(f"status={payload['status']}")
+        print(f"warning_count={payload['warning_count']}")
         print(f"chapter={target_chapter}")
         print(f"due={len(groups['due'])}")
         print(f"overdue={len(groups['overdue'])}")
-        print(f"markdown={md_path.as_posix()}")
-        print(f"json={json_path.as_posix()}")
+        print(f"markdown={payload['report_paths']['markdown']}")
+        print(f"json={payload['report_paths']['json']}")
     return 0
 
 

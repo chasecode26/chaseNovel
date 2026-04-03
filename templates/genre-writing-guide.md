@@ -12,7 +12,7 @@
 当遇到由于系统库过于庞大导致的“节奏与文风冲突”时，**必须绝对遵守**以下优先级梯队：
 
 - **🥇 第一层级（绝对优先级）：作家指纹库 & 具体题材库**
-  - 作家指纹（如马伯庸风、烽火戏诸侯风）的句式、意境要求，**无条件推翻**通用的“全短句、全快打脸”润色要求。
+  - 风格指纹（如考据机锋档、群像悲壮档）的句式、意境要求，**无条件推翻**通用的“全短句、全快打脸”润色要求。
   - 特殊题材（如克苏鲁怪谈、历史权谋）的慢热、压抑或求生要求，**无条件推翻**通用自检中的“主角必须获得资源、升级”的标准。
 - **🥈 第二层级（中优）：本章/本卷大纲目标**
   - 如果大纲写了“本章极尽憋屈”，则执行大纲，无视通用的“三章必扬”爽感公式。情节逻辑 > 通用爽点公式。
@@ -57,7 +57,6 @@
 - 都市 / 系统流：`templates/genres/02-dushi-xitongliu.md`
 - 种田文：`templates/genres/03-zhongtianwen.md`
 - 末世：`templates/genres/04-moshi.md`
-- 甜宠 / 总裁：`templates/genres/05-tianchong-zongcai.md`
 - 重生复仇：`templates/genres/06-zhongsheng-fuchou.md`
 - 无限流 / 副本流：`templates/genres/07-wuxianliu-fubenliu.md`
 - 悬疑 / 刑侦 / 推理：`templates/genres/08-xuanyi-xingzhen-tuili.md`
@@ -69,6 +68,12 @@
 - 校园 / 青春成长：`templates/genres/14-xiaoyuan-qingchun-chengzhang.md`
 - 宫斗 / 宅斗：`templates/genres/15-gongdou-zhaidou.md`
 - 仙侠恋爱 / 古言甜虐：`templates/genres/16-xianxia-lianai-guyan-tiannue.md`
+
+甜宠 / 情感主导类现言不再单列旧式 Prompt 模板，统一改为：
+
+- 主关系推进：`templates/romance_arc.md`
+- 情绪与风格约束：`templates/style-defaults.md`、`templates/style.md`
+- 章节落地与避免空转：`references/writing-patterns.md`
 
 ---
 

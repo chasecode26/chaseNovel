@@ -310,15 +310,14 @@
 
 ## 写作技巧参考
 
-写作技巧已拆分到独立文件，避免主文档继续膨胀。
+写法手法与低 AI 味约束已拆到独立文件，避免主文档继续膨胀。
 
+- 章节落地、动作替代判断、不同章节类型的写法重心：详见 `references/writing-patterns.md`
 - 开篇抓人、章节推进、章尾钩子、番茄风格写法：详见 `templates/writing-techniques.md`
 - 差例 / 好例 / 为什么的短对照范文：详见 `templates/writing-examples.md`
-- 16 类题材对应的写法重点、常见失误、推进技巧与短对照范文：先读 `templates/genre-writing-guide.md`，再按题材下钻到 `templates/genres/*.md`
+- 15 类题材对应的写法重点、常见失误、推进技巧与短对照范文：先读 `templates/genre-writing-guide.md`，再按题材下钻到 `templates/genres/*.md`
 - 古代权谋里偏边关争霸、养兵夺权、男频立威：补读 `templates/substyles/bianguan-zhengba-nanpin.md`
 - 平台目标偏番茄、需要更强章节反馈密度：补读 `templates/substyles/fanqie-kuai-fankui-shuangdian.md`
 - 主线里需要慢热、克制、共谋型关系推进：补读 `templates/substyles/manre-gongmou-ganqingxian.md`
 - 多视角切换、节奏与信息投放、题材专项技法、小工具：详见 `templates/writing_playbook.md`
 - `/写` 前可直接套用的完整章卡示例：详见 `templates/chapter-card-examples.md`
-- 适合场景：`/一键开书` 前找切入点、`/写` 前补章卡、卡文时找解法、修改章节时找提速方案
-- 使用原则：先按本技能主流程保证结构正确，再按技巧库补强抓人度、反馈密度与句式节奏；若某项内容已在 `templates/` 有成型示例或模板，以模板正文为准，本文件只负责导航与约束摘要

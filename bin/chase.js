@@ -76,7 +76,7 @@ function main() {
   }
 
   if (command === "doctor") {
-    runPython(python, path.join(repoRoot, "scripts", "dashboard_snapshot.py"), ["--project", options.project, "--dry-run"]);
+    runPython(python, path.join(repoRoot, "scripts", "project_doctor.py"), passthrough);
     return;
   }
 
@@ -132,10 +132,12 @@ function printHelp(errorMessage) {
   chase batch --project <dir> [--from <n> --to <n>]
   chase audit --project <dir> [--chapter-no <n>]
   chase bootstrap --project <dir> [--force]
+  chase doctor --project <dir> [--json]
   chase run --project <dir> [--chapter <n>] [--steps <csv>]
 
 Notes:
   - existing gate and audit scripts are passed through unchanged
+  - default run steps: doctor,context,memory,foreshadow,arc,timeline,repeat,dashboard
   - project defaults to the current directory`);
 }
 

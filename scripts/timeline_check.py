@@ -74,8 +74,10 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     return {
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "status": "warn" if warnings else "pass",
         "event_count": len(rows),
         "warnings": warnings,
+        "warning_count": len(warnings),
         "events": rows[:50],
     }
 
@@ -112,6 +114,10 @@ def main() -> int:
     reports_dir = project_dir / "05_reports"
     md_path = reports_dir / "timeline_check.md"
     json_path = reports_dir / "timeline_check.json"
+    payload["report_paths"] = {
+        "markdown": md_path.as_posix(),
+        "json": json_path.as_posix(),
+    }
     if not args.dry_run:
         reports_dir.mkdir(parents=True, exist_ok=True)
         md_path.write_text(render_markdown(payload), encoding="utf-8")
@@ -119,10 +125,11 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
+        print(f"status={payload['status']}")
         print(f"event_count={payload['event_count']}")
-        print(f"warning_count={len(payload['warnings'])}")
-        print(f"markdown={md_path.as_posix()}")
-        print(f"json={json_path.as_posix()}")
+        print(f"warning_count={payload['warning_count']}")
+        print(f"markdown={payload['report_paths']['markdown']}")
+        print(f"json={payload['report_paths']['json']}")
     return 0
 
 

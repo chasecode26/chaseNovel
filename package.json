@@ -26,6 +26,7 @@
   },
   "scripts": {
     "doctor:project": "node ./bin/chase.js doctor --project .",
+    "verify:toolchain": "python ./scripts/toolchain_smoke.py",
     "doctor": "node ./bin/chase-novel-skill.js doctor",
     "install:local": "node ./bin/chase-novel-skill.js install"
   },

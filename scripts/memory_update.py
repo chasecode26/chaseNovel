@@ -125,10 +125,20 @@ def main() -> int:
     chapter_no, chapter_path = detect_latest_chapter(project_dir)
     target_chapter = args.chapter or chapter_no
     if target_chapter <= 0:
-        payload = {"project": project_dir.as_posix(), "updated": False, "reason": "no chapters found"}
+        payload = {
+            "project": project_dir.as_posix(),
+            "updated": False,
+            "reason": "no chapters found",
+            "status": "warn",
+            "warnings": ["当前未检测到章节文件，无法执行记忆回写。"],
+            "warning_count": 1,
+            "report_paths": {},
+        }
         if args.json:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         else:
+            print("status=warn")
+            print("warning_count=1")
             print("updated=false")
             print("reason=no chapters found")
         return 0
@@ -158,12 +168,25 @@ def main() -> int:
     report_path = project_dir / "04_gate" / f"ch{target_chapter:03d}" / "memory_update.md"
     payload = {
         "project": project_dir.as_posix(),
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "status": "pass",
         "updated": True,
         "chapter": target_chapter,
         "state_path": state_path.as_posix(),
         "recent_path": recent_path.as_posix(),
         "report_path": report_path.as_posix(),
+        "warnings": [],
+        "warning_count": 0,
+        "report_paths": {
+            "memory_report": report_path.as_posix(),
+            "state": state_path.as_posix(),
+            "recent": recent_path.as_posix(),
+        },
     }
+    if args.dry_run:
+        payload["warnings"].append("dry-run 模式未实际写入 state.md、recent.md 与 memory_update.md。")
+        payload["warning_count"] = len(payload["warnings"])
+        payload["status"] = "warn"
 
     if not args.dry_run:
         write_text(state_path, state_text)
@@ -173,9 +196,11 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
+        print(f"status={payload['status']}")
+        print(f"warning_count={payload['warning_count']}")
         print(f"updated=true")
         print(f"chapter={target_chapter}")
-        print(f"report={report_path.as_posix()}")
+        print(f"report={payload['report_paths']['memory_report']}")
     return 0
 
 

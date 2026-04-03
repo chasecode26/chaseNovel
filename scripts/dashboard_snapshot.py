@@ -9,6 +9,13 @@ from datetime import datetime
 from pathlib import Path
 
 
+PLACEHOLDER_PATTERNS = (
+    re.compile(r"\{[A-Z0-9_]+\}"),
+    re.compile(r"第_{2,}章"),
+    re.compile(r"第\{[A-Z0-9_]+\}章"),
+)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate a lightweight book-level dashboard snapshot for a chaseNovel project."
@@ -28,6 +35,20 @@ def read_text(path: Path) -> str:
 def extract_line(text: str, label: str) -> str:
     match = re.search(rf"{re.escape(label)}[:：]\s*(.+)", text)
     return match.group(1).strip() if match else ""
+
+
+def has_placeholder(text: str) -> bool:
+    normalized = text.strip()
+    if not normalized:
+        return False
+    return any(pattern.search(normalized) for pattern in PLACEHOLDER_PATTERNS)
+
+
+def clean_value(text: str, fallback: str = "未识别") -> str:
+    normalized = text.strip()
+    if not normalized or has_placeholder(normalized):
+        return fallback
+    return normalized
 
 
 def count_chapters(project_dir: Path) -> int:
@@ -57,20 +78,33 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     chapter_match = re.search(r"(\d+)", current_chapter)
     active_volume = extract_line(state_text, "- 当前卷") or extract_line(state_text, "当前卷")
     active_arc = extract_line(state_text, "- 当前弧") or extract_line(state_text, "当前弧")
+    warnings: list[str] = []
+    chapter_count = count_chapters(project_dir)
+    if chapter_count == 0:
+        warnings.append("当前项目还没有正文文件，dashboard 仅反映模板与记忆状态。")
+    if not (memory_dir / "retrieval" / "next_context.md").exists():
+        warnings.append("缺少 next_context.md；建议先运行 context_compiler.py 或 chase context。")
+    overdue_count = len(foreshadow_json.get("overdue", []))
+    if overdue_count:
+        warnings.append(f"当前存在 {overdue_count} 条超期伏笔，建议优先安排回收。")
+    status = "warn" if warnings else "pass"
 
     return {
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "status": status,
         "current_chapter": int(chapter_match.group(1)) if chapter_match else count_chapters(project_dir),
-        "active_volume": active_volume or "未识别",
-        "active_arc": active_arc or "未识别",
-        "chapter_count": count_chapters(project_dir),
+        "active_volume": clean_value(active_volume),
+        "active_arc": clean_value(active_arc),
+        "chapter_count": chapter_count,
         "pending_foreshadow_count": len(foreshadow_json.get("active", [])),
-        "overdue_foreshadow_count": len(foreshadow_json.get("overdue", [])),
-        "reports": {
+        "overdue_foreshadow_count": overdue_count,
+        "warnings": warnings,
+        "warning_count": len(warnings),
+        "report_paths": {
             "next_context": (memory_dir / "retrieval" / "next_context.md").as_posix(),
-            "dashboard_markdown": (reports_dir / "dashboard.md").as_posix(),
-            "dashboard_json": (reports_dir / "dashboard.json").as_posix(),
+            "markdown": (reports_dir / "dashboard.md").as_posix(),
+            "json": (reports_dir / "dashboard.json").as_posix(),
         },
     }
 
@@ -90,8 +124,8 @@ def render_markdown(payload: dict[str, object]) -> str:
             f"- 超期伏笔数：`{payload['overdue_foreshadow_count']}`",
             "",
             "## 关键产物",
-            f"- 下一章上下文：`{payload['reports']['next_context']}`",
-            f"- Dashboard JSON：`{payload['reports']['dashboard_json']}`",
+            f"- 下一章上下文：`{payload['report_paths']['next_context']}`",
+            f"- Dashboard JSON：`{payload['report_paths']['json']}`",
         ]
     ) + "\n"
 
@@ -116,10 +150,12 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
+        print(f"status={payload['status']}")
+        print(f"warning_count={payload['warning_count']}")
         print(f"chapter={payload['current_chapter']}")
         print(f"active_volume={payload['active_volume']}")
         print(f"active_arc={payload['active_arc']}")
-        print(f"dashboard={payload['reports']['dashboard_markdown']}")
+        print(f"dashboard={payload['report_paths']['markdown']}")
     return 0
 
 
