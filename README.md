@@ -21,6 +21,7 @@
 - `references/` 存放长规则、诊断说明、固定输出契约
 - `templates/` 提供项目记忆模板、章卡示例、题材写法资产
 - `technique-kb/` 提供脚本和人工共用的结构化技法知识
+- `hooks/` 只保留可执行的自动自检 hook，供 Claude 本地安装态接入
 - `scripts/` 负责 chapter gate、language audit、自检和记忆回填
 - `bin/` 提供 `chase` / `chase-novel-skill` CLI 入口
 
@@ -52,6 +53,10 @@
   用来直接套用监军夺令、粮官卡脖、地方官逼军、战后分功、封赏藏刀、抚恤闹营等军政冲突章卡
 - `references/hook-result-learning.md`
   用来专门补强末世囤货 / 仙侠苟道的章节结果换挡与章尾钩子设计
+- `references/moshi-bastion-and-order-library.md`
+  用来专门补强末世囤货中后期的据点升级、规则建立、势力治理与秩序重建
+- `references/moshi-bastion-governance-chapter-cards.md`
+  用来直接套用新人准入、资源分配、规则处罚、对外交易、外点扩张、闹营治理等据点治理章卡
 - `templates/opening-route-cheatsheet.md`
   用来在 `/一键开书` 前快速选择第一章路线，而不是直接闷头写
 - `templates/golden-three-route-cheatsheet.md`
@@ -139,9 +144,10 @@ repo/
 ├─ SKILL.md
 ├─ references/
 ├─ templates/
-│  ├─ genres/        # 8 类核心题材模板
+│  ├─ genres/        # 5 条常用主战题材模板
 │  └─ substyles/     # 3 类子风格模板
 ├─ technique-kb/
+├─ hooks/
 ├─ scripts/
 ├─ schemas/
 └─ bin/

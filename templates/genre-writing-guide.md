@@ -3,7 +3,7 @@
 > 用途：作为题材导航索引，帮助按题材补读更小的写法文件。
 > 原则：先用主技能保证结构与节奏，再按题材特性补强爽点、情绪点、冲突形态与语言节拍。
 
-具体题材正文已拆到 `templates/genres/`，当前只保留常用的 8 类核心题材，不再维护低频题材模板。
+具体题材正文已拆到 `templates/genres/`，当前只保留常用的 5 条主战题材，不再维护低频题材模板。
 
 ---
 
@@ -36,7 +36,7 @@
 - 都市 / 系统流 + 悬疑 / 推理：主题材通常是“都市 / 系统流”，悬疑负责放大问题感和信息差
 - 玄幻 / 修仙 + 历史 / 权谋：主题材看主卖点；若主打升级成长，玄幻为主；若主打站队博弈，历史权谋为主
 - 末世 + 种田文：主题材通常是“末世”，种田负责放大囤货、经营、据点建设
-- 历史 / 权谋 + 重生复仇：主题材通常是“历史 / 权谋”，重生复仇负责放大先知优势与清算感
+- 历史 / 权谋 + 先知复盘：主题材通常是“历史 / 权谋”，先知优势只作为局部加成，不单列独立题材模板
 
 ---
 
@@ -57,9 +57,6 @@
 - 都市 / 系统流：`templates/genres/02-dushi-xitongliu.md`
 - 种田文：`templates/genres/03-zhongtianwen.md`
 - 末世：`templates/genres/04-moshi.md`
-- 重生复仇：`templates/genres/06-zhongsheng-fuchou.md`
-- 无限流 / 副本流：`templates/genres/07-wuxianliu-fubenliu.md`
-- 悬疑 / 刑侦 / 推理：`templates/genres/08-xuanyi-xingzhen-tuili.md`
 - 历史 / 权谋：`templates/genres/09-lishi-quanmou.md`
 
 ---

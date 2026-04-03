@@ -74,6 +74,10 @@
 
 - 先读 `references/moshi-volume-route-library.md`
 
+### 如果你现在卡在据点升级、规则建立和势力治理
+
+- 先读 `references/moshi-bastion-and-order-library.md`
+
 ### 如果你现在卡在团队、仇人、规则推进
 
 - 先读 `references/moshi-character-learning.md`
@@ -81,6 +85,7 @@
 ### 如果你不会把这一章落地
 
 - 先读 `references/moshi-chapter-card-library.md`
+- 再读 `references/moshi-bastion-governance-chapter-cards.md`
 
 ### 如果你怀疑写成囤货流水账
 
@@ -92,9 +97,11 @@
 1. `references/local-corpus-learning.md`
 2. `references/hook-result-learning.md`
 3. `references/moshi-volume-route-library.md`
-4. `references/moshi-character-learning.md`
-5. `references/moshi-chapter-card-library.md`
-6. `references/moshi-negative-patterns.md`
+4. `references/moshi-bastion-and-order-library.md`
+5. `references/moshi-character-learning.md`
+6. `references/moshi-chapter-card-library.md`
+7. `references/moshi-bastion-governance-chapter-cards.md`
+8. `references/moshi-negative-patterns.md`
 
 ---
 
