@@ -34,6 +34,8 @@
   用来对照偏好题材的开篇路线专题，优先覆盖历史权谋、末世囤货、仙侠苟道
 - `references/local-corpus-learning.md`
   用来沉淀本地下载小说语料的结构化学习结果，重点提炼历史权谋/边境战争、末世囤货、仙侠苟道三类高频路线，并为都市系统流、种田文扩展提供对照底稿
+- `references/local-corpus-priority-map.md`
+  用来先判断本地下载目录里哪本更值得先读、分别适合提炼什么结构，避免盲目整本平推
 - 题材专项资产统一按同一套结构组织：
   - `*-volume-route-library.md`：整卷路线
   - `*-character-learning.md`：人物与关系
@@ -42,6 +44,12 @@
   - 当前已覆盖 `historical`、`moshi`、`goudao`、`dushi`、`zhongtian`
 - `references/historical-midgame-learning.md`
   用来专门补强历史权谋 / 边境战争在 10 章以后如何持续推进、换挡与提压
+- `references/historical-command-and-aftermath-library.md`
+  用来专门补强将领关系、军令分配、违令有功、分功定责、封赏清算与战后后账
+- `references/historical-relationship-card-deck.md`
+  用来速查皇帝、监军、宿将、先锋、粮官、地方官、台谏、盟友、亲兵等高频关系的变质路线
+- `references/historical-military-political-chapter-card-library.md`
+  用来直接套用监军夺令、粮官卡脖、地方官逼军、战后分功、封赏藏刀、抚恤闹营等军政冲突章卡
 - `references/hook-result-learning.md`
   用来专门补强末世囤货 / 仙侠苟道的章节结果换挡与章尾钩子设计
 - `templates/opening-route-cheatsheet.md`

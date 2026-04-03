@@ -29,10 +29,16 @@
 ### 如果你现在卡在人物和阵营关系
 
 - 先读 `references/historical-character-learning.md`
+- 再读 `references/historical-relationship-card-deck.md`
+
+### 如果你现在卡在将领关系、军令分配和战后后账
+
+- 先读 `references/historical-command-and-aftermath-library.md`
 
 ### 如果你已经知道方向，但不会落成一章
 
 - 先读 `references/historical-chapter-card-library.md`
+- 再读 `references/historical-military-political-chapter-card-library.md`
 
 ### 如果你怀疑写成老三样
 
@@ -44,9 +50,12 @@
 1. `references/local-corpus-learning.md`
 2. `references/historical-midgame-learning.md`
 3. `references/historical-character-learning.md`
-4. `references/historical-chapter-card-library.md`
-5. `references/historical-volume-route-library.md`
-6. `references/historical-negative-patterns.md`
+4. `references/historical-relationship-card-deck.md`
+5. `references/historical-command-and-aftermath-library.md`
+6. `references/historical-chapter-card-library.md`
+7. `references/historical-military-political-chapter-card-library.md`
+8. `references/historical-volume-route-library.md`
+9. `references/historical-negative-patterns.md`
 
 ---
 
