@@ -22,10 +22,7 @@
 - `templates/antagonist_design.md`
   - 反派降智、压迫力不足、只会当沙包时读
 
-## 感情线与风格修正
-
-- `templates/romance_arc.md`
-  - 感情线停滞、CP感不够、甜虐节拍不稳时读
+## 风格修正
 - `templates/vibe_check_prompt.md`
   - 章节初稿完成后，要做去 AI 味和风格校正时读
 - `templates/style_fingerprints.md`

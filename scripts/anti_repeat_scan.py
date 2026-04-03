@@ -225,6 +225,66 @@ def analyze_entry_dimensions(entry: dict[str, str]) -> dict[str, str]:
     }
 
 
+def analyze_midgame_fatigue(chapter_dimensions: list[dict[str, str]]) -> dict[str, object]:
+    recent = chapter_dimensions[-5:]
+    warnings: list[str] = []
+    summary = {
+        "window_size": len(recent),
+        "recent_chapters": [item["chapter"] for item in recent],
+        "unique_results": len({item["result"] for item in recent if item["result"] != "unknown"}),
+        "unique_conflicts": len({item["conflict"] for item in recent if item["conflict"] != "unknown"}),
+        "unique_hooks": len({item["hook"] for item in recent if item["hook"] != "unknown"}),
+        "unique_pairs": len({item["main_pair"] for item in recent if item["main_pair"]}),
+    }
+    if len(recent) < 5:
+        return {"summary": summary, "warnings": warnings}
+
+    if summary["unique_results"] <= 2:
+        warnings.append("近 5 章结果类型过少，中盘反馈可能开始同质化。")
+    if summary["unique_conflicts"] <= 2:
+        warnings.append("近 5 章冲突路径过少，中盘冲突形态可能重复。")
+    if summary["unique_hooks"] <= 2:
+        warnings.append("近 5 章钩子类型过少，章尾驱动力可能进入模板循环。")
+    if summary["unique_pairs"] <= 2:
+        warnings.append("近 5 章主要人物组合过少，互动关系可能发僵。")
+
+    repeat_result_streak = 1
+    repeat_hook_streak = 1
+    repeat_conflict_streak = 1
+    current_result_streak = 1
+    current_hook_streak = 1
+    current_conflict_streak = 1
+    for previous, current in zip(recent, recent[1:]):
+        if current["result"] != "unknown" and current["result"] == previous["result"]:
+            current_result_streak += 1
+            repeat_result_streak = max(repeat_result_streak, current_result_streak)
+        else:
+            current_result_streak = 1
+        if current["hook"] != "unknown" and current["hook"] == previous["hook"]:
+            current_hook_streak += 1
+            repeat_hook_streak = max(repeat_hook_streak, current_hook_streak)
+        else:
+            current_hook_streak = 1
+        if current["conflict"] != "unknown" and current["conflict"] == previous["conflict"]:
+            current_conflict_streak += 1
+            repeat_conflict_streak = max(repeat_conflict_streak, current_conflict_streak)
+        else:
+            current_conflict_streak = 1
+
+    summary["max_result_streak"] = repeat_result_streak
+    summary["max_hook_streak"] = repeat_hook_streak
+    summary["max_conflict_streak"] = repeat_conflict_streak
+
+    if repeat_result_streak >= 3:
+        warnings.append(f"近章结果类型连续 {repeat_result_streak} 章未换挡，建议先换结果。")
+    if repeat_hook_streak >= 3:
+        warnings.append(f"近章钩子类型连续 {repeat_hook_streak} 章未换挡，建议换章尾路线。")
+    if repeat_conflict_streak >= 3:
+        warnings.append(f"近章冲突路径连续 {repeat_conflict_streak} 章未换挡，建议换冲突形态。")
+
+    return {"summary": summary, "warnings": warnings}
+
+
 def detect_repeat_risks(entries: list[dict[str, str]]) -> dict[str, object]:
     hook_counter: Counter[str] = Counter()
     conflict_counter: Counter[str] = Counter()
@@ -326,6 +386,11 @@ def suggest_actions(payload: dict[str, object]) -> list[str]:
     if golden_three_warnings:
         suggestions.append("开篇前三章未完全拉开层级，回看黄金三章：第1章抓入场，第2章推动行动，第3章挂长期承诺。")
 
+    midgame = payload.get("midgame_fatigue", {})
+    midgame_warnings = midgame.get("warnings", []) if isinstance(midgame, dict) else []
+    if midgame_warnings:
+        suggestions.append("进入中盘换挡期：先换结果类型，再换冲突路径，再换人物组合，最后才换句子。")
+
     if not suggestions:
         suggestions.append("当前未发现高强度重复，可继续写，但仍需盯住下一章的结果类型和钩子换法。")
     return suggestions
@@ -377,6 +442,7 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     analysis = detect_repeat_risks(entries)
     body_analysis = detect_body_patterns(project_dir)
     golden_three = analyze_golden_three(entries)
+    midgame_fatigue = analyze_midgame_fatigue(analysis["chapter_dimensions"])
     payload = {
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -393,7 +459,8 @@ def build_payload(project_dir: Path) -> dict[str, object]:
         "body_openers": body_analysis["body_openers"],
         "body_hooks": body_analysis["body_hooks"],
         "golden_three": golden_three,
-        "warnings": analysis["warnings"] + body_analysis["warnings"] + list(golden_three["warnings"]),
+        "midgame_fatigue": midgame_fatigue,
+        "warnings": analysis["warnings"] + body_analysis["warnings"] + list(golden_three["warnings"]) + list(midgame_fatigue["warnings"]),
     }
     payload["suggestions"] = suggest_actions(payload)
     payload["warning_count"] = len(payload["warnings"])
@@ -426,6 +493,28 @@ def render_markdown(payload: dict[str, object]) -> str:
                 f"- 第{item['chapter']}章：核心事件={item['core_event'] or '未写'} / "
                 f"启下={item['carry_out'] or '未写'} / 钩子={item['hook']}"
             )
+    else:
+        lines.append("- 无")
+
+    lines.extend([
+        "",
+        "## 中盘疲劳快照",
+    ])
+    midgame = payload.get("midgame_fatigue", {})
+    midgame_summary = midgame.get("summary", {}) if isinstance(midgame, dict) else {}
+    if midgame_summary:
+        lines.append(
+            f"- 近窗章节：`{', '.join(midgame_summary.get('recent_chapters', [])) or '无'}` / "
+            f"结果去重={midgame_summary.get('unique_results', 0)} / "
+            f"冲突去重={midgame_summary.get('unique_conflicts', 0)} / "
+            f"钩子去重={midgame_summary.get('unique_hooks', 0)} / "
+            f"人物组合去重={midgame_summary.get('unique_pairs', 0)}"
+        )
+        lines.append(
+            f"- 连续重复：结果={midgame_summary.get('max_result_streak', 0)} / "
+            f"冲突={midgame_summary.get('max_conflict_streak', 0)} / "
+            f"钩子={midgame_summary.get('max_hook_streak', 0)}"
+        )
     else:
         lines.append("- 无")
 

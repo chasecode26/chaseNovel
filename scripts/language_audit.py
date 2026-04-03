@@ -214,8 +214,6 @@ def parse_style_file(style_path: Path) -> dict[str, object]:
                 lowered = item.lower()
                 if "权谋" in item and not profile["genre"]:
                     profile["genre"] = "历史/权谋"
-                elif "甜宠" in item and not profile["genre"]:
-                    profile["genre"] = "甜宠/总裁文"
                 elif "悬疑" in item and not profile["genre"]:
                     profile["genre"] = "悬疑/推理"
                 elif "系统" in item and not profile["genre"]:
