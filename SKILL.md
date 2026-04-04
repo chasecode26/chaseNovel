@@ -404,6 +404,7 @@ python scripts/batch_gate.py --project "novel_书名" --from 1 --to 30 --json
 - `technique-kb/` 会被 `language_audit.py`、`chapter_gate.py` 等脚本自动消费
 - `scripts/` 产出的报告优先于口头印象
 - `workflow_runner.py` 会额外生成 `05_reports/pipeline_report.{md,json}` 作为流水线总报告
+- `workflow_runner.py --chapter N` 的 `N` 默认指“已存在的当前章”，适合写完一章后做回填和汇总；若只是要准备下一章上下文，用 `context_compiler.py --chapter 下一章`
 
 ## 对话侧常用指令
 

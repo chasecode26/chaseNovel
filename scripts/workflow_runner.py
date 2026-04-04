@@ -23,10 +23,14 @@ STEP_MAP = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run a local chaseNovel workflow sequence."
+        description="Run a local chaseNovel workflow sequence. When --chapter is set, pass the number of an already existing drafted chapter, not the next chapter you plan to write."
     )
     parser.add_argument("--project", required=True, help="Path to the novel project root")
-    parser.add_argument("--chapter", type=int, help="Target chapter number")
+    parser.add_argument(
+        "--chapter",
+        type=int,
+        help="Existing drafted chapter number for context/memory/foreshadow steps. Do not pass the next unwritten chapter here.",
+    )
     parser.add_argument(
         "--steps",
         default="doctor,context,memory,foreshadow,arc,timeline,repeat,dashboard",

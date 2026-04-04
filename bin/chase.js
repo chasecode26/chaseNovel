@@ -138,6 +138,7 @@ function printHelp(errorMessage) {
 Notes:
   - existing gate and audit scripts are passed through unchanged
   - default run steps: doctor,context,memory,foreshadow,arc,timeline,repeat,dashboard
+  - chase run --chapter expects an already drafted chapter number; do not pass the next unwritten chapter
   - project defaults to the current directory`);
 }
 

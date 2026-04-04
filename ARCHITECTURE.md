@@ -134,6 +134,9 @@ chase bootstrap --project novel_x
 chase run --project novel_x --chapter 128
 ```
 
+`chase run --chapter N` is for an already drafted chapter `N` because the pipeline includes memory writeback for that chapter.
+If you only want the next chapter context, use `chase context --chapter N+1` separately.
+
 ## Why This Shape
 
 - Chat remains the fastest writing surface.
