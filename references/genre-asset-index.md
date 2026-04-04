@@ -4,13 +4,14 @@
 
 **当你已经有很多专项资产时，先告诉你这次该读哪一份。**
 
-当前重点覆盖五条核心题材：
+当前重点覆盖六条核心题材：
 
 - 历史权谋 / 边境战争
 - 末世囤货
 - 仙侠苟道
 - 都市系统流
 - 种田文
+- 盗墓 / 摸金 / 民国奇诡
 
 ---
 
@@ -212,11 +213,43 @@
 
 ---
 
-## 六、通用入口
+## 六、盗墓 / 摸金 / 民国奇诡
+
+### 如果你现在卡在开篇
+
+- 先读 `references/daomu-writing-notes.md`
+- 再读 `references/title-and-selling.md`
+
+### 如果你现在卡在墓里气氛和危险落不下来
+
+- 先读 `templates/genres/10-daomu-minguo.md`
+- 再读 `references/chapter-emotion-and-ai-check.md`
+
+### 如果你现在卡在术语、规矩和世界观检索
+
+- 先读 `templates/worldbuilding-index.md`
+
+### 如果你怀疑写成重复副本
+
+- 先读 `references/daomu-writing-notes.md`
+- 再读 `references/anti-repeat-rules.md`
+
+### 推荐阅读顺序
+
+1. `references/title-and-selling.md`
+2. `references/daomu-writing-notes.md`
+3. `templates/genres/10-daomu-minguo.md`
+4. `templates/worldbuilding-index.md`
+5. `references/chapter-emotion-and-ai-check.md`
+
+---
+
+## 七、通用入口
 
 ### 开书 / 黄金三章 / 平台节奏
 
 - `references/craft-and-platform.md`
+- `references/title-and-selling.md`
 - `templates/opening-route-cheatsheet.md`
 - `templates/golden-three-route-cheatsheet.md`
 
@@ -231,19 +264,22 @@
 - `references/anti-repeat-rules.md`
 - `references/revision-and-diagnostics.md`
 - `references/language-governance.md`
+- `references/chapter-emotion-and-ai-check.md`
 
 ---
 
-## 七、最短决策表
+## 八、最短决策表
 
 如果你只想立刻知道先读哪份：
 
 - 开篇不稳：`references/opening-sample-specialties.md`
+- 书名 / 卖点发空：`references/title-and-selling.md`
 - 单章不会收：`references/hook-result-learning.md`
 - 中盘发散：对应题材的 `*-volume-route-library.md`
 - 人物关系僵：对应题材的 `*-character-learning.md`
 - 不会做章卡：对应题材的 `*-chapter-card-library.md`
 - 怀疑写烂：对应题材的 `*-negative-patterns.md`
+- 情绪跳 / AI 味重：`references/chapter-emotion-and-ai-check.md`
 
 一句话原则：
 

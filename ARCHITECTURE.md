@@ -2,7 +2,7 @@
 
 ## Goal
 
-`chaseNovel` is evolving from a pure writing skill into a local writing operating system for long-form Chinese web novels. The target is stable support for projects that run for hundreds of chapters and approach or exceed one million Chinese characters.
+`chaseNovel` is a repo-local writing skill plus a small set of helper scripts for long-form Chinese web novels. The goal is stable support for projects that run for hundreds of chapters without turning the repo into a heavy product.
 
 The system is designed for a single primary author working locally. It prioritizes:
 
@@ -14,26 +14,26 @@ The system is designed for a single primary author working locally. It prioritiz
 
 ## Design Principles
 
-1. `skill` remains the primary interaction entry.
+1. `SKILL.md` remains the primary interaction entry.
 2. Long-term state lives in project files, not transient chat context.
-3. Repetitive governance work moves into scripts and reports.
-4. Chapter drafting and book governance are separate concerns.
-5. GUI is optional and deferred until the local workflow is proven.
+3. Scripts only keep the repetitive checks that still have clear value.
+4. Lightweight agent orchestration handles planning, drafting, language cleanup, and review.
+5. No GUI or heavy orchestration layer unless the local workflow proves it is needed.
 
 ## Runtime Layers
 
 ### Layer 1: Interaction
 
-- Codex or Claude skill
+- Codex skill
 - slash-command style prompts
-- planner / drafter / reviser conversation workflow
+- planner / writer / reviewer conversation workflow
 
 ### Layer 2: Orchestration
 
 - `chase` CLI
 - local workflow runner
 - context compilation entrypoints
-- report generation commands
+- minimal report generation commands
 
 ### Layer 3: Book Engine
 
@@ -50,7 +50,7 @@ The system is designed for a single primary author working locally. It prioritiz
 - `language_audit.py`
 - `batch_gate.py`
 - dashboard snapshots
-- future regression reports
+- project doctor checks
 
 ## Repository Layout
 
@@ -59,7 +59,6 @@ repo/
 ├─ ARCHITECTURE.md
 ├─ SKILL.md
 ├─ bin/
-│  ├─ chase-novel-skill.js
 │  └─ chase.js
 ├─ scripts/
 │  ├─ chapter_gate.py
@@ -73,8 +72,7 @@ repo/
 │  ├─ dashboard_snapshot.py
 │  ├─ project_bootstrap.py
 │  ├─ memory_update.py
-│  ├─ workflow_runner.py
-│  └─ install-skill.js
+│  └─ workflow_runner.py
 ├─ schemas/
 │  ├─ project_state.schema.json
 │  ├─ foreshadow.schema.json
@@ -100,6 +98,8 @@ novel_{book}/
 │  ├─ style.md
 │  ├─ voice.md
 │  ├─ scene_preferences.md
+│  ├─ summaries/
+│  │  └─ recent.md
 │  └─ retrieval/
 │     ├─ next_context.md
 │     └─ dashboard_cache.json
@@ -107,35 +107,16 @@ novel_{book}/
 ├─ 02_knowledge/
 ├─ 03_chapters/
 ├─ 04_gate/
-├─ 05_reports/
-└─ 06_exports/
+└─ 05_reports/
 ```
 
 ## Core Workflows
 
 1. Chapter planning uses `context_compiler.py` to build the minimum next-chapter context package.
-2. Chapter drafting remains skill-driven and focuses on functional story advancement.
-3. Revision uses style and voice constraints plus `language_audit.py`.
+2. Chapter drafting stays skill-driven and follows the lightweight agent sequence.
+3. Revision uses `language_audit.py` plus style and memory files.
 4. Chapter governance uses `chapter_gate.py` and `dashboard_snapshot.py`.
-5. Book health review uses `batch_gate.py`, `foreshadow_scheduler.py`, and `dashboard_snapshot.py`.
-
-## Phase 1 Deliverables
-
-- unified `chase` CLI wrapper
-- context compiler
-- foreshadow scheduler
-- dashboard snapshot generator
-- voice and scene preference templates
-- JSON schemas for future automation
-
-## Phase 2 Deliverables
-
-- arc health tracker
-- timeline consistency check
-- anti-repeat scan for recent summaries
-- project bootstrap command for new books
-- memory update helper after chapter drafting
-- workflow runner that chains local governance steps
+5. Book health review uses `batch_gate.py`, `foreshadow_scheduler.py`, and in-workflow reviewer retrospectives.
 
 ## Command Surface
 
@@ -155,10 +136,7 @@ chase run --project novel_x --chapter 128
 
 ## Why This Shape
 
-This architecture is intentionally hybrid:
-
-- chat remains the fastest writing surface
-- Python scripts remain the cheapest automation layer
-- markdown memory remains the most transparent storage format
-
-That combination is strong enough for a single-author million-character workflow without the cost of building a full writing platform too early.
+- Chat remains the fastest writing surface.
+- Python scripts remain the cheapest automation layer.
+- Markdown memory remains the most transparent storage format.
+- Lightweight agent roles improve quality without introducing a heavy orchestration system.

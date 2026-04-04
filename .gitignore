@@ -6,3 +6,5 @@ yarn-error.log*
 package-lock.json
 __pycache__/
 *.pyc
+.omx/
+__MACOSX/

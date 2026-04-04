@@ -17,21 +17,8 @@
   - 做卷纲、卷级冲突、卷末交接时读
   - 用来避免长篇中盘只会堆章节，不会立卷
 
-## 反派、暗线与长期冲突
-
-- `templates/antagonist_design.md`
-  - 反派降智、压迫力不足、只会当沙包时读
-
-## 风格修正
-- `templates/vibe_check_prompt.md`
-  - 章节初稿完成后，要做去 AI 味和风格校正时读
 - `templates/style_fingerprints.md`
   - 需要补具体叙述气质，而不是只写“克制”或“热血”这种空标签时读
-
-## 结尾与大后期
-
-- `templates/ending_blueprint.md`
-  - 全书完成度较高，开始收束大结局时读
 
 ## 使用纪律
 

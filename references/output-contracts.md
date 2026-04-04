@@ -20,6 +20,7 @@
 - `/修改`：详见 `references/contracts/04-modify.md`
 - `/状态`、`/卷节奏`：详见 `references/contracts/05-state-and-rhythm.md`
 - `/角色弧`、`/承诺`、`/兑现`、`/防重复`：详见 `references/contracts/06-promises-and-repeat.md`
+- `ResearchMaterial`：详见 `references/contracts/07-research-material.md`
 
 使用方式：
 
@@ -89,6 +90,7 @@
 ## 默认运行原则
 
 - 默认代理执行，但保留人工审核节点
+- 默认协同顺序以对应 contract 文件中的轻量 agent 编排为准
 - 默认最小读取，不默认全量加载
 - 默认服务长线推进，不服务一次性炫技
 - 默认优先保证主线、人物、节奏、钩子

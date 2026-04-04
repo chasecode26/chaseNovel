@@ -14,7 +14,7 @@
 - 角色轮转与出场频率规则
 - 黄金三章模板
 - `style.md` 默认模板
-- 写作技巧参考
+- 写法补强导航
 
 ---
 
@@ -389,7 +389,6 @@
 
 开篇题材模板已拆分到独立文件，避免主文档过长、影响检索与维护。
 
-- `/一键开书`、开篇规划、前三章校准：详见 `templates/golden-three-chapters.md`
 - `/一键开书`、开篇规划、前三章校准、自动推荐前三章节拍：详见 `templates/golden-three-route-cheatsheet.md`
 - 先按题材定位三章功能，再结合当前卖点、主线目标与主角处境做本地化改写
 - 模板只定义开篇功能，不定义固定剧情
@@ -406,19 +405,16 @@
 
 ---
 
-## 写作技巧参考
+## 写法补强导航
 
 写法手法与低 AI 味约束已拆到独立文件，避免主文档继续膨胀。
 
 - 章节落地、动作替代判断、不同章节类型的写法重心：详见 `references/writing-patterns.md`
-- 开篇抓人、章节推进、章尾钩子、番茄风格写法：详见 `templates/writing-techniques.md`
 - 中盘像一条直线、想主动换挡：详见 `templates/midgame-fatigue-cheatsheet.md`
 - 本章结果怎么换、怎么避免又是上一章那套：详见 `templates/result-route-cheatsheet.md`
 - 章尾收束发平、钩子总重复、想快速选收尾路线：详见 `templates/hook-route-cheatsheet.md`
-- 差例 / 好例 / 为什么的短对照范文：详见 `templates/writing-examples.md`
-- 5 条常用主战题材对应的写法重点、常见失误、推进技巧与短对照范文：先读 `templates/genre-writing-guide.md`，再按题材下钻到 `templates/genres/*.md`
+- 6 条常用主战题材对应的写法重点、常见失误、推进技巧与短对照范文：先读 `templates/genre-writing-guide.md`，再按题材下钻到 `templates/genres/*.md`
 - 古代权谋里偏边关争霸、养兵夺权、男频立威：补读 `templates/substyles/bianguan-zhengba-nanpin.md`
 - 平台目标偏番茄、需要更强章节反馈密度：补读 `templates/substyles/fanqie-kuai-fankui-shuangdian.md`
 - 主线里需要慢热、克制、共谋型关系推进：补读 `templates/substyles/manre-gongmou-ganqingxian.md`
-- 多视角切换、节奏与信息投放、题材专项技法、小工具：详见 `templates/writing_playbook.md`
 - `/写` 前可直接套用的完整章卡示例：详见 `templates/chapter-card-examples.md`

@@ -196,7 +196,7 @@
 - `references/revision-and-diagnostics.md`：负责诊断“为什么重复”
 - 本文件：负责判断“重复发生在哪个维度，怎么换”
 - `references/craft-and-platform.md`：负责提醒不同题材的常见反馈路径
-- `templates/writing-techniques.md`、`templates/writing-examples.md`：提供具体换法示例
+- `references/writing-patterns.md`：提供具体换法与动作化改写方向
 - `templates/result-route-cheatsheet.md`：负责给结果类型换挡
 - `templates/midgame-fatigue-cheatsheet.md`：负责诊断中盘疲劳并给出变轨顺序
 - `templates/hook-route-cheatsheet.md`：负责给章尾钩子换路线
