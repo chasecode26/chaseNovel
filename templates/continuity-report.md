@@ -14,13 +14,24 @@
 - `state.md` 是否存在当前有效布置：{arrangement_status}
 - `foreshadowing.md` 是否存在活跃伏笔：{foreshadow_status}
 
-## 3. 阻断项
+## 3. 写前规划预审
+- 规划步骤状态：{planning_status}
+- 规划结论：{planning_verdict}
+- 规划报告：{planning_report_path}
+
+### 规划阻断项
+{planning_blockers}
+
+### 规划预警项
+{planning_warnings}
+
+## 4. 阻断项
 {blockers}
 
-## 4. 预警项
+## 5. 预警项
 {warnings}
 
-## 5. 判定
+## 6. 判定
 - 连续性判定：{continuity_verdict}
 - 语言判定：{language_verdict}
 - 结论：{verdict}
@@ -29,7 +40,7 @@
   - `WARN`：存在预警项，建议先补记忆文件再继续写后续章节。
   - `BLOCK`：存在阻断项，必须修复 `state.md` / `timeline.md` / `foreshadowing.md` 或正文后再继续。
 
-## 6. 语言门禁
+## 7. 语言门禁
 - 风格书名：{language_style_title}
 - 风格题材：{language_style_genre}
 - 语言评分：{language_scores}

@@ -2,9 +2,12 @@
 输出：
 - Planner 结果
 - HookEmotion 结果
+- 章节规划预审
 - Writer 成稿
 - StyleDialogue 结果
 - LanguageReviewer 结果
+- ContinuityReviewer 结果
+- CausalityReviewer 结果
 - Reviewer 结论
 - 需更新的记忆点
 
@@ -51,6 +54,14 @@
 - 本章钩子是否能决定下一章行动：
 - 情绪 / 爽点风险提示：
 
+## 2.1 章节规划预审
+- 是否通过：pass / revise
+- 本章功能是否与最近 `3-5` 章重复：否 / 是（说明）
+- 本章结果是否有升级：是 / 否（说明）
+- 本章钩子是否会改变下一章行动：是 / 否（说明）
+- 本章关键转折前提是否成立：是 / 否（说明）
+- 既有布局 / 资源 / 旧伏笔是否已确认：是 / 否（说明）
+
 ## 3. Writer 成稿
 [正文]
 
@@ -66,6 +77,24 @@
 - 哪些段落只有结论、没有动作承载：
 - 去 AI 味优先修订项：
 
+## 5.1 ContinuityReviewer 结果
+- `chapter_function`：
+- `conflict_type`：
+- `result_type`：
+- `hook_type`：
+- `findings`：
+- `blocking`：yes / no
+- `suggested_fix`：
+
+## 5.2 CausalityReviewer 结果
+- `chapter_function`：
+- `conflict_type`：
+- `result_type`：
+- `hook_type`：
+- `findings`：
+- `blocking`：yes / no
+- `suggested_fix`：
+
 ## 6. Reviewer 结论
 - 是否有明确推进：是 / 否
 - 是否有结果变化：是 / 否
@@ -78,6 +107,8 @@
 - 是否存在中盘疲劳风险：
 - 是否存在 AI 味风险：
 - 是否存在情绪跳跃风险：
+- `repeat_window`：
+- `upgrade_point`：
 - 是否建议直接采用本稿：是 / 否
 - 若否，优先回修项：
 

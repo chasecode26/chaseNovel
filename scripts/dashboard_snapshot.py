@@ -3,17 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
-
-PLACEHOLDER_PATTERNS = (
-    re.compile(r"\{[A-Z0-9_]+\}"),
-    re.compile(r"第_{2,}章"),
-    re.compile(r"第\{[A-Z0-9_]+\}章"),
-)
+from novel_utils import clean_value, count_chapter_files, detect_current_chapter, extract_state_value, read_text
 
 
 def parse_args() -> argparse.Namespace:
@@ -24,43 +18,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json", action="store_true", help="Print JSON result")
     parser.add_argument("--dry-run", action="store_true", help="Do not write report files")
     return parser.parse_args()
-
-
-def read_text(path: Path) -> str:
-    if not path.exists():
-        return ""
-    return path.read_text(encoding="utf-8").lstrip("\ufeff")
-
-
-def extract_line(text: str, label: str) -> str:
-    match = re.search(rf"{re.escape(label)}[:：]\s*(.+)", text)
-    return match.group(1).strip() if match else ""
-
-
-def has_placeholder(text: str) -> bool:
-    normalized = text.strip()
-    if not normalized:
-        return False
-    return any(pattern.search(normalized) for pattern in PLACEHOLDER_PATTERNS)
-
-
-def clean_value(text: str, fallback: str = "未识别") -> str:
-    normalized = text.strip()
-    if not normalized or has_placeholder(normalized):
-        return fallback
-    return normalized
-
-
-def count_chapters(project_dir: Path) -> int:
-    chapters_dir = project_dir / "03_chapters"
-    if not chapters_dir.exists():
-        return 0
-    count = 0
-    for path in chapters_dir.iterdir():
-        if path.is_file() and re.search(r"\d+", path.stem):
-            count += 1
-    return count
-
 
 def load_json(path: Path) -> dict[str, object]:
     if not path.exists():
@@ -74,14 +31,12 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     state_text = read_text(memory_dir / "state.md")
     foreshadow_json = load_json(reports_dir / "foreshadow_heatmap.json")
 
-    current_chapter = extract_line(state_text, "- 当前章节") or extract_line(state_text, "当前章节")
-    chapter_match = re.search(r"(\d+)", current_chapter)
-    active_volume = extract_line(state_text, "- 当前卷") or extract_line(state_text, "当前卷")
-    active_arc = extract_line(state_text, "- 当前弧") or extract_line(state_text, "当前弧")
+    active_volume = extract_state_value(state_text, "当前卷")
+    active_arc = extract_state_value(state_text, "当前弧")
     warnings: list[str] = []
-    chapter_count = count_chapters(project_dir)
+    chapter_count = count_chapter_files(project_dir)
     if chapter_count == 0:
-        warnings.append("当前项目还没有正文文件，dashboard 仅反映模板与记忆状态。")
+        warnings.append("当前项目还没有正文章节，dashboard 仅反映模板与记忆状态。")
     if not (memory_dir / "retrieval" / "next_context.md").exists():
         warnings.append("缺少 next_context.md；建议先运行 context_compiler.py 或 chase context。")
     overdue_count = len(foreshadow_json.get("overdue", []))
@@ -93,7 +48,7 @@ def build_payload(project_dir: Path) -> dict[str, object]:
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "status": status,
-        "current_chapter": int(chapter_match.group(1)) if chapter_match else count_chapters(project_dir),
+        "current_chapter": detect_current_chapter(state_text) or chapter_count,
         "active_volume": clean_value(active_volume),
         "active_arc": clean_value(active_arc),
         "chapter_count": chapter_count,

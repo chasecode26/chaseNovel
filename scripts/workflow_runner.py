@@ -11,6 +11,7 @@ from pathlib import Path
 
 STEP_MAP = {
     "doctor": "project_doctor.py",
+    "planning": "chapter_planning_review.py",
     "context": "context_compiler.py",
     "memory": "memory_update.py",
     "foreshadow": "foreshadow_scheduler.py",
@@ -33,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--steps",
-        default="doctor,context,memory,foreshadow,arc,timeline,repeat,dashboard",
+        default="doctor,planning,context,memory,foreshadow,arc,timeline,repeat,dashboard",
         help="Comma-separated workflow steps",
     )
     parser.add_argument("--json", action="store_true", help="Print JSON result")
@@ -44,7 +45,7 @@ def parse_args() -> argparse.Namespace:
 def run_step(repo_root: Path, step: str, project: Path, chapter: int | None, dry_run: bool) -> dict[str, object]:
     script_name = STEP_MAP[step]
     command = [sys.executable, str(repo_root / "scripts" / script_name), "--project", project.as_posix(), "--json"]
-    if chapter is not None and step in {"context", "memory", "foreshadow"}:
+    if chapter is not None and step in {"planning", "context", "memory", "foreshadow"}:
         command.extend(["--chapter", str(chapter)])
     if dry_run:
         command.append("--dry-run")

@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
-import sys
 from datetime import datetime
 from pathlib import Path
+import sys
+
+from novel_utils import detect_current_chapter, extract_pipe_table_rows, read_text
 
 
 def parse_args() -> argparse.Namespace:
@@ -20,17 +21,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_text(path: Path) -> str:
-    if not path.exists():
-        return ""
-    return path.read_text(encoding="utf-8").lstrip("\ufeff")
-
-
-def detect_current_chapter(state_text: str) -> int:
-    match = re.search(r"当前章节[:：]\s*第?(\d+)章", state_text)
-    return int(match.group(1)) if match else 0
-
-
 def parse_priority(raw: str) -> str:
     if "高" in raw:
         return "high"
@@ -42,7 +32,13 @@ def parse_priority(raw: str) -> str:
 
 
 def parse_status(raw: str) -> str:
-    mapping = {"待回收": "active", "已激活": "triggered", "已回收": "resolved", "已延后": "delayed", "已废弃": "abandoned"}
+    mapping = {
+        "待回收": "active",
+        "已激活": "triggered",
+        "已回收": "resolved",
+        "已延后": "delayed",
+        "已废弃": "abandoned",
+    }
     for key, value in mapping.items():
         if key in raw:
             return value
@@ -51,32 +47,33 @@ def parse_status(raw: str) -> str:
 
 def parse_rows(path: Path) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
-    for line in read_text(path).splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|") or "----" in stripped or "ID" in stripped:
-            continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+    for cells in extract_pipe_table_rows(read_text(path))[1:]:
         if len(cells) < 9:
             continue
         item_id = cells[0]
         if not item_id:
             continue
-        seed_match = re.search(r"(\d+)", cells[1])
-        due_match = re.search(r"(\d+)", cells[6])
+        seed_chapter = next((int(token) for token in [extract_number(cells[1])] if token is not None), 0)
+        due_chapter = extract_number(cells[6])
         rows.append(
             {
                 "id": item_id,
-                "seed_chapter": int(seed_match.group(1)) if seed_match else 0,
+                "seed_chapter": seed_chapter,
                 "content": cells[2],
                 "who_knows": cells[3],
                 "trigger_condition": cells[4],
                 "invalid_condition": cells[5],
-                "due_chapter": int(due_match.group(1)) if due_match else None,
+                "due_chapter": due_chapter,
                 "priority": parse_priority(cells[7]),
                 "status": parse_status(cells[8]),
             }
         )
     return rows
+
+
+def extract_number(text: str) -> int | None:
+    digits = "".join(ch for ch in text if ch.isdigit())
+    return int(digits) if digits else None
 
 
 def compute_heat(target_chapter: int, seed_chapter: int) -> str:
@@ -122,14 +119,18 @@ def render_markdown(project_dir: Path, target_chapter: int, groups: dict[str, li
     ]
     if groups["due"]:
         for item in groups["due"]:
-            lines.append(f"- `{item['id']}` 第{item['seed_chapter']}章埋设，当前应回收；热度 `{item['reader_memory_heat']}`；内容：{item['content']}")
+            lines.append(
+                f"- `{item['id']}` 第{item['seed_chapter']}章埋设，当前应回收；热度 `{item['reader_memory_heat']}`；内容：{item['content']}"
+            )
     else:
         lines.append("- 无")
 
     lines.extend(["", "## 超期伏笔"])
     if groups["overdue"]:
         for item in groups["overdue"]:
-            lines.append(f"- `{item['id']}` 已超期；计划回收章：{item['due_chapter']}；当前状态：{item['status']}；内容：{item['content']}")
+            lines.append(
+                f"- `{item['id']}` 已超期；计划回收章：{item['due_chapter']}；当前状态：{item['status']}；内容：{item['content']}"
+            )
     else:
         lines.append("- 无")
 
@@ -137,7 +138,9 @@ def render_markdown(project_dir: Path, target_chapter: int, groups: dict[str, li
     if groups["active"]:
         for item in groups["active"][:12]:
             due_text = f"第{item['due_chapter']}章" if item["due_chapter"] is not None else "未指定"
-            lines.append(f"- `{item['id']}` 计划回收：{due_text}；热度 `{item['reader_memory_heat']}`；内容：{item['content']}")
+            lines.append(
+                f"- `{item['id']}` 计划回收：{due_text}；热度 `{item['reader_memory_heat']}`；内容：{item['content']}"
+            )
     else:
         lines.append("- 无")
 

@@ -8,6 +8,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from novel_utils import extract_pipe_table_rows, read_text
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -19,19 +21,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_text(path: Path) -> str:
-    if not path.exists():
-        return ""
-    return path.read_text(encoding="utf-8").lstrip("\ufeff")
-
-
 def parse_timeline_rows(text: str) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|") or "----" in stripped:
-            continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+    for cells in extract_pipe_table_rows(text)[1:]:
         if len(cells) < 6 or cells[0] in {"时间点", "角色"}:
             continue
         rows.append(

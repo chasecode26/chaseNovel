@@ -8,8 +8,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-
-CHAPTER_PATTERN = re.compile(r"第0*(\d+)章")
+from novel_utils import detect_existing_chapter_file, read_text
 AUTHORIAL_HARD_PATTERNS = (
     "宿命感",
     "压抑得让人",
@@ -28,6 +27,12 @@ ABSTRACT_WORDS = (
 DEFAULT_CAUTION_PHRASES = (
     "不禁", "只见", "此刻", "心中暗道"
 )
+EXPLANATORY_PHRASES = (
+    "也就是说", "换句话说", "换言之", "这意味着", "这说明", "显然",
+    "其实", "原来", "本质上", "某种程度上", "可以说",
+)
+FAST_VOICE_MARKERS = ("快", "紧", "利落", "凌厉", "直给", "短促")
+RESTRAINED_VOICE_MARKERS = ("克制", "冷", "硬", "冷峻", "压住", "收着", "不外放")
 DEFAULT_THRESHOLDS = {
     "authorial_narration_tolerance": 0,
     "soft_authorial_tolerance": 1,
@@ -36,6 +41,46 @@ DEFAULT_THRESHOLDS = {
     "lyrical_paragraph_tolerance": 1,
 }
 LINE_VALUE_RE = re.compile(r"^- ([^：]+)：\s*(.*)$")
+STYLE_LIST_FIELD_MAP = {
+    "禁止句式": "forbidden_phrases",
+    "慎用句式": "caution_phrases",
+    "禁止词汇": "forbidden_words",
+    "慎用词汇": "caution_words",
+    "豁免句式": "allowed_phrases",
+    "豁免作者旁白信号": "allowed_authorial_patterns",
+    "高频重复预警词": "repetition_alert_words",
+}
+STYLE_SCALAR_FIELD_MAP = {
+    "书名": "title",
+    "题材": "genre",
+    "节奏基线": "rhythm_baseline",
+    "对话占比基线": "dialogue_ratio_baseline",
+    "旁白浓度": "narration_density",
+    "句式节拍": "sentence_cadence",
+    "叙述距离": "narration_distance",
+    "必须保住的声音": "must_keep_voice",
+    "每章最该留下的读感": "target_reading_feel",
+}
+STYLE_THRESHOLD_FIELD_MAP = {
+    "作者式旁白容忍度": ("authorial_narration_tolerance", 0),
+    "软作者式旁白容忍度": ("soft_authorial_tolerance", 1),
+    "抽象形容词容忍度": ("abstract_word_tolerance", 2),
+    "同类句式重复容忍度": ("repeated_phrase_tolerance", 1),
+    "纯抒情段落最大连续数": ("lyrical_paragraph_tolerance", 1),
+}
+VOICE_FIELD_MAP = {
+    "叙述距离": "narration_distance",
+    "叙述温度": "narration_temperature",
+    "句长倾向": "sentence_cadence",
+    "节奏倾向": "rhythm_baseline",
+    "是否允许作者式旁白": "authorial_permission",
+    "必须保住的声音": "must_keep_voice",
+    "每章应留下的读感": "target_reading_feel",
+    "主角": "protagonist_voice",
+    "核心配角A": "core_supporting_voice_a",
+    "核心配角B": "core_supporting_voice_b",
+    "绝不能出现的 AI 味表达": "forbidden_drift",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,44 +105,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json", action="store_true", help="Print JSON result")
     return parser.parse_args()
 
-
-def chapter_number_from_name(name: str) -> int | None:
-    match = CHAPTER_PATTERN.search(name)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def detect_target_chapter(project_dir: Path, chapter_arg: str | None, chapter_no: int | None) -> tuple[int, Path]:
-    chapters_dir = project_dir / "03_chapters"
-    if chapter_arg:
-        chapter_path = Path(chapter_arg).resolve()
-        detected_no = chapter_no or chapter_number_from_name(chapter_path.name)
-        if detected_no is None:
-            raise ValueError("无法从 --chapter 推断章节号，请补充 --chapter-no。")
-        return detected_no, chapter_path
-
-    chapter_files: list[tuple[int, Path]] = []
-    if chapters_dir.exists():
-        for path in chapters_dir.iterdir():
-            if not path.is_file():
-                continue
-            detected_no = chapter_number_from_name(path.name)
-            if detected_no is not None:
-                chapter_files.append((detected_no, path))
-
-    chapter_files.sort(key=lambda item: item[0])
-    if chapter_no is not None:
-        for current_no, path in chapter_files:
-            if current_no == chapter_no:
-                return current_no, path
-        raise ValueError(f"未找到第{chapter_no:03d}章文件。")
-
-    if chapter_files:
-        return chapter_files[-1]
-    raise ValueError("未找到章节文件，请传入 --chapter 或在 03_chapters 下放入章节。")
-
-
 def split_paragraphs(text: str) -> list[str]:
     return [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
 
@@ -105,13 +112,12 @@ def split_paragraphs(text: str) -> list[str]:
 def split_sentences(text: str) -> list[str]:
     return [part.strip() for part in re.split(r"[。！？；\n]+", text) if part.strip()]
 
-
-def normalize_input_text(text: str) -> str:
-    return text.lstrip("\ufeff")
-
-
 def load_json_file(path: Path) -> dict[str, object]:
-    return json.loads(normalize_input_text(path.read_text(encoding="utf-8")))
+    return json.loads(read_text(path))
+
+
+def iter_text_lines(path: Path) -> list[str]:
+    return read_text(path).splitlines()
 
 
 def parse_scalar_int(value: str, default: int) -> int:
@@ -129,6 +135,165 @@ def parse_inline_list(value: str) -> list[str]:
     return [item.strip().strip("\"'`") for item in items if item.strip().strip("\"'`")]
 
 
+def apply_platform_direction_item(profile: dict[str, object], item: str) -> None:
+    if "权谋" in item and not profile["genre"]:
+        profile["genre"] = "历史/权谋"
+    elif "悬疑" in item and not profile["genre"]:
+        profile["genre"] = "悬疑/推理"
+    elif "系统" in item and not profile["genre"]:
+        profile["genre"] = "都市/系统流"
+    elif "番茄" in item:
+        profile["preferred_patterns"].extend(["快反馈", "结果先行"])
+
+    if "快反馈" in item or "快节奏" in item:
+        profile["preferred_patterns"].extend(["快反馈", "动作结果"])
+    if "男频" in item or "权谋" in item:
+        profile["narration_rules"].extend(
+            [
+                "少矫情心理戏，优先动作和局势变化",
+                "结果变化优先于抒情铺垫",
+            ]
+        )
+
+
+def dedupe_style_profile(profile: dict[str, object]) -> dict[str, object]:
+    profile["forbidden_phrases"] = unique_items(profile["forbidden_phrases"])
+    profile["caution_phrases"] = unique_items(list(DEFAULT_CAUTION_PHRASES) + list(profile["caution_phrases"]))
+    profile["forbidden_words"] = unique_items(profile["forbidden_words"])
+    profile["caution_words"] = unique_items(profile["caution_words"])
+    profile["allowed_phrases"] = unique_items(profile["allowed_phrases"])
+    profile["allowed_authorial_patterns"] = unique_items(profile["allowed_authorial_patterns"])
+    profile["repetition_alert_words"] = unique_items(profile["repetition_alert_words"])
+    profile["narration_rules"] = unique_items(profile["narration_rules"])
+    profile["preferred_patterns"] = unique_items(profile["preferred_patterns"])
+    return profile
+
+
+def build_issue(
+    issue_type: str,
+    severity: str,
+    reason: str,
+    position: str = "",
+) -> dict[str, object]:
+    issue: dict[str, object] = {
+        "type": issue_type,
+        "severity": severity,
+        "reason": reason,
+    }
+    if position:
+        issue["position"] = position
+    return issue
+
+
+def collect_counted_issues(
+    text: str,
+    values: list[str],
+    issue_type: str,
+    severity: str,
+    reason_template: str,
+    skipped_values: set[str] | None = None,
+) -> list[dict[str, object]]:
+    issues: list[dict[str, object]] = []
+    skipped = skipped_values or set()
+    for value in values:
+        if value in skipped:
+            continue
+        count = text.count(value)
+        if not count:
+            continue
+        issues.append(build_issue(issue_type, severity, reason_template.format(value=value, count=count)))
+    return issues
+
+
+def build_scores(
+    issues: list[dict[str, object]],
+    style_consistency_issues: list[dict[str, object]],
+    dialogue_voice_issues: list[dict[str, object]],
+) -> dict[str, int]:
+    return {
+        "naturalness": max(0, 100 - len(issues) * 8),
+        "viewpoint_integrity": max(
+            0,
+            100
+            - sum(12 for item in issues if item["type"] == "authorial_narration")
+            - sum(6 for item in issues if item["type"] == "authorial_narration_soft"),
+        ),
+        "atmosphere_authenticity": max(
+            0,
+            100 - sum(10 for item in issues if item["type"] in {"forced_atmosphere", "abstract_word_overuse"}),
+        ),
+        "repetition_risk": min(100, sum(18 for item in issues if item["type"] == "repeated_phrase")),
+        "style_consistency": max(
+            0,
+            100 - sum(12 if item["severity"] == "high" else 7 for item in style_consistency_issues),
+        ),
+        "dialogue_distinction": max(
+            0,
+            100 - sum(12 if item["severity"] == "high" else 8 for item in dialogue_voice_issues),
+        ),
+    }
+
+
+def build_rewrite_plan(
+    issues: list[dict[str, object]],
+    text: str,
+    effective_profile: dict[str, object],
+    rewrite_pairs: list[dict[str, object]],
+    positive_patterns: list[dict[str, object]],
+    style_consistency_issues: list[dict[str, object]],
+    dialogue_voice_issues: list[dict[str, object]],
+) -> list[str]:
+    rewrite_plan = [
+        "删除或压缩作者跳出的结论句",
+        "把抽象气氛词改写为异常细节、动作受阻或身体反应",
+        "压缩重复提示短语，避免模板腔",
+    ]
+
+    kb_rewrite_steps = unique_items(
+        [step for item in issues for step in item.get("kb_rewrite_strategy", [])]
+    )
+    if kb_rewrite_steps:
+        rewrite_plan.extend(kb_rewrite_steps)
+
+    pair_rewrite_steps = unique_items(
+        [
+            step
+            for pair in rewrite_pairs
+            if pattern_matches_genre(pair, str(effective_profile.get("genre", "")))
+            and pattern_trigger_matches(text, pair)
+            for step in pair.get("rewrite_strategy", [])
+        ]
+    )
+    if pair_rewrite_steps:
+        rewrite_plan.extend(pair_rewrite_steps)
+
+    recipe_rewrite_steps = unique_items(
+        [step for item in issues for step in item.get("recipe_steps", [])]
+    )
+    if recipe_rewrite_steps:
+        rewrite_plan.append("按场景配方重排表达顺序：" + " -> ".join(recipe_rewrite_steps))
+
+    positive_guidance = unique_items(
+        [
+            str(pattern.get("good_example", "")).strip()
+            for pattern in positive_patterns
+            if pattern_matches_genre(pattern, str(effective_profile.get("genre", "")))
+        ]
+    )
+    if positive_guidance:
+        rewrite_plan.append("参考正向表达样例，优先靠具体反馈、缺口线索或距离变化落地。")
+
+    if effective_profile["forbidden_phrases"] or effective_profile["forbidden_words"]:
+        rewrite_plan.append("回查 style.md 的禁写表达与预警词，统一替换为本书允许的表达")
+    if effective_profile["narration_rules"]:
+        rewrite_plan.append("回查题材口吻基线，确保旁白与反馈方式不偏离当前题材。")
+    if style_consistency_issues:
+        rewrite_plan.append("回查 voice.md / style.md 的单书 voice DNA，优先修掉解释腔、抒情腔和节拍漂移。")
+    if dialogue_voice_issues:
+        rewrite_plan.append("回查 character-voice-diff.md，拉开句长、语速、措辞和压力下的失真方式，避免多人同声。")
+    return rewrite_plan
+
+
 def parse_style_file(style_path: Path) -> dict[str, object]:
     profile = {
         "title": "",
@@ -144,13 +309,20 @@ def parse_style_file(style_path: Path) -> dict[str, object]:
         "explicit_thresholds": {},
         "narration_rules": [],
         "preferred_patterns": [],
+        "dialogue_ratio_baseline": "",
+        "rhythm_baseline": "",
+        "narration_density": "",
+        "sentence_cadence": "",
+        "narration_distance": "",
+        "must_keep_voice": "",
+        "target_reading_feel": "",
     }
     if not style_path.exists():
         return profile
 
     section = ""
     subsection = ""
-    for raw_line in normalize_input_text(style_path.read_text(encoding="utf-8")).splitlines():
+    for raw_line in iter_text_lines(style_path):
         line = raw_line.rstrip()
         stripped = line.strip()
         if not stripped:
@@ -166,44 +338,15 @@ def parse_style_file(style_path: Path) -> dict[str, object]:
         match = LINE_VALUE_RE.match(stripped)
         if match:
             label, value = match.groups()
-            if label == "书名":
-                profile["title"] = value.strip()
-            elif label == "题材":
-                profile["genre"] = value.strip()
-            elif label == "禁止句式":
-                profile["forbidden_phrases"].extend(parse_inline_list(value))
-            elif label == "慎用句式":
-                profile["caution_phrases"].extend(parse_inline_list(value))
-            elif label == "禁止词汇":
-                profile["forbidden_words"].extend(parse_inline_list(value))
-            elif label == "慎用词汇":
-                profile["caution_words"].extend(parse_inline_list(value))
-            elif label == "豁免句式":
-                profile["allowed_phrases"].extend(parse_inline_list(value))
-            elif label == "豁免作者旁白信号":
-                profile["allowed_authorial_patterns"].extend(parse_inline_list(value))
-            elif label == "高频重复预警词":
-                profile["repetition_alert_words"].extend(parse_inline_list(value))
-            elif label == "作者式旁白容忍度":
-                parsed = parse_scalar_int(value, 0)
-                profile["thresholds"]["authorial_narration_tolerance"] = parsed
-                profile["explicit_thresholds"]["authorial_narration_tolerance"] = parsed
-            elif label == "软作者式旁白容忍度":
-                parsed = parse_scalar_int(value, 1)
-                profile["thresholds"]["soft_authorial_tolerance"] = parsed
-                profile["explicit_thresholds"]["soft_authorial_tolerance"] = parsed
-            elif label == "抽象形容词容忍度":
-                parsed = parse_scalar_int(value, 2)
-                profile["thresholds"]["abstract_word_tolerance"] = parsed
-                profile["explicit_thresholds"]["abstract_word_tolerance"] = parsed
-            elif label == "同类句式重复容忍度":
-                parsed = parse_scalar_int(value, 1)
-                profile["thresholds"]["repeated_phrase_tolerance"] = parsed
-                profile["explicit_thresholds"]["repeated_phrase_tolerance"] = parsed
-            elif label == "纯抒情段落最大连续数":
-                parsed = parse_scalar_int(value, 1)
-                profile["thresholds"]["lyrical_paragraph_tolerance"] = parsed
-                profile["explicit_thresholds"]["lyrical_paragraph_tolerance"] = parsed
+            if label in STYLE_LIST_FIELD_MAP:
+                profile[STYLE_LIST_FIELD_MAP[label]].extend(parse_inline_list(value))
+            elif label in STYLE_SCALAR_FIELD_MAP:
+                profile[STYLE_SCALAR_FIELD_MAP[label]] = value.strip()
+            elif label in STYLE_THRESHOLD_FIELD_MAP:
+                threshold_key, default = STYLE_THRESHOLD_FIELD_MAP[label]
+                parsed = parse_scalar_int(value, default)
+                profile["thresholds"][threshold_key] = parsed
+                profile["explicit_thresholds"][threshold_key] = parsed
             continue
 
         if stripped.startswith("- "):
@@ -211,39 +354,67 @@ def parse_style_file(style_path: Path) -> dict[str, object]:
             if not item:
                 continue
             if section == "平台方向":
-                lowered = item.lower()
-                if "权谋" in item and not profile["genre"]:
-                    profile["genre"] = "历史/权谋"
-                elif "悬疑" in item and not profile["genre"]:
-                    profile["genre"] = "悬疑/推理"
-                elif "系统" in item and not profile["genre"]:
-                    profile["genre"] = "都市/系统流"
-                elif "番茄" in item:
-                    profile["preferred_patterns"].extend(["快反馈", "结果先行"])
-                if "快反馈" in item or "快节奏" in item:
-                    profile["preferred_patterns"].extend(["快反馈", "动作结果"])
-                if "男频" in item or "权谋" in item:
-                    profile["narration_rules"].extend([
-                        "少矫情心理戏，优先动作和局势变化",
-                        "结果变化优先于抒情铺垫",
-                    ])
+                apply_platform_direction_item(profile, item)
             if section == "负向锚点（去AI化红线）" and subsection == "":
                 if item not in profile["caution_phrases"]:
                     profile["caution_phrases"].append(item)
             if "禁止句式" in raw_line:
                 continue
 
-    profile["caution_phrases"] = unique_items(list(DEFAULT_CAUTION_PHRASES) + list(profile["caution_phrases"]))
-    profile["forbidden_phrases"] = unique_items(profile["forbidden_phrases"])
-    profile["caution_phrases"] = unique_items(profile["caution_phrases"])
-    profile["forbidden_words"] = unique_items(profile["forbidden_words"])
-    profile["caution_words"] = unique_items(profile["caution_words"])
-    profile["allowed_phrases"] = unique_items(profile["allowed_phrases"])
-    profile["allowed_authorial_patterns"] = unique_items(profile["allowed_authorial_patterns"])
-    profile["repetition_alert_words"] = unique_items(profile["repetition_alert_words"])
-    profile["narration_rules"] = unique_items(profile["narration_rules"])
-    profile["preferred_patterns"] = unique_items(profile["preferred_patterns"])
+    return dedupe_style_profile(profile)
+
+
+def parse_voice_file(voice_path: Path) -> dict[str, str]:
+    profile = {
+        "narration_distance": "",
+        "narration_temperature": "",
+        "sentence_cadence": "",
+        "rhythm_baseline": "",
+        "authorial_permission": "",
+        "must_keep_voice": "",
+        "target_reading_feel": "",
+        "protagonist_voice": "",
+        "core_supporting_voice_a": "",
+        "core_supporting_voice_b": "",
+        "forbidden_drift": "",
+    }
+    if not voice_path.exists():
+        return profile
+
+    for raw_line in iter_text_lines(voice_path):
+        stripped = raw_line.strip()
+        match = LINE_VALUE_RE.match(stripped)
+        if not match:
+            continue
+        label, value = match.groups()
+        if label in VOICE_FIELD_MAP:
+            profile[VOICE_FIELD_MAP[label]] = value.strip()
     return profile
+
+
+def parse_character_voice_diff(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+
+    entries: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    for raw_line in iter_text_lines(path):
+        stripped = raw_line.strip()
+        if stripped.startswith("## 角色"):
+            if current:
+                entries.append(current)
+            current = {"name": stripped.replace("## ", "").strip()}
+            continue
+        if current is None:
+            continue
+        match = LINE_VALUE_RE.match(stripped)
+        if not match:
+            continue
+        label, value = match.groups()
+        current[label.strip()] = value.strip()
+    if current:
+        entries.append(current)
+    return entries
 
 
 def merge_style_profiles(base: dict[str, object], override: dict[str, object]) -> dict[str, object]:
@@ -261,6 +432,13 @@ def merge_style_profiles(base: dict[str, object], override: dict[str, object]) -
         "preferred_patterns": unique_items(list(base.get("preferred_patterns", [])) + list(override.get("preferred_patterns", []))),
         "thresholds": dict(base.get("thresholds", DEFAULT_THRESHOLDS)),
         "explicit_thresholds": dict(base.get("explicit_thresholds", {})),
+        "dialogue_ratio_baseline": str(override.get("dialogue_ratio_baseline") or base.get("dialogue_ratio_baseline") or ""),
+        "rhythm_baseline": str(override.get("rhythm_baseline") or base.get("rhythm_baseline") or ""),
+        "narration_density": str(override.get("narration_density") or base.get("narration_density") or ""),
+        "sentence_cadence": str(override.get("sentence_cadence") or base.get("sentence_cadence") or ""),
+        "narration_distance": str(override.get("narration_distance") or base.get("narration_distance") or ""),
+        "must_keep_voice": str(override.get("must_keep_voice") or base.get("must_keep_voice") or ""),
+        "target_reading_feel": str(override.get("target_reading_feel") or base.get("target_reading_feel") or ""),
     }
     override_thresholds = dict(override.get("explicit_thresholds", override.get("thresholds", {})))
     merged["thresholds"].update(override_thresholds)
@@ -559,6 +737,198 @@ def detect_lyrical_paragraph(paragraph: str) -> bool:
     return abstract_hits >= 2 and not has_action and len(sentences) >= 2
 
 
+def count_dialogue_ratio(text: str) -> float:
+    dialogue_chars = sum(len(item) for item in re.findall(r"[“\"]([^”\"]+)[”\"]", text))
+    total_chars = max(len(re.sub(r"\s+", "", text)), 1)
+    return dialogue_chars / total_chars
+
+
+def voice_prefers_low_dialogue(value: str) -> bool:
+    return any(token in value for token in ("低", "少", "克制", "中低", "稀疏"))
+
+
+def voice_prefers_high_dialogue(value: str) -> bool:
+    return any(token in value for token in ("高", "多", "中高", "密"))
+
+
+def voice_prefers_fast_cadence(value: str) -> bool:
+    return any(token in value for token in FAST_VOICE_MARKERS)
+
+
+def voice_prefers_restrained_tone(text: str) -> bool:
+    return any(token in text for token in RESTRAINED_VOICE_MARKERS)
+
+
+def detect_style_consistency_issues(
+    text: str,
+    paragraphs: list[str],
+    sentences: list[str],
+    effective_profile: dict[str, object],
+    voice_profile: dict[str, str],
+) -> tuple[list[dict[str, object]], dict[str, object]]:
+    issues: list[dict[str, object]] = []
+    dialogue_ratio = count_dialogue_ratio(text)
+    sentence_lengths = [len(sentence) for sentence in sentences if sentence.strip()]
+    long_sentence_ratio = (
+        sum(1 for length in sentence_lengths if length >= 28) / len(sentence_lengths)
+        if sentence_lengths else 0.0
+    )
+    short_sentence_ratio = (
+        sum(1 for length in sentence_lengths if length <= 10) / len(sentence_lengths)
+        if sentence_lengths else 0.0
+    )
+    exclamation_count = text.count("！") + text.count("!")
+    question_count = text.count("？") + text.count("?")
+    explanatory_hits = {
+        phrase: text.count(phrase)
+        for phrase in EXPLANATORY_PHRASES
+        if text.count(phrase)
+    }
+    lyrical_paragraphs = sum(1 for paragraph in paragraphs if detect_lyrical_paragraph(paragraph))
+
+    dialogue_baseline = str(effective_profile.get("dialogue_ratio_baseline", ""))
+    rhythm_baseline = " ".join(
+        part for part in (
+            str(effective_profile.get("rhythm_baseline", "")),
+            voice_profile.get("rhythm_baseline", ""),
+            str(effective_profile.get("must_keep_voice", "")),
+            voice_profile.get("must_keep_voice", ""),
+            str(effective_profile.get("target_reading_feel", "")),
+            voice_profile.get("target_reading_feel", ""),
+        ) if part
+    )
+    cadence_baseline = " ".join(
+        part for part in (
+            str(effective_profile.get("sentence_cadence", "")),
+            voice_profile.get("sentence_cadence", ""),
+        ) if part
+    )
+    authorial_permission = voice_profile.get("authorial_permission", "") or str(effective_profile.get("narration_density", ""))
+
+    if voice_prefers_low_dialogue(dialogue_baseline) and dialogue_ratio >= 0.58:
+        issues.append({
+            "type": "style_dialogue_ratio_drift",
+            "severity": "medium",
+            "reason": f"当前对话占比约为 {dialogue_ratio:.0%}，高于书级设定的低对话基线，章节读感可能偏离原书叙述重心。",
+        })
+    if voice_prefers_high_dialogue(dialogue_baseline) and dialogue_ratio <= 0.12:
+        issues.append({
+            "type": "style_dialogue_ratio_drift",
+            "severity": "medium",
+            "reason": f"当前对话占比约为 {dialogue_ratio:.0%}，低于书级设定的高对话基线，信息交换密度可能不足。",
+        })
+
+    if voice_prefers_fast_cadence(cadence_baseline) and long_sentence_ratio >= 0.45:
+        issues.append({
+            "type": "style_cadence_drift",
+            "severity": "medium",
+            "reason": f"长句比例约为 {long_sentence_ratio:.0%}，与本书偏快、利落的句式节拍不一致。",
+        })
+
+    if voice_prefers_restrained_tone(rhythm_baseline) and exclamation_count + question_count >= max(4, len(paragraphs) // 2 + 2):
+        issues.append({
+            "type": "style_emotion_drift",
+            "severity": "medium",
+            "reason": "感叹号/问号密度偏高，章节情绪外放程度可能压过本书克制、冷硬的底色。",
+        })
+
+    if (
+        any(token in authorial_permission for token in ("否", "低", "弱", "克制"))
+        and sum(explanatory_hits.values()) >= 3
+    ):
+        issues.append({
+            "type": "style_explanatory_drift",
+            "severity": "high" if sum(explanatory_hits.values()) >= 5 else "medium",
+            "reason": "解释腔信号偏多："
+            + ", ".join(f"{phrase}x{count}" for phrase, count in explanatory_hits.items())
+            + "。当前章可能在替读者下判断，而不是让结果自己说话。",
+        })
+
+    if voice_prefers_fast_cadence(rhythm_baseline) and lyrical_paragraphs >= max(2, len(paragraphs) // 3):
+        issues.append({
+            "type": "style_lyrical_drift",
+            "severity": "medium",
+            "reason": f"疑似抒情段落 {lyrical_paragraphs} 段，偏离本书快反馈/硬反馈的节奏要求。",
+        })
+
+    stats = {
+        "dialogue_ratio": round(dialogue_ratio, 4),
+        "long_sentence_ratio": round(long_sentence_ratio, 4),
+        "short_sentence_ratio": round(short_sentence_ratio, 4),
+        "exclamation_count": exclamation_count,
+        "question_count": question_count,
+        "explanatory_hits": explanatory_hits,
+        "lyrical_paragraphs": lyrical_paragraphs,
+    }
+    return issues, stats
+
+
+def extract_dialogue_lines(text: str) -> list[str]:
+    lines = [item.strip() for item in re.findall(r"[“\"]([^”\"]+)[”\"]", text)]
+    return [line for line in lines if line]
+
+
+def dialogue_feature_signature(line: str) -> tuple[str, ...]:
+    suffix_tokens = tuple(token for token in ("吗", "呢", "吧", "啊", "了", "罢了", "就是", "行", "可") if token in line)
+    prefix = line[:2]
+    punctuation = "!" if "！" in line or "!" in line else "?"
+    if "？" not in line and "?" not in line and punctuation == "?":
+        punctuation = "."
+    length_band = "short" if len(line) <= 8 else "mid" if len(line) <= 18 else "long"
+    return (prefix, punctuation, length_band, *suffix_tokens[:3])
+
+
+def detect_dialogue_voice_issues(
+    text: str,
+    voice_entries: list[dict[str, str]],
+) -> tuple[list[dict[str, object]], dict[str, object]]:
+    issues: list[dict[str, object]] = []
+    dialogue_lines = extract_dialogue_lines(text)
+    if len(dialogue_lines) < 4:
+        return issues, {"dialogue_lines": len(dialogue_lines), "signature_uniqueness": 0.0, "configured_roles": len(voice_entries)}
+
+    signatures = [dialogue_feature_signature(line) for line in dialogue_lines]
+    uniqueness = len(set(signatures)) / len(signatures)
+    explanatory_dialogue_count = sum(
+        1 for line in dialogue_lines if any(phrase in line for phrase in EXPLANATORY_PHRASES)
+    )
+    same_length_count = sum(1 for line in dialogue_lines if 8 <= len(line) <= 16)
+
+    if uniqueness <= 0.45 and len(dialogue_lines) >= 6:
+        issues.append({
+            "type": "dialogue_voice_uniformity",
+            "severity": "medium",
+            "reason": f"对白签名离散度偏低（{uniqueness:.0%}），多句对白像同一人在说话，存在多人同声风险。",
+        })
+    if explanatory_dialogue_count >= max(2, len(dialogue_lines) // 3):
+        issues.append({
+            "type": "dialogue_explanatory_overload",
+            "severity": "medium",
+            "reason": "对白中的解释腔偏多，人物像在替作者补设定，而不是各自带着立场说话。",
+        })
+    if same_length_count >= max(4, len(dialogue_lines) - 1):
+        issues.append({
+            "type": "dialogue_cadence_uniformity",
+            "severity": "medium",
+            "reason": "多句对白长度过于整齐，节拍像同一模板裁出来，角色区分度不足。",
+        })
+    if voice_entries and uniqueness <= 0.6:
+        issues.append({
+            "type": "dialogue_voice_diff_not_applied",
+            "severity": "medium",
+            "reason": "项目里已有角色说话差分表，但当前对白仍然偏同声，说明差分没有真正落进正文。",
+        })
+
+    stats = {
+        "dialogue_lines": len(dialogue_lines),
+        "signature_uniqueness": round(uniqueness, 4),
+        "explanatory_dialogue_count": explanatory_dialogue_count,
+        "same_length_count": same_length_count,
+        "configured_roles": len(voice_entries),
+    }
+    return issues, stats
+
+
 def replace_terms(text: str, replacements: dict[str, str]) -> str:
     updated = text
     for source, target in replacements.items():
@@ -749,6 +1119,9 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
     effective_profile["rewrite_pairs"] = rewrite_pairs
     effective_profile["scene_recipes"] = scene_recipes
     effective_profile["positive_patterns"] = positive_patterns
+    voice_root = style_path.parent if style_path is not None else Path(".")
+    voice_profile = parse_voice_file(voice_root / "voice.md")
+    character_voice_entries = parse_character_voice_diff(voice_root / "character-voice-diff.md")
     lyrical_streak = 0
     lyrical_tolerance = int(effective_profile["thresholds"]["lyrical_paragraph_tolerance"])
     authorial_tolerance = int(effective_profile["thresholds"]["authorial_narration_tolerance"])
@@ -767,74 +1140,81 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
             if pattern not in allowed_authorial_patterns and pattern in paragraph
         ]
         if len(hard_authorial_hits) > authorial_tolerance:
-            issues.append({
-                "type": "authorial_narration",
-                "severity": "high",
-                "position": f"p{index}",
-                "reason": f"段落含作者式旁白高风险信号：{', '.join(hard_authorial_hits)}，超过风格阈值 {authorial_tolerance}。",
-            })
+            issues.append(
+                build_issue(
+                    "authorial_narration",
+                    "high",
+                    f"段落含作者式旁白高风险信号：{', '.join(hard_authorial_hits)}，超过风格阈值 {authorial_tolerance}。",
+                    f"p{index}",
+                )
+            )
         if len(soft_authorial_hits) > soft_authorial_tolerance:
-            issues.append({
-                "type": "authorial_narration_soft",
-                "severity": "medium",
-                "position": f"p{index}",
-                "reason": f"段落含过渡型作者旁白信号：{', '.join(soft_authorial_hits)}，超过软阈值 {soft_authorial_tolerance}。",
-            })
+            issues.append(
+                build_issue(
+                    "authorial_narration_soft",
+                    "medium",
+                    f"段落含过渡型作者旁白信号：{', '.join(soft_authorial_hits)}，超过软阈值 {soft_authorial_tolerance}。",
+                    f"p{index}",
+                )
+            )
 
         abstract_hits = [word for word in unique_items(list(ABSTRACT_WORDS) + list(effective_profile["forbidden_words"]) + list(effective_profile["caution_words"])) if word in paragraph]
         if len(abstract_hits) > abstract_tolerance:
-            issues.append({
-                "type": "forced_atmosphere",
-                "severity": "high",
-                "position": f"p{index}",
-                "reason": f"段落堆叠抽象气氛词：{', '.join(abstract_hits)}，超过风格阈值 {abstract_tolerance}。",
-            })
+            issues.append(
+                build_issue(
+                    "forced_atmosphere",
+                    "high",
+                    f"段落堆叠抽象气氛词：{', '.join(abstract_hits)}，超过风格阈值 {abstract_tolerance}。",
+                    f"p{index}",
+                )
+            )
 
         if detect_lyrical_paragraph(paragraph):
             lyrical_streak += 1
         else:
             lyrical_streak = 0
         if lyrical_streak > lyrical_tolerance:
-            issues.append({
-                "type": "lyrical_overflow",
-                "severity": "medium",
-                "position": f"p{index}",
-                "reason": f"连续抒情段落达到 {lyrical_streak} 段，超过风格阈值 {lyrical_tolerance}。",
-            })
+            issues.append(
+                build_issue(
+                    "lyrical_overflow",
+                    "medium",
+                    f"连续抒情段落达到 {lyrical_streak} 段，超过风格阈值 {lyrical_tolerance}。",
+                    f"p{index}",
+                )
+            )
 
     issues.extend(detect_negative_pattern_hits(paragraphs, str(effective_profile.get("genre", "")), negative_patterns))
     issues.extend(detect_scene_recipe_hits(paragraphs, str(effective_profile.get("genre", "")), scene_recipes))
 
-    for phrase in effective_profile["forbidden_phrases"]:
-        if phrase in allowed_phrases:
-            continue
-        count = text.count(phrase)
-        if count:
-            issues.append({
-                "type": "forbidden_phrase",
-                "severity": "high",
-                "reason": f"命中风格禁写句式“{phrase}” {count} 次。",
-            })
-
-    for phrase in effective_profile["caution_phrases"]:
-        if phrase in allowed_phrases:
-            continue
-        count = text.count(phrase)
-        if count:
-            issues.append({
-                "type": "caution_phrase",
-                "severity": "medium",
-                "reason": f"命中风格慎用句式“{phrase}” {count} 次。",
-            })
-
-    for word in effective_profile["forbidden_words"]:
-        count = text.count(word)
-        if count:
-            issues.append({
-                "type": "forbidden_word",
-                "severity": "medium",
-                "reason": f"命中风格禁写词“{word}” {count} 次。",
-            })
+    issues.extend(
+        collect_counted_issues(
+            text,
+            list(effective_profile["forbidden_phrases"]),
+            "forbidden_phrase",
+            "high",
+            "命中风格禁写句式“{value}” {count} 次。",
+            allowed_phrases,
+        )
+    )
+    issues.extend(
+        collect_counted_issues(
+            text,
+            list(effective_profile["caution_phrases"]),
+            "caution_phrase",
+            "medium",
+            "命中风格慎用句式“{value}” {count} 次。",
+            allowed_phrases,
+        )
+    )
+    issues.extend(
+        collect_counted_issues(
+            text,
+            list(effective_profile["forbidden_words"]),
+            "forbidden_word",
+            "medium",
+            "命中风格禁写词“{value}” {count} 次。",
+        )
+    )
 
     issues.extend(repeated_phrases(sentences, effective_profile))
     abstract_counts = abstract_word_counts(text, effective_profile)
@@ -843,57 +1223,38 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
         if count > abstract_tolerance and word in ABSTRACT_WORDS + tuple(effective_profile["repetition_alert_words"])
     }
     if high_freq_abstract:
-        issues.append({
-            "type": "abstract_word_overuse",
-            "severity": "medium",
-            "reason": "高频抽象词或预警词过多：" + ", ".join(f"{word}x{count}" for word, count in high_freq_abstract.items()),
-        })
+        issues.append(
+            build_issue(
+                "abstract_word_overuse",
+                "medium",
+                "高频抽象词或预警词过多：" + ", ".join(f"{word}x{count}" for word, count in high_freq_abstract.items()),
+            )
+        )
 
-    scores = {
-        "naturalness": max(0, 100 - len(issues) * 8),
-        "viewpoint_integrity": max(0, 100 - sum(12 for item in issues if item["type"] == "authorial_narration") - sum(6 for item in issues if item["type"] == "authorial_narration_soft")),
-        "atmosphere_authenticity": max(0, 100 - sum(10 for item in issues if item["type"] in {"forced_atmosphere", "abstract_word_overuse"})),
-        "repetition_risk": min(100, sum(18 for item in issues if item["type"] == "repeated_phrase")),
-    }
+    style_consistency_issues, style_consistency_stats = detect_style_consistency_issues(
+        text,
+        paragraphs,
+        sentences,
+        effective_profile,
+        voice_profile,
+    )
+    issues.extend(style_consistency_issues)
+    dialogue_voice_issues, dialogue_voice_stats = detect_dialogue_voice_issues(
+        text,
+        character_voice_entries,
+    )
+    issues.extend(dialogue_voice_issues)
 
-    rewrite_plan = [
-        "删除或压缩作者跳出的结论句",
-        "把抽象气氛词改写为异常细节、动作受阻或身体反应",
-        "压缩重复提示短语，避免模板腔",
-    ]
-    kb_rewrite_steps = unique_items([
-        step
-        for item in issues
-        for step in item.get("kb_rewrite_strategy", [])
-    ])
-    if kb_rewrite_steps:
-        rewrite_plan.extend(kb_rewrite_steps)
-    pair_rewrite_steps = unique_items([
-        step
-        for pair in rewrite_pairs
-        if pattern_matches_genre(pair, str(effective_profile.get("genre", ""))) and pattern_trigger_matches(text, pair)
-        for step in pair.get("rewrite_strategy", [])
-    ])
-    if pair_rewrite_steps:
-        rewrite_plan.extend(pair_rewrite_steps)
-    recipe_rewrite_steps = unique_items([
-        step
-        for item in issues
-        for step in item.get("recipe_steps", [])
-    ])
-    if recipe_rewrite_steps:
-        rewrite_plan.append("按场景配方重排表达顺序：" + " -> ".join(recipe_rewrite_steps))
-    positive_guidance = unique_items([
-        str(pattern.get("good_example", "")).strip()
-        for pattern in positive_patterns
-        if pattern_matches_genre(pattern, str(effective_profile.get("genre", "")))
-    ])
-    if positive_guidance:
-        rewrite_plan.append("参考正向表达样例，优先靠具体反馈、缺口线索或距离变化落地。")
-    if effective_profile["forbidden_phrases"] or effective_profile["forbidden_words"]:
-        rewrite_plan.append("回查 style.md 的禁写表达与预警词，统一替换为本书允许的表达")
-    if effective_profile["narration_rules"]:
-        rewrite_plan.append("回查题材口吻基线，确保旁白与反馈方式不偏离当前题材。")
+    scores = build_scores(issues, style_consistency_issues, dialogue_voice_issues)
+    rewrite_plan = build_rewrite_plan(
+        issues,
+        text,
+        effective_profile,
+        rewrite_pairs,
+        positive_patterns,
+        style_consistency_issues,
+        dialogue_voice_issues,
+    )
 
     suggestions = build_suggestions(text, paragraphs, issues, effective_profile)
     rewritten_text = build_full_rewrite(text, suggestions) if suggestions else text
@@ -915,6 +1276,8 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
             "paragraphs": len(paragraphs),
             "sentences": len(sentences),
             "abstract_word_counts": abstract_counts,
+            "style_consistency": style_consistency_stats,
+            "dialogue_voice": dialogue_voice_stats,
         },
         "style_profile": {
             "title": effective_profile["title"],
@@ -928,6 +1291,14 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
             "narration_rules": effective_profile["narration_rules"],
             "preferred_patterns": effective_profile["preferred_patterns"],
             "thresholds": effective_profile["thresholds"],
+            "dialogue_ratio_baseline": effective_profile["dialogue_ratio_baseline"],
+            "rhythm_baseline": effective_profile["rhythm_baseline"],
+            "sentence_cadence": effective_profile["sentence_cadence"],
+            "narration_distance": effective_profile["narration_distance"],
+            "must_keep_voice": effective_profile["must_keep_voice"],
+            "target_reading_feel": effective_profile["target_reading_feel"],
+            "voice_profile": voice_profile,
+            "character_voice_diff_count": len(character_voice_entries),
             "rewrite_pair_ids": [
                 str(pair.get("id", ""))
                 for pair in rewrite_pairs
@@ -953,16 +1324,7 @@ def render_markdown(chapter_no: int, chapter_path: Path, analysis: dict[str, obj
         f"- [{item['severity']}] {item.get('position', 'global')} {item['type']}：{item['reason']}"
         for item in issues
     ]
-    rewrite_lines = "\n".join(f"- {line}" for line in analysis["rewrite_plan"])
-    suggestion_lines = []
-    for item in analysis["suggestions"]:
-        suggestion_lines.extend([
-            f"### {item['position']} / {item['issue_type']}",
-            f"- 原文：{item['original']}",
-            f"- 建议：{item['strategy']}",
-            f"- 试改：{item['suggested_rewrite']}",
-            "",
-        ])
+    rewrite_lines = [f"- {line}" for line in analysis["rewrite_plan"]]
     scores = analysis["scores"]
     stats = analysis["stats"]
     style_profile = analysis["style_profile"]
@@ -974,34 +1336,70 @@ def render_markdown(chapter_no: int, chapter_path: Path, analysis: dict[str, obj
         f"- 模式：`{mode}`",
         f"- 风格档案：`{style_profile['title'] or '未命名'}` / 题材：`{style_profile['genre'] or '未设定'}`",
         "",
-        "## 评分",
-        f"- naturalness: {scores['naturalness']}",
-        f"- viewpoint_integrity: {scores['viewpoint_integrity']}",
-        f"- atmosphere_authenticity: {scores['atmosphere_authenticity']}",
-        f"- repetition_risk: {scores['repetition_risk']}",
+        *render_score_lines(scores),
         "",
-        "## 统计",
-        f"- 段落数：{stats['paragraphs']}",
-        f"- 句子数：{stats['sentences']}",
-        f"- 抽象词频：{json.dumps(stats['abstract_word_counts'], ensure_ascii=False)}",
-        f"- 风格阈值：{json.dumps(style_profile['thresholds'], ensure_ascii=False)}",
+        *render_stats_lines(stats, style_profile),
         "",
         "## 问题清单",
         *issue_lines,
         "",
         "## 改写策略",
-        rewrite_lines,
+        *(rewrite_lines or ["- 无改写策略"]),
         "",
     ]
     if mode == "suggest":
-        suggestion_block = suggestion_lines if suggestion_lines else ["- 无局部改写建议", ""]
-        lines.extend([
-            "## 局部改写建议",
-            *suggestion_block,
-            "## 整章建议稿",
-            analysis["rewritten_text"] if analysis["rewritten_text"].strip() else "无建议稿",
-        ])
+        lines.extend(render_suggest_section(analysis))
     return "\n".join(lines)
+
+
+def render_suggestion_lines(items: list[dict[str, object]]) -> list[str]:
+    lines: list[str] = []
+    for item in items:
+        lines.extend(
+            [
+                f"### {item['position']} / {item['issue_type']}",
+                f"- 原文：{item['original']}",
+                f"- 建议：{item['strategy']}",
+                f"- 试改：{item['suggested_rewrite']}",
+                "",
+            ]
+        )
+    return lines
+
+
+def render_score_lines(scores: dict[str, object]) -> list[str]:
+    return [
+        "## 评分",
+        f"- naturalness: {scores['naturalness']}",
+        f"- viewpoint_integrity: {scores['viewpoint_integrity']}",
+        f"- atmosphere_authenticity: {scores['atmosphere_authenticity']}",
+        f"- repetition_risk: {scores['repetition_risk']}",
+        f"- style_consistency: {scores['style_consistency']}",
+        f"- dialogue_distinction: {scores['dialogue_distinction']}",
+    ]
+
+
+def render_stats_lines(stats: dict[str, object], style_profile: dict[str, object]) -> list[str]:
+    return [
+        "## 统计",
+        f"- 段落数：{stats['paragraphs']}",
+        f"- 句子数：{stats['sentences']}",
+        f"- 抽象词频：{json.dumps(stats['abstract_word_counts'], ensure_ascii=False)}",
+        f"- 风格一致性信号：{json.dumps(stats['style_consistency'], ensure_ascii=False)}",
+        f"- 对白差分信号：{json.dumps(stats['dialogue_voice'], ensure_ascii=False)}",
+        f"- 风格阈值：{json.dumps(style_profile['thresholds'], ensure_ascii=False)}",
+    ]
+
+
+def render_suggest_section(analysis: dict[str, object]) -> list[str]:
+    suggestion_lines = render_suggestion_lines(analysis["suggestions"])
+    suggestion_block = suggestion_lines if suggestion_lines else ["- 无局部改写建议", ""]
+    return [
+        "## 局部改写建议",
+        *suggestion_block,
+        "## 整章建议稿",
+        analysis["rewritten_text"] if analysis["rewritten_text"].strip() else "无建议稿",
+    ]
 
 
 def write_outputs(
@@ -1036,12 +1434,12 @@ def main() -> int:
     rewrite_out = Path(args.rewrite_out).resolve() if args.rewrite_out else None
 
     try:
-        chapter_no, chapter_path = detect_target_chapter(project_dir, args.chapter, args.chapter_no)
+        chapter_no, chapter_path = detect_existing_chapter_file(project_dir, args.chapter, args.chapter_no)
     except ValueError as exc:
         print(str(exc))
         return 1
 
-    text = normalize_input_text(chapter_path.read_text(encoding="utf-8"))
+    text = read_text(chapter_path)
     style_profile = parse_style_file(style_path)
     analysis = analyze_text(text, style_profile, style_path)
     report_path, result_path = write_outputs(

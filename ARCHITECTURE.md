@@ -2,23 +2,25 @@
 
 ## Goal
 
-`chaseNovel` is a repo-local writing skill plus a small set of helper scripts for long-form Chinese web novels. The goal is stable support for projects that run for hundreds of chapters without turning the repo into a heavy product.
+`chaseNovel` is a repo-local writing skill plus a focused set of helper scripts for long-form Chinese web novels. The goal is stable support for projects that run for hundreds of chapters while keeping the architecture subordinate to story quality.
 
 The system is designed for a single primary author working locally. It prioritizes:
 
-- low-friction chat-driven writing
+- story quality over process lightness
+- chat-driven writing with explicit quality gates
 - durable project memory
 - chapter and book level validation
 - recovery after breaks
-- controlled evolution instead of a heavy product rebuild
+- controlled evolution instead of management overhead that does not improve pages
 
 ## Design Principles
 
 1. `SKILL.md` remains the primary interaction entry.
 2. Long-term state lives in project files, not transient chat context.
-3. Scripts only keep the repetitive checks that still have clear value.
-4. Lightweight agent orchestration handles planning, drafting, language cleanup, and review.
-5. No GUI or heavy orchestration layer unless the local workflow proves it is needed.
+3. Scripts only keep the repetitive checks that still have clear value for the manuscript.
+4. Agent orchestration is allowed to become stricter when that improves chapter quality.
+5. Reading scope stays minimal by default, but expands immediately when continuity, causality, promises, or resource state are at risk.
+6. No GUI or management layer unless it directly improves the manuscript.
 
 ## Runtime Layers
 
@@ -113,7 +115,7 @@ novel_{book}/
 ## Core Workflows
 
 1. Chapter planning uses `context_compiler.py` to build the minimum next-chapter context package.
-2. Chapter drafting stays skill-driven and follows the lightweight agent sequence.
+2. Chapter drafting stays skill-driven and follows a planning gate plus explicit multi-reviewer sequence.
 3. Revision uses `language_audit.py` plus style and memory files.
 4. Chapter governance uses `chapter_gate.py` and `dashboard_snapshot.py`.
 5. Book health review uses `batch_gate.py`, `foreshadow_scheduler.py`, and in-workflow reviewer retrospectives.
@@ -142,4 +144,4 @@ If you only want the next chapter context, use `chase context --chapter N+1` sep
 - Chat remains the fastest writing surface.
 - Python scripts remain the cheapest automation layer.
 - Markdown memory remains the most transparent storage format.
-- Lightweight agent roles improve quality without introducing a heavy orchestration system.
+- Agent roles exist to raise chapter quality; any layer that does not improve the manuscript should stay out of the path.

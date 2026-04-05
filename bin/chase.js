@@ -20,6 +20,11 @@ function main() {
     return;
   }
 
+  if (command === "planning") {
+    runPython(python, path.join(repoRoot, "scripts", "chapter_planning_review.py"), passthrough);
+    return;
+  }
+
   if (command === "batch") {
     runPython(python, path.join(repoRoot, "scripts", "batch_gate.py"), passthrough);
     return;
@@ -121,6 +126,7 @@ function printHelp(errorMessage) {
     console.error(errorMessage);
   }
   console.log(`Usage:
+  chase planning --project <dir> [--chapter <n> | --target-chapter <n>]
   chase context --project <dir> [--chapter <n>]
   chase foreshadow --project <dir> [--chapter <n>]
   chase dashboard --project <dir>
@@ -136,8 +142,9 @@ function printHelp(errorMessage) {
   chase run --project <dir> [--chapter <n>] [--steps <csv>]
 
 Notes:
+  - planning reviews the next chapter by default; --chapter means current drafted chapter
   - existing gate and audit scripts are passed through unchanged
-  - default run steps: doctor,context,memory,foreshadow,arc,timeline,repeat,dashboard
+  - default run steps: doctor,planning,context,memory,foreshadow,arc,timeline,repeat,dashboard
   - chase run --chapter expects an already drafted chapter number; do not pass the next unwritten chapter
   - project defaults to the current directory`);
 }

@@ -2,9 +2,12 @@
 输出：
 - Planner 结果
 - HookEmotion 结果
+- 章节规划预审
 - Writer 续写
 - StyleDialogue 结果
 - LanguageReviewer 结果
+- ContinuityReviewer 结果
+- CausalityReviewer 结果
 - Reviewer 结论
 
 #### `/续写` 固定输出模板
@@ -44,6 +47,14 @@
 - 本章章尾钩子建议：
 - 情绪 / 节奏风险提示：
 
+## 2.1 章节规划预审
+- 是否通过：pass / revise
+- 断点钩子是否已经接住：是 / 否（说明）
+- 本章功能是否与最近 `3-5` 章重复：否 / 是（说明）
+- 本章结果是否有升级：是 / 否（说明）
+- 本章钩子是否会改变下一章行动：是 / 否（说明）
+- 状态、时间、资源、知情边界是否已钉死：是 / 否（说明）
+
 ## 3. Writer 续写
 [正文]
 
@@ -59,6 +70,24 @@
 - 哪些段落解释重、动作轻：
 - 去 AI 味优先修订项：
 
+## 5.1 ContinuityReviewer 结果
+- `chapter_function`：
+- `conflict_type`：
+- `result_type`：
+- `hook_type`：
+- `findings`：
+- `blocking`：yes / no
+- `suggested_fix`：
+
+## 5.2 CausalityReviewer 结果
+- `chapter_function`：
+- `conflict_type`：
+- `result_type`：
+- `hook_type`：
+- `findings`：
+- `blocking`：yes / no
+- `suggested_fix`：
+
 ## 6. Reviewer 结论
 - 是否接住了断点：是 / 否
 - 是否延续既有口吻：是 / 否
@@ -66,6 +95,8 @@
 - 是否存在时间线风险：否 / 是（说明）
 - 是否存在重复推进：否 / 是（说明）
 - 是否存在 AI 味风险：否 / 是（说明）
+- `repeat_window`：
+- `upgrade_point`：
 - 是否建议直接进入下一章：是 / 否
 - 若否，优先回修项：
 

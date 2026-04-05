@@ -8,8 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-
-CHAPTER_PATTERN = re.compile(r"(\d+)")
+from novel_utils import detect_existing_chapter_file, detect_latest_chapter_file, read_text
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,34 +22,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_text(path: Path) -> str:
-    if not path.exists():
-        return ""
-    return path.read_text(encoding="utf-8").lstrip("\ufeff")
-
-
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
-
-
-def detect_latest_chapter(project_dir: Path) -> tuple[int, Path | None]:
-    chapters_dir = project_dir / "03_chapters"
-    latest_no = 0
-    latest_path: Path | None = None
-    if not chapters_dir.exists():
-        return latest_no, latest_path
-    for path in chapters_dir.iterdir():
-        if not path.is_file():
-            continue
-        match = CHAPTER_PATTERN.search(path.stem)
-        if not match:
-            continue
-        chapter_no = int(match.group(1))
-        if chapter_no > latest_no:
-            latest_no = chapter_no
-            latest_path = path
-    return latest_no, latest_path
 
 
 def replace_or_append_line(text: str, label: str, value: str) -> str:
@@ -72,7 +46,7 @@ def extract_title_and_summary(chapter_path: Path) -> tuple[str, list[str]]:
         if line.startswith("#"):
             continue
         if len(line) >= 12:
-            bullets.append(line[:60].rstrip("，。；、,."))
+            bullets.append(line[:60].rstrip("，。；、."))
         if len(bullets) == 3:
             break
     return title, bullets
@@ -83,8 +57,7 @@ def append_recent_summary(recent_text: str, chapter_no: int, title: str, bullets
         return recent_text
     block = [f"## 第{chapter_no:03d}章：{title}"]
     if bullets:
-        for bullet in bullets:
-            block.append(f"- {bullet}")
+        block.extend(f"- {bullet}" for bullet in bullets)
     else:
         block.append("- 待补本章摘要")
     addition = "\n".join(block) + "\n"
@@ -93,7 +66,7 @@ def append_recent_summary(recent_text: str, chapter_no: int, title: str, bullets
     return recent_text + addition
 
 
-def build_memory_report(project_dir: Path, chapter_no: int, title: str) -> str:
+def build_memory_report(chapter_no: int, title: str) -> str:
     return "\n".join(
         [
             "# 记忆回写报告",
@@ -122,8 +95,9 @@ def main() -> int:
 
     args = parse_args()
     project_dir = Path(args.project).resolve()
-    chapter_no, chapter_path = detect_latest_chapter(project_dir)
-    target_chapter = args.chapter or chapter_no
+    latest_chapter_no, _ = detect_latest_chapter_file(project_dir)
+    target_chapter = args.chapter or latest_chapter_no
+
     if target_chapter <= 0:
         payload = {
             "project": project_dir.as_posix(),
@@ -143,18 +117,7 @@ def main() -> int:
             print("reason=no chapters found")
         return 0
 
-    if chapter_path is None or (args.chapter and CHAPTER_PATTERN.search(chapter_path.stem) and int(CHAPTER_PATTERN.search(chapter_path.stem).group(1)) != target_chapter):
-        target_path = None
-        for path in (project_dir / "03_chapters").iterdir():
-            match = CHAPTER_PATTERN.search(path.stem)
-            if path.is_file() and match and int(match.group(1)) == target_chapter:
-                target_path = path
-                break
-        chapter_path = target_path
-
-    if chapter_path is None:
-        raise SystemExit(f"chapter file not found for chapter {target_chapter}")
-
+    _, chapter_path = detect_existing_chapter_file(project_dir, None, target_chapter)
     memory_dir = project_dir / "00_memory"
     state_path = memory_dir / "state.md"
     recent_path = memory_dir / "summaries" / "recent.md"
@@ -191,14 +154,14 @@ def main() -> int:
     if not args.dry_run:
         write_text(state_path, state_text)
         write_text(recent_path, recent_text)
-        write_text(report_path, build_memory_report(project_dir, target_chapter, title))
+        write_text(report_path, build_memory_report(target_chapter, title))
 
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         print(f"status={payload['status']}")
         print(f"warning_count={payload['warning_count']}")
-        print(f"updated=true")
+        print("updated=true")
         print(f"chapter={target_chapter}")
         print(f"report={payload['report_paths']['memory_report']}")
     return 0

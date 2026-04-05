@@ -8,10 +8,18 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from language_audit import analyze_text, normalize_input_text, parse_style_file
+from language_audit import analyze_text, parse_style_file
+from novel_utils import (
+    CHAPTER_PATTERN,
+    detect_existing_chapter_file,
+    detect_latest_chapter_file,
+    extract_markdown_table_rows,
+    extract_section_body,
+    read_text,
+    render_list,
+)
 
 
-CHAPTER_PATTERN = re.compile(r"第0*(\d+)章")
 DANGER_KEYWORDS = (
     "遇刺", "刺杀", "刺客", "追杀", "围杀", "跟踪", "暴露", "身份",
     "搜查", "搜捕", "潜入", "危机", "危险", "截杀", "埋伏", "伏杀"
@@ -44,19 +52,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def chapter_number_from_name(name: str) -> int | None:
-    match = CHAPTER_PATTERN.search(name)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def read_text_if_exists(path: Path) -> str:
-    if not path.exists():
-        return ""
-    return normalize_input_text(path.read_text(encoding="utf-8"))
-
-
 def normalize_value(value: str) -> str:
     return value.strip().strip("`").strip()
 
@@ -70,37 +65,6 @@ def extract_line_value(content: str, label: str) -> str:
     if not match:
         return ""
     return match.group(1).strip()
-
-
-def extract_section_body(content: str, heading_variants: list[str]) -> str:
-    for heading in heading_variants:
-        pattern = re.compile(
-            rf"##\s+{re.escape(heading)}\s*\n(?P<body>.*?)(?:\n##\s+|\Z)",
-            re.DOTALL,
-        )
-        match = pattern.search(content)
-        if match:
-            return match.group("body")
-    return ""
-
-
-def extract_markdown_table_rows(content: str, heading: str) -> list[list[str]]:
-    body = extract_section_body(content, [heading])
-    if not body:
-        return []
-
-    rows: list[list[str]] = []
-    for line in body.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|"):
-            continue
-        if set(stripped.replace("|", "").replace("-", "").replace(":", "").strip()) == set():
-            continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
-        if cells:
-            rows.append(cells)
-    return rows
-
 
 def has_non_placeholder_row(rows: list[list[str]]) -> bool:
     if len(rows) <= 1:
@@ -155,51 +119,6 @@ def infer_current_place_from_chapter(content: str) -> str:
             continue
         return candidate
     return ""
-
-
-def detect_latest_chapter_no(project_dir: Path) -> int:
-    chapters_dir = project_dir / "03_chapters"
-    latest = 0
-    if not chapters_dir.exists():
-        return latest
-    for path in chapters_dir.iterdir():
-        if not path.is_file():
-            continue
-        number = chapter_number_from_name(path.name)
-        if number is not None:
-            latest = max(latest, number)
-    return latest
-
-
-def detect_target_chapter(project_dir: Path, chapter_arg: str | None, chapter_no: int | None) -> tuple[int, Path]:
-    chapters_dir = project_dir / "03_chapters"
-    if chapter_arg:
-        chapter_path = Path(chapter_arg).resolve()
-        detected_no = chapter_no or chapter_number_from_name(chapter_path.name)
-        if detected_no is None:
-            raise ValueError("无法从 --chapter 推断章节号，请补充 --chapter-no。")
-        return detected_no, chapter_path
-
-    chapter_files: list[tuple[int, Path]] = []
-    if chapters_dir.exists():
-        for path in chapters_dir.iterdir():
-            if not path.is_file():
-                continue
-            detected_no = chapter_number_from_name(path.name)
-            if detected_no is not None:
-                chapter_files.append((detected_no, path))
-
-    chapter_files.sort(key=lambda item: item[0])
-    if chapter_no is not None:
-        for current_no, path in chapter_files:
-            if current_no == chapter_no:
-                return current_no, path
-        raise ValueError(f"未找到第{chapter_no:03d}章文件。")
-
-    if chapter_files:
-        return chapter_files[-1]
-
-    raise ValueError("未找到章节文件，请传入 --chapter 或在 03_chapters 下放入章节。")
 
 
 def detect_danger_keywords(content: str) -> list[str]:
@@ -273,6 +192,17 @@ def render_language_suggestions(suggestions: list[dict[str, object]]) -> str:
     return "\n".join(blocks).rstrip()
 
 
+def load_planning_review(project_dir: Path, chapter_no: int) -> dict[str, object]:
+    path = project_dir / "04_gate" / f"ch{chapter_no:03d}" / "planning_review.json"
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(read_text(path))
+        return payload if isinstance(payload, dict) else {}
+    except json.JSONDecodeError:
+        return {}
+
+
 def build_gate_analysis(
     project_dir: Path,
     chapter_no: int,
@@ -280,11 +210,12 @@ def build_gate_analysis(
     style_path: Path,
     skip_language: bool,
 ) -> dict[str, object]:
-    chapter_content = read_text_if_exists(chapter_path)
-    state_content = read_text_if_exists(project_dir / "00_memory" / "state.md")
-    timeline_content = read_text_if_exists(project_dir / "00_memory" / "timeline.md")
-    foreshadowing_content = read_text_if_exists(project_dir / "00_memory" / "foreshadowing.md")
-    latest_chapter_no = detect_latest_chapter_no(project_dir)
+    chapter_content = read_text(chapter_path)
+    state_content = read_text(project_dir / "00_memory" / "state.md")
+    timeline_content = read_text(project_dir / "00_memory" / "timeline.md")
+    foreshadowing_content = read_text(project_dir / "00_memory" / "foreshadowing.md")
+    planning_review = load_planning_review(project_dir, chapter_no)
+    latest_chapter_no, _ = detect_latest_chapter_file(project_dir)
     historical_mode = latest_chapter_no > 0 and chapter_no < latest_chapter_no
 
     warnings: list[str] = []
@@ -357,6 +288,24 @@ def build_gate_analysis(
     if not chapter_content.strip():
         blockers.append("目标章节正文为空，无法执行 continuity gate。")
 
+    planning_status = str(planning_review.get("status", "missing"))
+    planning_verdict = str(planning_review.get("planning_verdict", "missing"))
+    planning_blockers = [str(item) for item in planning_review.get("blockers", []) if str(item).strip()]
+    planning_warnings = [str(item) for item in planning_review.get("warnings", []) if str(item).strip()]
+    planning_report_path = ""
+    report_paths = planning_review.get("report_paths", {})
+    if isinstance(report_paths, dict):
+        planning_report_path = str(report_paths.get("markdown", ""))
+
+    if planning_status == "fail" or planning_verdict == "revise":
+        blockers.append("写前章节规划预审未通过，必须先修章卡/下章预告后再认定本章可交稿。")
+        blockers.extend([f"规划预审：{item}" for item in planning_blockers[:4]])
+    elif planning_status == "warn":
+        warnings.append("写前章节规划预审存在预警，建议回看章卡与下章行动变化。")
+        warnings.extend([f"规划预审：{item}" for item in planning_warnings[:3]])
+    elif planning_status == "missing" and not historical_mode:
+        warnings.append("缺少本章 planning_review.json，当前门禁无法确认写前章卡是否曾通过预审。")
+
     warnings.extend(evaluate_golden_three_progress(chapter_no, chapter_content))
 
     continuity_verdict = "pass"
@@ -395,6 +344,11 @@ def build_gate_analysis(
         "language_verdict": language_analysis["verdict"],
         "language_scores": language_analysis.get("scores", {}),
         "language_style_profile": language_analysis.get("style_profile", {}),
+        "planning_status": planning_status,
+        "planning_verdict": planning_verdict,
+        "planning_blockers": planning_blockers,
+        "planning_warnings": planning_warnings,
+        "planning_report_path": planning_report_path,
         "language_blockers": language_blockers,
         "language_warnings": language_warnings,
         "language_rewrite_plan": language_analysis.get("rewrite_plan", []),
@@ -404,12 +358,6 @@ def build_gate_analysis(
         "blockers": blockers,
         "verdict": verdict,
     }
-
-
-def render_list(items: list[str], empty_text: str) -> str:
-    if not items:
-        return f"- {empty_text}"
-    return "\n".join(f"- {item}" for item in items)
 
 
 def load_template(templates_root: Path, name: str) -> str:
@@ -441,6 +389,11 @@ def write_outputs(
         danger_hits=", ".join(analysis["danger_hits"]) if analysis["danger_hits"] else "无",
         arrangement_status="是" if analysis["has_arrangements"] else "否",
         foreshadow_status="是" if analysis["has_foreshadowing"] else "否",
+        planning_status=str(analysis["planning_status"]).upper(),
+        planning_verdict=str(analysis["planning_verdict"]).upper(),
+        planning_report_path=analysis["planning_report_path"] or "未找到",
+        planning_blockers=render_list(list(analysis["planning_blockers"]), "无规划预审阻断项"),
+        planning_warnings=render_list(list(analysis["planning_warnings"]), "无规划预审预警项"),
         continuity_verdict=str(analysis["continuity_verdict"]).upper(),
         language_verdict=str(analysis["language_verdict"]).upper(),
         language_style_title=analysis["language_style_profile"].get("title", "未命名") or "未命名",
@@ -491,7 +444,7 @@ def main() -> int:
     )
 
     try:
-        chapter_no, chapter_path = detect_target_chapter(project_dir, args.chapter, args.chapter_no)
+        chapter_no, chapter_path = detect_existing_chapter_file(project_dir, args.chapter, args.chapter_no)
     except ValueError as exc:
         print(str(exc))
         return 1
@@ -505,11 +458,16 @@ def main() -> int:
         "continuity_verdict": analysis["continuity_verdict"],
         "language_verdict": analysis["language_verdict"],
         "style_path": analysis["style_path"],
+        "planning_status": analysis["planning_status"],
+        "planning_verdict": analysis["planning_verdict"],
+        "planning_report_path": analysis["planning_report_path"],
         "report_path": report_path.as_posix(),
         "result_path": result_path.as_posix(),
         "rewrite_out": rewrite_out.as_posix() if rewrite_out else "",
         "warnings": analysis["warnings"],
         "blockers": analysis["blockers"],
+        "planning_warnings": analysis["planning_warnings"],
+        "planning_blockers": analysis["planning_blockers"],
         "language_warnings": analysis["language_warnings"],
         "language_blockers": analysis["language_blockers"],
         "language_suggestions": analysis["language_suggestions"],

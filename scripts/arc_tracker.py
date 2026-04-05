@@ -3,17 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
-
-PLACEHOLDER_PATTERNS = (
-    re.compile(r"\{[A-Z0-9_]+\}"),
-    re.compile(r"第_{2,}章"),
-    re.compile(r"第\{[A-Z0-9_]+\}章"),
-)
+from novel_utils import clean_value, detect_current_chapter, extract_pipe_table_rows, extract_state_value, read_text
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,42 +20,11 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_text(path: Path) -> str:
-    if not path.exists():
-        return ""
-    return path.read_text(encoding="utf-8").lstrip("\ufeff")
-
-
-def has_placeholder(text: str) -> bool:
-    normalized = text.strip()
-    if not normalized:
-        return False
-    return any(pattern.search(normalized) for pattern in PLACEHOLDER_PATTERNS)
-
-
-def clean_value(text: str, fallback: str = "未识别") -> str:
-    normalized = text.strip()
-    if not normalized or has_placeholder(normalized):
-        return fallback
-    return normalized
-
-
-def parse_table_rows(text: str) -> list[list[str]]:
-    rows: list[list[str]] = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|") or "----" in stripped:
-            continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
-        rows.append(cells)
-    return rows
-
-
 def parse_character_arcs(memory_dir: Path) -> list[dict[str, str]]:
-    rows = parse_table_rows(read_text(memory_dir / "character_arcs.md"))
+    rows = extract_pipe_table_rows(read_text(memory_dir / "character_arcs.md"))
     results: list[dict[str, str]] = []
     for row in rows[1:]:
-        if len(row) < 8 or not row[0]:
+        if len(row) < 8 or not row[0] or row[0] in {"角色", "关系对"}:
             continue
         results.append(
             {
@@ -79,39 +42,31 @@ def parse_character_arcs(memory_dir: Path) -> list[dict[str, str]]:
 
 
 def parse_relation_arcs(memory_dir: Path) -> list[dict[str, str]]:
-    text = read_text(memory_dir / "character_arcs.md")
-    matches = re.findall(
-        r"^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|$",
-        text,
-        re.MULTILINE,
-    )
+    rows = extract_pipe_table_rows(read_text(memory_dir / "character_arcs.md"))
     results: list[dict[str, str]] = []
-    for row in matches:
-        if row[0].strip() in {"关系对", "角色"}:
+    for row in rows[1:]:
+        if len(row) != 6 or not row[0] or row[0] in {"关系对", "角色"}:
             continue
-        if len(row) == 6 and "—" not in row[0]:
-            continue
-        if len(row) == 6:
-            results.append(
-                {
-                    "pair": row[0].strip(),
-                    "position": row[1].strip(),
-                    "latest_shift": row[2].strip(),
-                    "tension": row[3].strip(),
-                    "next_mode": row[4].strip(),
-                    "repeat_risk": row[5].strip(),
-                }
-            )
+        results.append(
+            {
+                "pair": row[0],
+                "position": row[1],
+                "latest_shift": row[2],
+                "tension": row[3],
+                "next_mode": row[4],
+                "repeat_risk": row[5],
+            }
+        )
     return results
 
 
 def build_payload(project_dir: Path) -> dict[str, object]:
     memory_dir = project_dir / "00_memory"
     state_text = read_text(memory_dir / "state.md")
-    current_chapter_match = re.search(r"当前章节[:：]\s*第?(\d+)章", state_text)
-    active_arc_match = re.search(r"当前弧[:：]\s*(.+)", state_text)
     characters = parse_character_arcs(memory_dir)
-    stalled = [item for item in characters if any(flag in item["risk"] for flag in ("停滞", "重复", "失真"))]
+    stalled = [
+        item for item in characters if any(flag in item["risk"] for flag in ("停滞", "重复", "失真"))
+    ]
     warnings: list[str] = []
     if not characters:
         warnings.append("角色弧表为空，当前只能做轻量结构检查。")
@@ -123,8 +78,8 @@ def build_payload(project_dir: Path) -> dict[str, object]:
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "status": status,
-        "current_chapter": int(current_chapter_match.group(1)) if current_chapter_match else 0,
-        "active_arc": clean_value(active_arc_match.group(1) if active_arc_match else ""),
+        "current_chapter": detect_current_chapter(state_text),
+        "active_arc": clean_value(extract_state_value(state_text, "当前弧")),
         "character_arcs": characters,
         "relation_arcs": parse_relation_arcs(memory_dir),
         "stalled_arc_count": len(stalled),
@@ -148,8 +103,7 @@ def render_markdown(payload: dict[str, object]) -> str:
     ]
     stalled = payload["stalled_characters"]
     if stalled:
-        for name in stalled:
-            lines.append(f"- {name}")
+        lines.extend(f"- {name}" for name in stalled)
     else:
         lines.append("- 无")
 

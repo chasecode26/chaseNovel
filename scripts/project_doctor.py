@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from novel_utils import count_chapter_files, detect_current_chapter, read_text
 
 
 REQUIRED_DIRS = [
@@ -46,43 +47,23 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_text(path: Path) -> str:
-    if not path.exists():
-        return ""
-    return path.read_text(encoding="utf-8").lstrip("\ufeff")
-
-
-def chapter_count(project_dir: Path) -> int:
-    chapters_dir = project_dir / "03_chapters"
-    if not chapters_dir.exists():
-        return 0
-    count = 0
-    for path in chapters_dir.iterdir():
-        if path.is_file() and re.search(r"\d+", path.stem):
-            count += 1
-    return count
-
-
-def detect_current_chapter(state_text: str) -> int | None:
-    match = re.search(r"当前章节[:：]\s*第?(\d+)章", state_text)
-    return int(match.group(1)) if match else None
-
-
 def build_payload(project_dir: Path) -> dict[str, object]:
     missing_dirs = [item for item in REQUIRED_DIRS if not (project_dir / item).exists()]
     missing_files = [item for item in REQUIRED_FILES if not (project_dir / item).exists()]
 
     state_text = read_text(project_dir / "00_memory" / "state.md")
-    current_chapter = detect_current_chapter(state_text)
-    chapters = chapter_count(project_dir)
+    current_chapter = detect_current_chapter(state_text) or None
+    chapters = count_chapter_files(project_dir)
 
     warnings: list[str] = []
     if chapters == 0:
-        warnings.append("当前项目还没有正文文件，无法做连续性与反重复回归。")
+        warnings.append("当前项目还没有正文章节，无法做连续性与反重复回归。")
     if current_chapter is None:
         warnings.append("state.md 中未识别到“当前章节”，上下文编译会退回默认章节。")
     elif chapters and current_chapter > chapters + 1:
-        warnings.append(f"state.md 当前章节为第{current_chapter}章，但正文目录仅检测到 {chapters} 章，状态可能超前。")
+        warnings.append(
+            f"state.md 当前章节为第{current_chapter}章，但正文章节仅检测到 {chapters} 章，状态可能超前。"
+        )
     if not (project_dir / "00_memory" / "retrieval" / "next_context.md").exists():
         warnings.append("缺少 next_context.md；建议运行 context_compiler.py 或 chase context。")
 

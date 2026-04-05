@@ -8,11 +8,14 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-
-PLACEHOLDER_PATTERNS = (
-    re.compile(r"\{[A-Z0-9_]+\}"),
-    re.compile(r"第_{2,}章"),
-    re.compile(r"第\{[A-Z0-9_]+\}章"),
+from novel_utils import (
+    detect_current_chapter,
+    detect_latest_chapter_file,
+    extract_state_value,
+    has_placeholder,
+    load_due_foreshadow_ids,
+    read_text,
+    useful_lines,
 )
 
 
@@ -28,126 +31,29 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_text(path: Path) -> str:
-    if not path.exists():
-        return ""
-    return path.read_text(encoding="utf-8").lstrip("\ufeff")
-
-
-def detect_current_chapter(state_text: str) -> int:
-    match = re.search(r"当前章节[:：]\s*第?(\d+)章", state_text)
-    return int(match.group(1)) if match else 0
-
-
-def extract_line(text: str, label: str) -> str:
-    match = re.search(rf"{re.escape(label)}[:：]\s*(.+)", text)
-    return match.group(1).strip() if match else ""
-
-
-def has_placeholder(text: str) -> bool:
-    normalized = text.strip()
-    if not normalized:
-        return False
-    return any(pattern.search(normalized) for pattern in PLACEHOLDER_PATTERNS)
-
-
-def useful_lines(text: str, limit: int) -> list[str]:
-    lines: list[str] = []
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        if not line or has_placeholder(line):
-            continue
-        if line.startswith("#") or line.startswith(">"):
-            continue
-        if line.startswith("<!--") or line.startswith("-->"):
-            continue
-        if line.startswith("|"):
-            continue
-        if re.fullmatch(r"\|[-:\s|]+\|?", line):
-            continue
-        lines.append(line)
-        if len(lines) >= limit:
-            break
-    return lines
-
-
 def extract_next_goal(state_text: str) -> str:
-    direct = extract_line(state_text, "- 下章预告") or extract_line(state_text, "下章预告")
+    direct = extract_state_value(state_text, "下章预告")
     if direct and not has_placeholder(direct):
         return direct
 
-    section_match = re.search(
-        r"##\s*下章预告\s*(.*?)(?:\n##\s+|\Z)",
-        state_text,
-        re.S,
-    )
+    section_match = re.search(r"##\s*下章预告\s*(.*?)(?:\n##\s+|\Z)", state_text, re.S)
     if not section_match:
         return ""
 
     section_text = section_match.group(1)
-    result = (
-        extract_line(section_text, "- 计划内容")
-        or extract_line(section_text, "计划内容")
-        or extract_line(section_text, "- 章节号")
-        or extract_line(section_text, "章节号")
-    )
+    result = extract_state_value(section_text, "计划内容") or extract_state_value(section_text, "章节目标")
     return "" if has_placeholder(result) else result
 
 
 def first_nonempty_lines(text: str, limit: int) -> list[str]:
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-    return lines[:limit]
+    return [line.strip() for line in text.splitlines() if line.strip()][:limit]
 
 
 def collect_latest_chapter_excerpt(project_dir: Path) -> str:
-    chapters_dir = project_dir / "03_chapters"
-    if not chapters_dir.exists():
-        return ""
-
-    latest_path = None
-    latest_no = -1
-    for path in chapters_dir.iterdir():
-        if not path.is_file():
-            continue
-        match = re.search(r"(\d+)", path.stem)
-        if not match:
-            continue
-        chapter_no = int(match.group(1))
-        if chapter_no > latest_no:
-            latest_no = chapter_no
-            latest_path = path
-
+    _, latest_path = detect_latest_chapter_file(project_dir)
     if latest_path is None:
         return ""
-
-    content = read_text(latest_path)
-    return "\n".join(first_nonempty_lines(content, 12))
-
-
-def load_due_foreshadow_ids(project_dir: Path, target_chapter: int) -> list[str]:
-    path = project_dir / "00_memory" / "foreshadowing.md"
-    if not path.exists():
-        return []
-
-    due_ids: list[str] = []
-    for line in read_text(path).splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|") or "----" in stripped or "ID" in stripped:
-            continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
-        if len(cells) < 8:
-            continue
-        item_id = cells[0]
-        due_text = cells[6]
-        status = cells[8] if len(cells) > 8 else ""
-        match = re.search(r"(\d+)", due_text)
-        if not item_id or not match:
-            continue
-        if status and any(flag in status for flag in ("已回收", "已废弃")):
-            continue
-        if int(match.group(1)) <= target_chapter:
-            due_ids.append(item_id)
-    return due_ids
+    return "\n".join(first_nonempty_lines(read_text(latest_path), 12))
 
 
 def build_markdown(project_dir: Path, target_chapter: int) -> str:
@@ -161,8 +67,8 @@ def build_markdown(project_dir: Path, target_chapter: int) -> str:
     style_text = read_text(memory_dir / "style.md")
     due_ids = load_due_foreshadow_ids(project_dir, target_chapter)
 
-    active_volume = extract_line(state_text, "- 当前卷") or extract_line(state_text, "当前卷")
-    active_arc = extract_line(state_text, "- 当前弧") or extract_line(state_text, "当前弧")
+    active_volume = extract_state_value(state_text, "当前卷")
+    active_arc = extract_state_value(state_text, "当前弧")
     next_goal = extract_next_goal(state_text)
 
     sections = [
@@ -211,7 +117,11 @@ def main() -> int:
     project_dir = Path(args.project).resolve()
     state_text = read_text(project_dir / "00_memory" / "state.md")
     target_chapter = args.chapter or max(detect_current_chapter(state_text) + 1, 1)
-    output_path = Path(args.output).resolve() if args.output else project_dir / "00_memory" / "retrieval" / "next_context.md"
+    output_path = (
+        Path(args.output).resolve()
+        if args.output
+        else project_dir / "00_memory" / "retrieval" / "next_context.md"
+    )
     markdown = build_markdown(project_dir, target_chapter)
 
     result = {

@@ -24,6 +24,7 @@ TEMPLATE_MAP = {
     "00_memory/arc_progress.md": "arc-progress.md",
     "00_memory/characters.md": "characters.md",
     "00_memory/character_arcs.md": "character-arcs.md",
+    "00_memory/character-voice-diff.md": "character-voice-diff.md",
     "00_memory/timeline.md": "timeline.md",
     "00_memory/foreshadowing.md": "foreshadowing.md",
     "00_memory/payoff_board.md": "payoff-board.md",
