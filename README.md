@@ -4,13 +4,14 @@
 
 目标不是“给一段 prompt 写一章”，而是把连载写作拆成可复用的规则、模板、记忆文件和质量门禁，一切以把小说写好为先。
 
-## 核心原则
+## 三步上手
 
-- 先保章节功能，再做语言润色。
-- 先保连续性和因果，再追求句子花活。
-- 先过规划门槛，再进正文。
-- 能脚本化的质量检查，尽量脚本化，不只靠口头自检。
-- 质量优先于轻量化；只要能显著提升成稿质量，就允许更重的流程。
+1. 先看 `SKILL.md` 顶部的“快速入口”，确认你现在是在开书、写章、续写还是改章。
+2. 用 `chase bootstrap` 建项目，用 `chase doctor` / `chase check` 看结构和状态是否健康。
+3. 真正落章时，先过规划，再跑门禁，不跳过 `planning -> gate/audit -> memory` 这条闭环。
+
+说明：`chase check` 不是“宽松通过器”。如果项目还没补齐地点、目标、章卡、上下文锚点，它会直接失败，这是为了保住小说质量，而不是为了流程好看。
+跨任务规则与表达标准，统一看 `references/output-contracts.md` 和 `references/execution_workflow.md`。
 
 ## 当前能力
 
@@ -101,6 +102,9 @@ repo/
 ```bash
 python scripts/project_bootstrap.py --project "novel_书名"
 python scripts/project_doctor.py --project "novel_书名"
+chase bootstrap --project "novel_书名"
+chase doctor --project "novel_书名"
+chase check --project "novel_书名" --chapter 12
 python scripts/chapter_planning_review.py --project "novel_书名" --target-chapter 12
 python scripts/context_compiler.py --project "novel_书名" --chapter 12
 python scripts/workflow_runner.py --project "novel_书名" --chapter 12
@@ -116,8 +120,8 @@ python scripts/language_audit.py --project "novel_书名" --chapter-no 12 --mode
 - 需要固定骨架时用 `templates/`
 - 需要静态校验时用 `scripts/`
 
-## 当前重点
+## 验证
 
-- 写前规划门禁已经前置为默认流程。
-- 脚本层已做一轮大规模去重，章节扫描、伏笔读取、表格解析、状态清洗尽量走共享工具。
-- 目标不是“流程漂亮”，而是稳定写出更强的连载质量。
+```bash
+python -m unittest discover -s tests -v
+```

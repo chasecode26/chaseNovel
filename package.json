@@ -24,7 +24,9 @@
   },
   "scripts": {
     "doctor:project": "node ./bin/chase.js doctor --project .",
-    "doctor": "node ./bin/chase.js doctor --project ."
+    "doctor": "node ./bin/chase.js doctor --project .",
+    "check": "node ./bin/chase.js check --project .",
+    "test:py": "python -m unittest discover -s tests -v"
   },
   "keywords": [
     "codex-skill",

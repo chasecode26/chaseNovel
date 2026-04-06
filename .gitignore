@@ -8,3 +8,4 @@ __pycache__/
 *.pyc
 .omx/
 __MACOSX/
+tests/.tmp/

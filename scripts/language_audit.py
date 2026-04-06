@@ -27,6 +27,31 @@ ABSTRACT_WORDS = (
 DEFAULT_CAUTION_PHRASES = (
     "不禁", "只见", "此刻", "心中暗道"
 )
+VAGUE_EXPRESSIONS = (
+    "那件事",
+    "那个人",
+    "那个地方",
+    "某种真相",
+    "某个答案",
+    "说不清",
+    "难以言明",
+    "不可名状",
+    "没有说破",
+    "没有点破",
+)
+SUSPENSE_MARKERS = (
+    "真相",
+    "线索",
+    "疑点",
+    "破案",
+    "凶手",
+    "嫌疑",
+    "反转",
+    "埋伏",
+    "身份",
+    "暗号",
+    "证据",
+)
 EXPLANATORY_PHRASES = (
     "也就是说", "换句话说", "换言之", "这意味着", "这说明", "显然",
     "其实", "原来", "本质上", "某种程度上", "可以说",
@@ -39,6 +64,7 @@ DEFAULT_THRESHOLDS = {
     "abstract_word_tolerance": 2,
     "repeated_phrase_tolerance": 1,
     "lyrical_paragraph_tolerance": 1,
+    "vague_expression_tolerance": 1,
 }
 LINE_VALUE_RE = re.compile(r"^- ([^：]+)：\s*(.*)$")
 STYLE_LIST_FIELD_MAP = {
@@ -60,6 +86,8 @@ STYLE_SCALAR_FIELD_MAP = {
     "叙述距离": "narration_distance",
     "必须保住的声音": "must_keep_voice",
     "每章最该留下的读感": "target_reading_feel",
+    "信息表达基线": "clarity_baseline",
+    "悬疑留白边界": "suspense_reveal_boundary",
 }
 STYLE_THRESHOLD_FIELD_MAP = {
     "作者式旁白容忍度": ("authorial_narration_tolerance", 0),
@@ -67,6 +95,7 @@ STYLE_THRESHOLD_FIELD_MAP = {
     "抽象形容词容忍度": ("abstract_word_tolerance", 2),
     "同类句式重复容忍度": ("repeated_phrase_tolerance", 1),
     "纯抒情段落最大连续数": ("lyrical_paragraph_tolerance", 1),
+    "隐晦表达容忍度": ("vague_expression_tolerance", 1),
 }
 VOICE_FIELD_MAP = {
     "叙述距离": "narration_distance",
@@ -76,6 +105,8 @@ VOICE_FIELD_MAP = {
     "是否允许作者式旁白": "authorial_permission",
     "必须保住的声音": "must_keep_voice",
     "每章应留下的读感": "target_reading_feel",
+    "信息表达基线": "clarity_baseline",
+    "悬疑留白边界": "suspense_reveal_boundary",
     "主角": "protagonist_voice",
     "核心配角A": "core_supporting_voice_a",
     "核心配角B": "core_supporting_voice_b",
@@ -244,6 +275,7 @@ def build_rewrite_plan(
     dialogue_voice_issues: list[dict[str, object]],
 ) -> list[str]:
     rewrite_plan = [
+        "先把谁在做事、为什么这么做、结果变了什么写明白",
         "删除或压缩作者跳出的结论句",
         "把抽象气氛词改写为异常细节、动作受阻或身体反应",
         "压缩重复提示短语，避免模板腔",
@@ -291,6 +323,8 @@ def build_rewrite_plan(
         rewrite_plan.append("回查 voice.md / style.md 的单书 voice DNA，优先修掉解释腔、抒情腔和节拍漂移。")
     if dialogue_voice_issues:
         rewrite_plan.append("回查 character-voice-diff.md，拉开句长、语速、措辞和压力下的失真方式，避免多人同声。")
+    if any(item.get("type") == "vague_expression" for item in issues):
+        rewrite_plan.append("除悬疑关键点外，把“那个人/那件事/某种真相”改成读者一眼能懂的具体对象。")
     return rewrite_plan
 
 
@@ -316,6 +350,8 @@ def parse_style_file(style_path: Path) -> dict[str, object]:
         "narration_distance": "",
         "must_keep_voice": "",
         "target_reading_feel": "",
+        "clarity_baseline": "",
+        "suspense_reveal_boundary": "",
     }
     if not style_path.exists():
         return profile
@@ -373,6 +409,8 @@ def parse_voice_file(voice_path: Path) -> dict[str, str]:
         "authorial_permission": "",
         "must_keep_voice": "",
         "target_reading_feel": "",
+        "clarity_baseline": "",
+        "suspense_reveal_boundary": "",
         "protagonist_voice": "",
         "core_supporting_voice_a": "",
         "core_supporting_voice_b": "",
@@ -439,6 +477,8 @@ def merge_style_profiles(base: dict[str, object], override: dict[str, object]) -
         "narration_distance": str(override.get("narration_distance") or base.get("narration_distance") or ""),
         "must_keep_voice": str(override.get("must_keep_voice") or base.get("must_keep_voice") or ""),
         "target_reading_feel": str(override.get("target_reading_feel") or base.get("target_reading_feel") or ""),
+        "clarity_baseline": str(override.get("clarity_baseline") or base.get("clarity_baseline") or ""),
+        "suspense_reveal_boundary": str(override.get("suspense_reveal_boundary") or base.get("suspense_reveal_boundary") or ""),
     }
     override_thresholds = dict(override.get("explicit_thresholds", override.get("thresholds", {})))
     merged["thresholds"].update(override_thresholds)
@@ -460,6 +500,8 @@ def load_kb_genre_profile(kb_root: Path, genre: str) -> dict[str, object]:
         "preferred_patterns": [],
         "thresholds": dict(DEFAULT_THRESHOLDS),
         "explicit_thresholds": {},
+        "clarity_baseline": "",
+        "suspense_reveal_boundary": "",
     }
     if not genre:
         return empty_profile
@@ -482,6 +524,8 @@ def load_kb_genre_profile(kb_root: Path, genre: str) -> dict[str, object]:
                 "allowed_authorial_patterns": payload.get("allowed_authorial_patterns", []),
                 "narration_rules": payload.get("narration_rules", []),
                 "preferred_patterns": payload.get("preferred_patterns", []),
+                "clarity_baseline": payload.get("clarity_baseline", ""),
+                "suspense_reveal_boundary": payload.get("suspense_reveal_boundary", ""),
                 "thresholds": payload.get("thresholds", dict(DEFAULT_THRESHOLDS)),
                 "explicit_thresholds": payload.get("thresholds", {}),
             }
@@ -506,6 +550,8 @@ def load_kb_book_profile(kb_root: Path, style_path: Path, title: str) -> dict[st
         "preferred_patterns": [],
         "thresholds": dict(DEFAULT_THRESHOLDS),
         "explicit_thresholds": {},
+        "clarity_baseline": "",
+        "suspense_reveal_boundary": "",
     }
     profiles_dir = kb_root / "profiles" / "book"
     if not profiles_dir.exists():
@@ -544,6 +590,8 @@ def load_kb_book_profile(kb_root: Path, style_path: Path, title: str) -> dict[st
                 "allowed_authorial_patterns": payload.get("allowed_authorial_patterns", []),
                 "narration_rules": payload.get("narration_rules", []),
                 "preferred_patterns": payload.get("preferred_patterns", []),
+                "clarity_baseline": payload.get("clarity_baseline", ""),
+                "suspense_reveal_boundary": payload.get("suspense_reveal_boundary", ""),
                 "thresholds": payload.get("thresholds", dict(DEFAULT_THRESHOLDS)),
                 "explicit_thresholds": payload.get("thresholds", {}),
             }
@@ -735,6 +783,41 @@ def detect_lyrical_paragraph(paragraph: str) -> bool:
     abstract_hits = sum(paragraph.count(word) for word in ABSTRACT_WORDS)
     has_action = any(marker in paragraph for marker in action_markers)
     return abstract_hits >= 2 and not has_action and len(sentences) >= 2
+
+
+def genre_prefers_suspense(profile: dict[str, object]) -> bool:
+    markers = " ".join(
+        [
+            str(profile.get("genre", "")),
+            str(profile.get("suspense_reveal_boundary", "")),
+            str(profile.get("clarity_baseline", "")),
+        ]
+    )
+    return any(token in markers for token in ("悬疑", "推理", "探案", "诡异"))
+
+
+def detect_vague_expression_issues(
+    paragraph: str,
+    index: int,
+    effective_profile: dict[str, object],
+) -> list[dict[str, object]]:
+    hits = [phrase for phrase in VAGUE_EXPRESSIONS if phrase in paragraph]
+    tolerance = int(effective_profile["thresholds"].get("vague_expression_tolerance", 1))
+    if len(hits) <= tolerance:
+        return []
+
+    suspense_like = genre_prefers_suspense(effective_profile) and any(
+        marker in paragraph for marker in SUSPENSE_MARKERS
+    )
+    if suspense_like and len(hits) <= tolerance + 1:
+        return []
+
+    severity = "medium" if suspense_like else "high"
+    reason = (
+        f"段落用词太虚：{', '.join(hits)}。默认要说大白话，把人、事、结果写明白；"
+        "只有悬疑关键点才允许少量留白。"
+    )
+    return [build_issue("vague_expression", severity, reason, f"p{index}")]
 
 
 def count_dialogue_ratio(text: str) -> float:
@@ -1131,6 +1214,7 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
     allowed_phrases = set(effective_profile.get("allowed_phrases", []))
 
     for index, paragraph in enumerate(paragraphs, start=1):
+        issues.extend(detect_vague_expression_issues(paragraph, index, effective_profile))
         hard_authorial_hits = [
             pattern for pattern in AUTHORIAL_HARD_PATTERNS
             if pattern not in allowed_authorial_patterns and pattern in paragraph
@@ -1297,6 +1381,8 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
             "narration_distance": effective_profile["narration_distance"],
             "must_keep_voice": effective_profile["must_keep_voice"],
             "target_reading_feel": effective_profile["target_reading_feel"],
+            "clarity_baseline": effective_profile.get("clarity_baseline", ""),
+            "suspense_reveal_boundary": effective_profile.get("suspense_reveal_boundary", ""),
             "voice_profile": voice_profile,
             "character_voice_diff_count": len(character_voice_entries),
             "rewrite_pair_ids": [
