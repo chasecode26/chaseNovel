@@ -63,6 +63,26 @@ class LanguageAuditTest(unittest.TestCase):
         issue_types = [item["type"] for item in analysis["issues"]]
         self.assertNotIn("vague_expression", issue_types)
 
+    def test_should_not_flag_allowed_frontline_judgment_pattern(self) -> None:
+        style_profile = self.build_style_profile("历史/权谋")
+        style_profile["forbidden_phrases"] = ["不是试探"]
+        text = "前头已经压到坡下了，后头还在上人！赵校尉传话，对面应该不是试探，怕是要集中火力破关！"
+
+        analysis = analyze_text(text, style_profile)
+
+        issue_types = [item["type"] for item in analysis["issues"]]
+        self.assertNotIn("forbidden_phrase", issue_types)
+
+    def test_still_flags_flat_half_judgment_phrase(self) -> None:
+        style_profile = self.build_style_profile("历史/权谋")
+        style_profile["forbidden_phrases"] = ["不是试探"]
+        text = "这不是试探，是要继续压。"
+
+        analysis = analyze_text(text, style_profile)
+
+        issue_types = [item["type"] for item in analysis["issues"]]
+        self.assertIn("forbidden_phrase", issue_types)
+
 
 if __name__ == "__main__":
     unittest.main()

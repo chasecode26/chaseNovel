@@ -6,7 +6,7 @@
 
 原则：
 - 章卡不是摘要，是开写前的执行卡
-- 至少写清：功能、冲突、结果变化、角色推进、钩子
+- 至少写清：功能、冲突、结果变化、角色推进、钩子、字数等级、目标字数、锚定包
 
 ## 通用最小模板
 
@@ -14,6 +14,15 @@
 # 第 X 章写作方案
 
 ## 1. 本章章卡
+- chapter_tier：regular / climax
+- target_word_count：
+- time_anchor：
+- location_anchor：
+- present_characters：
+- knowledge_boundary：
+- resource_state：
+- open_threads：
+- forbidden_inventions：
 - 本章功能：
 - 本章目标：
 - 本章冲突：
@@ -48,6 +57,15 @@
 ## 示例 1：玄幻 / 修仙反打章
 
 ```markdown
+- chapter_tier：regular
+- target_word_count：3000
+- time_anchor：外门大比前一夜
+- location_anchor：青云宗外门试场
+- present_characters：主角、执事、围观弟子、内定弟子
+- knowledge_boundary：主角知道执事在换名额；旁人只看见临时改规，不知道背后交易
+- resource_state：主角只有入场凭证和一次系统提示
+- open_threads：入山资格、系统价值、执事背后的靠山
+- forbidden_inventions：不能临时冒出更高级长老替主角解围
 - 本章功能：兑现小爽点 + 推进主线
 - 本章目标：主角拿回本该属于自己的入山资格
 - 本章冲突：执事临时改规，想把名额转给内定弟子
@@ -64,6 +82,15 @@
 ## 示例 2：都市 / 系统流翻盘章
 
 ```markdown
+- chapter_tier：regular
+- target_word_count：3200
+- time_anchor：周一上午项目例会
+- location_anchor：公司大会议室
+- present_characters：主角、上司、客户、同事
+- knowledge_boundary：主角知道客户的真实需求；同事只等着看笑话
+- resource_state：系统临时任务未完成，上司手里握着汇报顺序
+- open_threads：系统翻身线、客户签约线、上司打压线
+- forbidden_inventions：不能突然追加主角私下认识客户的旧设定
 - 本章功能：兑现爽点 + 强化系统价值
 - 本章目标：主角在会议上拿下原本不可能拿到的客户
 - 本章冲突：上司甩锅，同事看笑话，客户极难搞
@@ -80,6 +107,15 @@
 ## 示例 3：关系推进章
 
 ```markdown
+- chapter_tier：regular
+- target_word_count：2800
+- time_anchor：宫宴后半夜
+- location_anchor：偏殿回廊
+- present_characters：男主、女主、第三方见证者
+- knowledge_boundary：男主知道更大的麻烦已被自己处理；女主暂时不知道
+- resource_state：女主处于被针对后的弱势，男主刚公开站队
+- open_threads：关系公开度、外部针对、后续更大麻烦
+- forbidden_inventions：不能让第三方突然听到全部密谈
 - 本章功能：推进关系线
 - 本章目标：让两人从互相试探推进到公开偏爱
 - 本章冲突：女主被当众针对，男主若出手会暴露立场
@@ -97,4 +133,5 @@
 
 - 不知道怎么收尾时，先看 `templates/hook-route-cheatsheet.md`
 - 中盘开始像直线时，先看 `templates/midgame-fatigue-cheatsheet.md`
+- 常规章默认控制在 `2300-3500` 字；高潮章才放宽到 `4500`
 - 先照结构写，不要先追求文气

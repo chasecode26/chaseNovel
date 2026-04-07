@@ -100,13 +100,45 @@
 - 章尾钩子建议
 - 爽点 / 情绪风险提示
 
-### 7. StyleDialogue
+### 7. StructureReviewer
+
+负责：
+
+- 开头第一屏有没有事
+- 主角是否尽快入场
+- 本章冲突是否越写越硬
+- 章尾钩子是否真的把下一章炸出来
+
+主要产物：
+
+- 结构问题定位
+- 开头抓力与冲突递进风险提示
+- 最小结构修法建议
+
+### 8. RhythmReviewer
+
+负责：
+
+- 哪里拖
+- 哪里在讲不是在打
+- 哪里该爆没爆
+- 哪里重复同一种压法
+
+主要产物：
+
+- 节奏问题定位
+- 爆点缺位与重复压法风险提示
+- 最小节奏修法建议
+
+### 9. StyleDialogue
 
 负责：
 
 - 对话口吻区分
 - 旁白发硬
 - 角色说话同质化
+- 台词是否需要读者自己翻译
+- 术语是否挡路
 
 主要产物：
 
@@ -115,7 +147,7 @@
 - 口吻与旁白风险提示
 - `templates/character-voice-diff.md` 的角色说话差分表
 
-### 8. LanguageReviewer
+### 10. LanguageReviewer
 
 负责：
 
@@ -123,6 +155,9 @@
 - 机械过渡
 - 作者替读者总结
 - 信息搬运感
+- 半句悬空判断
+- “不是A，是B”式空反衬
+- 只报抽象结论、不报具体后果
 
 主要产物：
 
@@ -130,7 +165,7 @@
 - 高风险句段定位
 - `templates/language-anti-ai-review.md` 审查卡
 
-### 8.1 StyleConsistencyReviewer
+### 10.1 StyleConsistencyReviewer
 
 负责：
 - 单书 voice DNA
@@ -142,7 +177,7 @@
 - 风格漂移定位
 - 最小修法建议
 - `templates/style-consistency-review.md` 审查卡
-### 9. ContinuityReviewer
+### 11. ContinuityReviewer
 
 负责：
 
@@ -150,6 +185,7 @@
 - 时间线连续性
 - 伏笔 / 承诺连续性
 - 已有效布置是否失忆
+- 认知边界是否越界
 
 主要产物：
 
@@ -157,7 +193,7 @@
 - 必修连续性问题
 - `templates/continuity-review-card.md` 审查卡
 
-### 10. CausalityReviewer
+### 12. CausalityReviewer
 
 负责：
 
@@ -165,6 +201,7 @@
 - 人物决策是否合理
 - 结果是否靠布置推出
 - 后账是否接得住
+- 判断句是否先有事实再落后果
 
 主要产物：
 
@@ -172,7 +209,7 @@
 - 必修因果问题
 - `templates/causality-review-card.md` 审查卡
 
-### 11. ResearchMaterial
+### 13. ResearchMaterial
 
 负责：
 
@@ -198,6 +235,8 @@
 | `Worldbuilder` | `architect` |
 | `Character` | `analyst` |
 | `HookEmotion` | `writer` |
+| `StructureReviewer` | `critic` |
+| `RhythmReviewer` | `critic` |
 | `StyleDialogue` | `writer` |
 | `LanguageReviewer` | `code-reviewer` |
 | `StyleConsistencyReviewer` | `critic` |
@@ -240,7 +279,7 @@
 
 顺序：
 
-`Planner -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> Writer/Planner 修正 -> Reviewer`
+`Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> Writer/Planner 修正 -> Reviewer`
 
 适用：
 
@@ -251,9 +290,11 @@
 最小交接：
 
 - Planner 先定本章功能、结果变化、情绪点、钩子
-- Planner 先补“写前锚定包”，明确时间、地点、在场人物、知情边界、资源状态、开放线程
+- Planner 先补“写前锚定包”，明确时间、地点、在场人物、知情边界、资源状态、开放线程、`chapter_tier`、`target_word_count`
 - HookEmotion 先校正情绪曲线、高点位置和章尾钩子是否真的能决定下一章行动
 - Writer 负责成稿
+- `StructureReviewer` 单独盯开头第一屏、主角入场、冲突递进和章尾钩子是否真能带起下一章
+- `RhythmReviewer` 单独盯哪里拖、哪里在讲不是在打、哪里该爆没爆、哪里重复同一种压法
 - `StyleDialogue` 在不改结构的前提下拉开对白口吻和旁白硬度，防止多人一个声口
 - `LanguageReviewer` 单独盯 AI 味、机械过渡、解释感、概括腔
 - `StyleConsistencyReviewer` 单独盯单书 voice DNA、章节节拍、角色声口、跨章漂移
@@ -266,7 +307,7 @@
 
 顺序：
 
-`Reviewer -> Planner -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer] -> Writer 修正 -> Reviewer`
+`Reviewer -> Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer] -> Writer 修正 -> Reviewer`
 
 适用：
 
@@ -282,6 +323,8 @@
 - Planner 重定保留项与修法
 - HookEmotion 专门处理情绪跳、钩子弱、爽点不兑现这类问题
 - Writer 重写
+- StructureReviewer 先查开头抓力、主角入场、冲突递进和章尾钩子是否真修到了
+- RhythmReviewer 先查拖段、讲段、爆点缺位和重复压法有没有压下去
 - StyleDialogue 只修对白和口吻层
 - LanguageReviewer 单独压 AI 味和解释味
 - StyleConsistencyReviewer 单独修风格漂移，不抢结构判断
@@ -293,7 +336,7 @@
 
 顺序：
 
-`Planner -> ResearchMaterial -> Worldbuilder -> Character -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> Writer/Planner 修正 -> Reviewer`
+`Planner -> ResearchMaterial -> Worldbuilder -> Character -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> Writer/Planner 修正 -> Reviewer`
 
 适用：
 
@@ -308,6 +351,8 @@
 - Worldbuilder 不抢剧情推进权
 - Character 不改世界规则
 - Writer 不擅自扩设定
+- StructureReviewer 不替 Writer 重写正文，只抓结构问题和最小修法
+- RhythmReviewer 不替 HookEmotion 重新排情绪，只抓节奏断点和重复压法
 - StyleDialogue 不擅自改结构
 - LanguageReviewer 不改剧情功能
 - StyleConsistencyReviewer 不另造新风格，只负责把章节拉回本书既有 voice
@@ -320,12 +365,16 @@
 ## 三、并行复核硬规则
 
 - `/写`、`/续写`、`/修改` 默认必须显式并行拉起：
+  - `StructureReviewer`
+  - `RhythmReviewer`
   - `StyleDialogue`
   - `LanguageReviewer`
   - `StyleConsistencyReviewer`
   - `ContinuityReviewer`
   - `CausalityReviewer`
   - `Reviewer`
+- 常规章默认目标字数 `2300-3500`；只有明确的高潮章、爆点章、阶段收束章，才允许放宽到 `4500`。
+- 若当前环境无法真正拉起多个子 agent，必须串行模拟全部 reviewer，并显式输出每个 reviewer 的单独结论，不得合并成一段笼统口头评价。
 - 开篇 `1-10` 章里，`Reviewer` 额外必须检查：
   - 章功能是否重复
   - 冲突类型是否重复
@@ -367,8 +416,9 @@
 1. `ContinuityReviewer` / `CausalityReviewer`
 2. `Reviewer`
 3. `HookEmotion`
-4. `StyleDialogue` / `LanguageReviewer`
-5. `StyleConsistencyReviewer`
+4. `StructureReviewer` / `RhythmReviewer`
+5. `StyleDialogue` / `LanguageReviewer`
+6. `StyleConsistencyReviewer`
 
 规则：
 
@@ -416,6 +466,22 @@
 - 爽点密度不足
 - 连续几章收尾同质
 - 用户明确要求控节奏、抓追读
+
+### 必拉 StructureReviewer
+
+- 开头第一屏总是没事
+- 主角入场太慢
+- 本章冲突写到中段还没真正咬住
+- 章尾钩子只是更抓人，没有改变下一章行动
+- 用户明确要求查结构、抓开头、补钩子
+
+### 必拉 RhythmReviewer
+
+- 章节发拖
+- 一直在讲局势，不在现场推进
+- 该爆的时候没爆
+- 连着几章都在用同一种压法
+- 用户明确要求查节奏、加快反馈、别写成分析稿
 
 ### 必拉 StyleDialogue
 
@@ -523,6 +589,36 @@
 
 - 命中阶段复盘时，优先套 `templates/reviewer-stage-retro.md`
 
+### StructureReviewer 输入
+
+- 已成稿正文
+- 本章章卡
+- 近 1-3 章的开头方式、冲突方式、钩子方式
+
+不负责：
+
+- 直接重写整章
+- 代替 Planner 重定大纲
+
+默认补件：
+
+- 先检查：开头第一屏有没有事、主角是否尽快入场、冲突是否越写越硬、章尾钩子是否会把下一章炸出来
+
+### RhythmReviewer 输入
+
+- 已成稿正文
+- 本章情绪点与结果点
+- 近 1-3 章的节奏与爆点分布
+
+不负责：
+
+- 改章节功能
+- 代替 HookEmotion 重排整章情绪
+
+默认补件：
+
+- 先检查：哪里拖、哪里在讲不是在打、哪里该爆没爆、哪里重复同一种压法
+
 ### HookEmotion 输入
 
 - 本章功能
@@ -549,6 +645,7 @@
 默认补件：
 
 - 角色说话开始撞车时，先补 `templates/character-voice-diff.md`
+- 额外检查：台词是否需要读者二次翻译；凡是“看着有劲，意思不直给”的句子，直接判问题句
 
 ### LanguageReviewer 输入
 
@@ -566,6 +663,7 @@
 
 - 先套 `templates/language-anti-ai-review.md`
 - 再额外检查：机械连接词、总结腔、均质对白、作者代角色发言
+- 再额外检查：有没有“已经在流血了”“气息一下紧了”这类只下抽象判断、不落具体事和具体后果的虚描述
 
 ### ContinuityReviewer 输入
 
@@ -617,6 +715,16 @@
 
 ## 六、回写原则
 
+## 五点五、Reviewer 固定检查
+
+每次 `Reviewer` 收口，至少回答：
+
+- 本章有没有一句需要读者停一下自己翻译的术语句。
+- 本章有没有“不是试探，是要继续压”这种半悬空判断。
+- 本章有没有作者总结句压过场景。
+- 本章字数是否符合 `chapter_tier`。
+- 本章相比前章的升级点是什么。
+
 编排不是开会，必须落文件。
 
 ### 开书后至少回写
@@ -660,11 +768,11 @@
 如果不显式说明，默认这样理解：
 
 - `/一键开书`：走 `Planner -> Character -> Worldbuilder -> Reviewer`
-- `/写`：走 `Planner -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
-- `/续写`：走 `Planner -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
-- `/修改`：走 `Reviewer -> Planner -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer] -> 修正 -> Reviewer`
+- `/写`：走 `Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
+- `/续写`：走 `Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
+- `/修改`：走 `Reviewer -> Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer] -> 修正 -> Reviewer`
 - 高风险单章 / 世界观密集章：并行复核不减配，只增配
-- 复杂题材开书 / 复杂题材中盘：可扩成 `Planner -> ResearchMaterial -> Worldbuilder -> Character -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
+- 复杂题材开书 / 复杂题材中盘：可扩成 `Planner -> ResearchMaterial -> Worldbuilder -> Character -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
 
 ---
 

@@ -72,6 +72,9 @@ class ProjectDoctorTest(unittest.TestCase):
         self.assertTrue(
             any("状态可能超前" in warning for warning in payload["warnings"])
         )
+        self.assertTrue(
+            any("style_guardrails.md" in warning for warning in payload["warnings"])
+        )
 
 
 if __name__ == "__main__":

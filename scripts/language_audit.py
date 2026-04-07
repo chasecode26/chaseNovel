@@ -27,6 +27,13 @@ ABSTRACT_WORDS = (
 DEFAULT_CAUTION_PHRASES = (
     "不禁", "只见", "此刻", "心中暗道"
 )
+SAFE_FORBIDDEN_PHRASE_PATTERNS = {
+    "不是试探": (
+        r"应该不是试探",
+        r"多半不是试探",
+        r"大概不是试探",
+    ),
+}
 VAGUE_EXPRESSIONS = (
     "那件事",
     "那个人",
@@ -230,6 +237,8 @@ def collect_counted_issues(
         if value in skipped:
             continue
         count = text.count(value)
+        for pattern in SAFE_FORBIDDEN_PHRASE_PATTERNS.get(value, ()):
+            count -= len(re.findall(pattern, text))
         if not count:
             continue
         issues.append(build_issue(issue_type, severity, reason_template.format(value=value, count=count)))

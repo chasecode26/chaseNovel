@@ -12,11 +12,13 @@
 
 说明：`chase check` 不是“宽松通过器”。如果项目还没补齐地点、目标、章卡、上下文锚点，它会直接失败，这是为了保住小说质量，而不是为了流程好看。
 跨任务规则与表达标准，统一看 `references/output-contracts.md` 和 `references/execution_workflow.md`。
+默认字数：常规章 `2300-3500`，高潮章可到 `4500`；默认显式多 Agent 复核，不靠单线程凭感觉收口。
 
 ## 当前能力
 
 - 写前规划预审：章节存在理由、结果升级、章尾钩子、到期伏笔、关键节点窗口。
 - 写后质量门禁：连续性、因果、语言、风格一致性、对白区分、反重复。
+- 语言硬规则：大白话、事实 -> 判断 -> 后果、反术语腔、反半截判断。
 - 项目级体检：目录结构、记忆文件、时间线、角色弧、伏笔热度、Dashboard 总览。
 - 共享脚本工具层：章节识别、章节计数、最新章节定位、到期伏笔读取、表格解析、状态值清洗。
 
@@ -64,6 +66,8 @@
   扫描近章摘要和正文的重复推进风险。
 - `scripts/chapter_gate.py`
   做单章节连续性与因果门禁。
+- `scripts/draft_gate.py`
+  做正文长度与章节强度门禁。
 - `scripts/language_audit.py`
   做语言、风格、一致性、对白区分审计。
 - `scripts/dashboard_snapshot.py`
@@ -109,6 +113,7 @@ python scripts/chapter_planning_review.py --project "novel_书名" --target-chap
 python scripts/context_compiler.py --project "novel_书名" --chapter 12
 python scripts/workflow_runner.py --project "novel_书名" --chapter 12
 python scripts/chapter_gate.py --project "novel_书名" --chapter-no 12
+python scripts/draft_gate.py --project "novel_书名" --draft "03_chapters/第012章.md" --chapter-no 12
 python scripts/language_audit.py --project "novel_书名" --chapter-no 12 --mode suggest
 ```
 

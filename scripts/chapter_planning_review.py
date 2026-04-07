@@ -141,13 +141,22 @@ def parse_chapter_number(text: str) -> int | None:
 
 
 def parse_heading_value(text: str, labels: list[str]) -> str:
-    for label in labels:
-        match = re.search(rf"-\s*{re.escape(label)}[:：]\s*(.+)", text)
-        if not match:
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line.startswith("-"):
             continue
-        value = match.group(1).strip()
-        if value and not has_placeholder(value):
-            return value
+        body = line[1:].strip()
+        for label in labels:
+            prefix_a = f"{label}:"
+            prefix_b = f"{label}："
+            if body.startswith(prefix_a):
+                value = body[len(prefix_a):].strip()
+            elif body.startswith(prefix_b):
+                value = body[len(prefix_b):].strip()
+            else:
+                continue
+            if value and not has_placeholder(value):
+                return value
     return ""
 
 
@@ -188,6 +197,15 @@ def find_chapter_card_path(project_dir: Path, target_chapter: int) -> Path | Non
 
 def parse_chapter_card(card_text: str) -> dict[str, str]:
     return {
+        "chapter_tier": parse_heading_value(card_text, ["chapter_tier", "章节等级", "本章等级"]),
+        "target_word_count": parse_heading_value(card_text, ["target_word_count", "目标字数", "本章目标字数"]),
+        "time_anchor": parse_heading_value(card_text, ["time_anchor", "本章时间", "时间锚点"]),
+        "location_anchor": parse_heading_value(card_text, ["location_anchor", "本章地点", "地点锚点"]),
+        "present_characters": parse_heading_value(card_text, ["present_characters", "在场人物"]),
+        "knowledge_boundary": parse_heading_value(card_text, ["knowledge_boundary", "知情边界"]),
+        "resource_state": parse_heading_value(card_text, ["resource_state", "资源状态"]),
+        "open_threads": parse_heading_value(card_text, ["open_threads", "开放线程"]),
+        "forbidden_inventions": parse_heading_value(card_text, ["forbidden_inventions", "禁止发明"]),
         "chapter_function": parse_heading_value(card_text, ["本章功能"]),
         "chapter_goal": parse_heading_value(card_text, ["本章目标"]),
         "conflict_type": parse_heading_value(card_text, ["本章冲突"]),
@@ -292,6 +310,10 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
         blockers.append("缺少可用的 `plan.md` 主线计划，无法确认本章是否还在大纲轨道内。")
     if not next_goal and not chapter_card.get("chapter_goal", "") and not chapter_card.get("chapter_function", ""):
         blockers.append("缺少显式章卡或 `state.md` 下章预告，本章存在理由没有落到文字。")
+    if not chapter_card.get("chapter_tier", ""):
+        warnings.append("章卡缺少 `chapter_tier`，后续字数门禁无法判断这是常规章还是高潮章。")
+    if not chapter_card.get("target_word_count", ""):
+        warnings.append("章卡缺少 `target_word_count`，后续字数门禁无法校验目标字数。")
     if not active_arc:
         blockers.append("`state.md` 缺少“当前弧”，无法判断本章推进的是哪条弧线。")
     if not absolute_time:
@@ -386,6 +408,8 @@ def render_markdown(project_dir: Path, analysis: dict[str, object]) -> str:
         f"- 显式章卡：`{analysis['chapter_card_path'] or '未找到'}`",
         "",
         "## 1. 本章存在理由",
+        f"- `chapter_tier`：{analysis['chapter_card'].get('chapter_tier', '') or '未填写'}",
+        f"- `target_word_count`：{analysis['chapter_card'].get('target_word_count', '') or '未填写'}",
         f"- 本章功能：{analysis['chapter_card'].get('chapter_function', '') or analysis['chapter_reason']}",
         f"- 如果删掉本章，会损失什么：{analysis['delete_loss']}",
         f"- 本章相较最近 3-5 章的新推进：{analysis['new_progress']}",

@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from chapter_planning_review import find_chapter_card_path, parse_chapter_card
 from language_audit import analyze_text, parse_style_file
 from novel_utils import (
     CHAPTER_PATTERN,
@@ -125,6 +126,16 @@ def detect_danger_keywords(content: str) -> list[str]:
     return [keyword for keyword in DANGER_KEYWORDS if keyword in content]
 
 
+def count_effective_chars(text: str) -> int:
+    return len(re.sub(r"\s+", "", text))
+
+
+def resolve_word_count_limit(chapter_tier: str) -> tuple[int, int]:
+    minimum = 2300
+    maximum = 4500 if chapter_tier == "climax" else 3500
+    return minimum, maximum
+
+
 def evaluate_golden_three_progress(chapter_no: int, chapter_content: str) -> list[str]:
     if chapter_no not in (1, 2, 3):
         return []
@@ -215,11 +226,15 @@ def build_gate_analysis(
     timeline_content = read_text(project_dir / "00_memory" / "timeline.md")
     foreshadowing_content = read_text(project_dir / "00_memory" / "foreshadowing.md")
     planning_review = load_planning_review(project_dir, chapter_no)
+    chapter_card_path = find_chapter_card_path(project_dir, chapter_no)
+    chapter_card_text = read_text(chapter_card_path) if chapter_card_path else ""
+    chapter_card = parse_chapter_card(chapter_card_text) if chapter_card_text else {}
     latest_chapter_no, _ = detect_latest_chapter_file(project_dir)
     historical_mode = latest_chapter_no > 0 and chapter_no < latest_chapter_no
 
     warnings: list[str] = []
     blockers: list[str] = []
+    word_count = count_effective_chars(chapter_content)
 
     absolute_time = extract_line_value(state_content, "当前绝对时间")
     relative_time = extract_line_value(state_content, "距上章过去")
@@ -306,6 +321,20 @@ def build_gate_analysis(
     elif planning_status == "missing" and not historical_mode:
         warnings.append("缺少本章 planning_review.json，当前门禁无法确认写前章卡是否曾通过预审。")
 
+    chapter_tier = str(chapter_card.get("chapter_tier", "")).strip()
+    target_word_count_raw = str(chapter_card.get("target_word_count", "")).strip()
+    target_word_count = int(target_word_count_raw) if target_word_count_raw.isdigit() else 0
+    if not chapter_tier:
+        warnings.append("章卡缺少 `chapter_tier`，无法区分常规章与高潮章的字数上限。")
+    if not target_word_count:
+        warnings.append("章卡缺少 `target_word_count`，无法校验本章目标字数。")
+    if chapter_tier:
+        minimum, maximum = resolve_word_count_limit(chapter_tier)
+        if word_count < minimum or word_count > maximum:
+            blockers.append(
+                f"本章有效字数为 {word_count}，不符合 {chapter_tier} 章节的允许范围 {minimum}-{maximum}。"
+            )
+
     warnings.extend(evaluate_golden_three_progress(chapter_no, chapter_content))
 
     continuity_verdict = "pass"
@@ -349,6 +378,10 @@ def build_gate_analysis(
         "planning_blockers": planning_blockers,
         "planning_warnings": planning_warnings,
         "planning_report_path": planning_report_path,
+        "chapter_card_path": chapter_card_path.as_posix() if chapter_card_path else "",
+        "chapter_tier": chapter_tier or "未填写",
+        "target_word_count": target_word_count or "",
+        "word_count": word_count,
         "language_blockers": language_blockers,
         "language_warnings": language_warnings,
         "language_rewrite_plan": language_analysis.get("rewrite_plan", []),
@@ -461,6 +494,10 @@ def main() -> int:
         "planning_status": analysis["planning_status"],
         "planning_verdict": analysis["planning_verdict"],
         "planning_report_path": analysis["planning_report_path"],
+        "chapter_card_path": analysis["chapter_card_path"],
+        "chapter_tier": analysis["chapter_tier"],
+        "target_word_count": analysis["target_word_count"],
+        "word_count": analysis["word_count"],
         "report_path": report_path.as_posix(),
         "result_path": result_path.as_posix(),
         "rewrite_out": rewrite_out.as_posix() if rewrite_out else "",

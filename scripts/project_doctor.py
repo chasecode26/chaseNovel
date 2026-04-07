@@ -66,6 +66,8 @@ def build_payload(project_dir: Path) -> dict[str, object]:
         )
     if not (project_dir / "00_memory" / "retrieval" / "next_context.md").exists():
         warnings.append("缺少 next_context.md；建议运行 context_compiler.py 或 chase context。")
+    if not (project_dir / "00_memory" / "style_guardrails.md").exists():
+        warnings.append("缺少 style_guardrails.md；建议补齐风格护栏，避免后续章节持续发虚或术语挡路。")
 
     status = "pass"
     if missing_dirs or missing_files:

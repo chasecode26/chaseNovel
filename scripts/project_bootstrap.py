@@ -29,6 +29,7 @@ TEMPLATE_MAP = {
     "00_memory/foreshadowing.md": "foreshadowing.md",
     "00_memory/payoff_board.md": "payoff-board.md",
     "00_memory/style.md": "style.md",
+    "00_memory/style_guardrails.md": "style-guardrails.md",
     "00_memory/voice.md": "voice.md",
     "00_memory/scene_preferences.md": "scene_preferences.md",
     "00_memory/findings.md": "findings.md",

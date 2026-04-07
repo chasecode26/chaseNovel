@@ -28,6 +28,8 @@ class ChapterPlanningReviewTest(unittest.TestCase):
     def test_parse_chapter_card_extracts_core_quality_fields(self) -> None:
         card_text = "\n".join(
             [
+                "- chapter_tier：regular",
+                "- target_word_count：3000",
                 "- 本章功能：把潜伏转成公开冲突",
                 "- 本章目标：逼反派交底",
                 "- 本章冲突：身份即将暴露",
@@ -39,6 +41,8 @@ class ChapterPlanningReviewTest(unittest.TestCase):
 
         payload = parse_chapter_card(card_text)
 
+        self.assertEqual(payload["chapter_tier"], "regular")
+        self.assertEqual(payload["target_word_count"], "3000")
         self.assertEqual(payload["chapter_function"], "把潜伏转成公开冲突")
         self.assertEqual(payload["chapter_goal"], "逼反派交底")
         self.assertEqual(payload["conflict_type"], "身份即将暴露")

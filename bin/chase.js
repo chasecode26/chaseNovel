@@ -6,6 +6,7 @@ const { spawnSync } = require("child_process");
 
 const COMMAND_SPECS = {
   gate: { script: "chapter_gate.py" },
+  draft: { script: "draft_gate.py" },
   planning: { script: "chapter_planning_review.py" },
   batch: { script: "batch_gate.py" },
   audit: { script: "language_audit.py" },
@@ -119,6 +120,7 @@ function printHelp(errorMessage) {
   chase repeat --project <dir>
   chase memory --project <dir> [--chapter <n>]
   chase gate --project <dir> [--chapter-no <n>]
+  chase draft --project <dir> [--chapter-no <n>]
   chase batch --project <dir> [--from <n> --to <n>]
   chase audit --project <dir> [--chapter-no <n>]
   chase bootstrap --project <dir> [--force]
