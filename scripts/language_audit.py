@@ -46,6 +46,19 @@ VAGUE_EXPRESSIONS = (
     "没有说破",
     "没有点破",
 )
+OPAQUE_TACTICAL_TERMS = (
+    "主口",
+    "主杀招",
+)
+OPAQUE_TACTICAL_PATTERNS = (
+    r"有鬼(?:。|！|？|,|，|$)",
+    r"不是主杀招",
+    r"不走主口",
+)
+OPAQUE_TACTICAL_METAPHOR_PATTERNS = (
+    (r"把(?:咱们|我们)?眼睛(?:全)?(?:拽|拖|引)(?:过去|到(?:这|那)边)", "把眼睛拽过去"),
+    (r"把(?:咱们|我们)?(?:目光|视线)(?:全)?(?:拽|拖|引)(?:过去|到(?:这|那)边)", "把目光拖过去"),
+)
 SUSPENSE_MARKERS = (
     "真相",
     "线索",
@@ -386,6 +399,8 @@ def build_rewrite_plan(
         rewrite_plan.append("对白别替作者补课，优先改成争利益、推责任、压人、自保或试探。")
     if any(item.get("type") == "vague_expression" for item in issues):
         rewrite_plan.append("除悬疑关键点外，把“那个人/那件事/某种真相”改成读者一眼能懂的具体对象。")
+    if any(item.get("type") == "opaque_tactical_expression" for item in issues):
+        rewrite_plan.append("涉及敌情、军报、权谋判断时，直接补清敌人要干什么、从哪动手、为什么这么判断，别拿黑话和半截结论顶现场。")
     return rewrite_plan
 
 
@@ -939,6 +954,32 @@ def detect_vague_expression_issues(
     return [build_issue("vague_expression", severity, reason, f"p{index}")]
 
 
+def detect_opaque_tactical_expression_issues(
+    paragraph: str,
+    index: int,
+) -> list[dict[str, object]]:
+    hits = [term for term in OPAQUE_TACTICAL_TERMS if term in paragraph]
+    regex_hits = [pattern for pattern in OPAQUE_TACTICAL_PATTERNS if re.search(pattern, paragraph)]
+    metaphor_hits = [
+        label for pattern, label in OPAQUE_TACTICAL_METAPHOR_PATTERNS
+        if re.search(pattern, paragraph)
+    ]
+    if not hits and not regex_hits and not metaphor_hits:
+        return []
+
+    normalized_hits = [
+        pattern.replace(r"(?:。|！|？|,|，|$)", "")
+        for pattern in regex_hits
+    ]
+    markers = unique_items(hits + normalized_hits + metaphor_hits)
+    reason = (
+        f"段落用了半截战术黑话或悬空判断：{', '.join(markers)}。"
+        "敌情、军报、推理句要直接说清敌人准备怎么打、从哪打、为什么这么判断，"
+        "不要只写“有鬼”“主口”“主杀招”或“把眼睛拽过去”这种作者脑内简称和比喻。"
+    )
+    return [build_issue("opaque_tactical_expression", "high", reason, f"p{index}")]
+
+
 def count_dialogue_ratio(text: str) -> float:
     dialogue_chars = sum(len(item) for item in re.findall(r"[“\"]([^”\"]+)[”\"]", text))
     total_chars = max(len(re.sub(r"\s+", "", text)), 1)
@@ -1199,6 +1240,10 @@ def build_local_rewrite(paragraph: str, style_profile: dict[str, object]) -> str
         "只见": "",
         "此刻": "",
         "心中暗道": "在心里迅速过了一遍",
+        "主口": "正门",
+        "主杀招": "真正的进攻方向",
+        "把咱们眼睛全拽过去": "把我们的注意都引到正面",
+        "把我们眼睛全拽过去": "把我们的注意都引到正面",
     }
     word_replacements = {
         "压抑": "发闷",
@@ -1219,6 +1264,8 @@ def build_local_rewrite(paragraph: str, style_profile: dict[str, object]) -> str
 
     rewritten = replace_terms(rewritten, phrase_replacements)
     rewritten = replace_terms(rewritten, word_replacements)
+    if "有鬼" in rewritten:
+        rewritten = rewritten.replace("有鬼", "有埋伏或后手")
     rewritten = re.sub(r"[，、]{2,}", "，", rewritten)
     rewritten = re.sub(r"\s+", "", rewritten)
     rewritten = re.sub(r"^，", "", rewritten)
@@ -1348,6 +1395,7 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
 
     for index, paragraph in enumerate(paragraphs, start=1):
         issues.extend(detect_vague_expression_issues(paragraph, index, effective_profile))
+        issues.extend(detect_opaque_tactical_expression_issues(paragraph, index))
         hard_authorial_hits = [
             pattern for pattern in AUTHORIAL_HARD_PATTERNS
             if pattern not in allowed_authorial_patterns and pattern in paragraph

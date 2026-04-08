@@ -1,0 +1,28 @@
+{
+  "id": "pair_tactical_judgment_001",
+  "kind": "rewrite_pair",
+  "title": "敌情黑话与半截判断改写对照",
+  "tags": [
+    "rewrite_pair",
+    "tactical_judgment",
+    "line_edit"
+  ],
+  "applicable_genres": [
+    "历史/权谋",
+    "末世",
+    "盗墓 / 摸金 / 民国奇诡"
+  ],
+  "trigger_phrases": [
+    "主口",
+    "主杀招",
+    "有鬼"
+  ],
+  "bad_example": "主口也走，但不是主杀招。东坡一直黑着，那边才有鬼。",
+  "good_example": "正门也会打，但那边只是幌子，不是他们真正要冲的地方。东坡一直不点火，说明他们想趁黑从那边摸上来。",
+  "problem": "原句只给作者脑内简称和半截结论，读者知道有问题，却不知道敌人到底要怎么打。",
+  "rewrite_strategy": [
+    "把黑话换成读者立刻能懂的地形或行动词",
+    "补清敌人的真实目标或动作",
+    "把判断依据落到可见征兆上"
+  ]
+}
