@@ -4,9 +4,9 @@
   "name": "玄幻/修仙口吻基线",
   "genre": "玄幻/修仙",
   "narration_rules": [
-    "力量提升必须伴随代价、阻力或可见反馈，不要只说变强了。",
-    "战斗优先写试探、克制、反制和结算，不要只堆名词。",
-    "世界规则分批释放，每次解释都要服务当前冲突。"
+    "力量提升要伴随代价、阻力或可见反馈，不要只说变强了。",
+    "战斗优先写试探、克制、反制和结算，不要只堆名词和异象。",
+    "世界规则分批释放，每次解释都要服务当前冲突，也要保留题材应有的意境和层次。"
   ],
   "forbidden_phrases": [
     "仿佛整个世界都",
@@ -25,21 +25,27 @@
     "窒息",
     "威压"
   ],
-  "allowed_phrases": [],
-  "allowed_authorial_patterns": [],
   "preferred_patterns": [
     "异象反馈",
     "身体负荷",
-    "战斗结算"
+    "战斗结算",
+    "规则兑现"
   ],
+  "dialogue_ratio_baseline": "中",
+  "rhythm_baseline": "中短句强节拍，顿悟和升级段可适度拉长",
+  "narration_density": "中",
+  "sentence_cadence": "战斗偏短，意境段可中长句收束",
+  "narration_distance": "贴近当前承压者或突破者的感知与判断",
+  "must_keep_voice": "有力量层次、有世界厚度，但不空喊宏大",
+  "target_reading_feel": "升级有代价，力量有兑现，世界在持续张开",
+  "clarity_baseline": "默认清晰可判读，允许题材意境，但不能用空泛宏词替代推进",
+  "suspense_reveal_boundary": "可对传承、身份、规则真相保留阶段性信息差，但当前场面因果要清楚",
   "thresholds": {
     "authorial_narration_tolerance": 0,
     "soft_authorial_tolerance": 1,
     "abstract_word_tolerance": 2,
     "repeated_phrase_tolerance": 1,
-    "lyrical_paragraph_tolerance": 1
-  },
-  "notes": [
-    "适合作为玄幻、修仙、升级流项目的题材兜底。"
-  ]
+    "lyrical_paragraph_tolerance": 1,
+    "vague_expression_tolerance": 1
+  }
 }

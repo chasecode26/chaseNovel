@@ -4,10 +4,9 @@
   "name": "都市/系统流口吻基线",
   "genre": "都市/系统流",
   "narration_rules": [
-    "优先短句和即时反馈",
-    "少作者判词，多现实结果",
-    "系统信息要短，不要播报成说明书",
-    "系统奖励必须尽快折算成现实好处、风险变化或打脸结果"
+    "优先写现实压力如何被新规则改写，不要只写系统说了什么。",
+    "结果和站位变化要尽快落地，但不要把所有角色压成统一短视频口气。",
+    "系统信息要短，要服务当场冲突、交易或风险变化，不要播报成说明书。"
   ],
   "forbidden_phrases": [
     "空气里弥漫着"
@@ -25,21 +24,27 @@
     "震惊",
     "沉重"
   ],
-  "allowed_phrases": [],
-  "allowed_authorial_patterns": [],
   "preferred_patterns": [
     "现实反应",
     "即时反馈",
-    "动作结果"
+    "动作结果",
+    "身份改口"
   ],
+  "dialogue_ratio_baseline": "中高",
+  "rhythm_baseline": "快起势、快反馈，但保留角色声口差异",
+  "narration_density": "中低",
+  "sentence_cadence": "短中句为主，结果句可略长",
+  "narration_distance": "贴近主角当下得失与现场反馈",
+  "must_keep_voice": "利落、现实、见效快，但不口水化",
+  "target_reading_feel": "局面在动、反馈及时、关系和身份持续改写",
+  "clarity_baseline": "默认清晰可判读，优先结果落地，不写成统一口水腔",
+  "suspense_reveal_boundary": "非悬疑题材默认少留白，只对试探、交易和后手短暂收半步",
   "thresholds": {
     "authorial_narration_tolerance": 0,
     "soft_authorial_tolerance": 1,
     "abstract_word_tolerance": 2,
     "repeated_phrase_tolerance": 1,
-    "lyrical_paragraph_tolerance": 1
-  },
-  "notes": [
-    "适合作为 style.md 缺失时的题材兜底"
-  ]
+    "lyrical_paragraph_tolerance": 1,
+    "vague_expression_tolerance": 1
+  }
 }

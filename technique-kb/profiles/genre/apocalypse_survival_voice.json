@@ -4,9 +4,9 @@
   "name": "末世流口吻基线",
   "genre": "末世",
   "narration_rules": [
-    "每章至少保留一种真实压力：资源稀缺、时间紧迫、信息缺口。",
-    "危险感优先落在环境、敌人和代价，不靠作者宣布绝望。",
-    "收益必须带新风险，避免纯爽无后果。"
+    "每章优先保留真实压力：资源稀缺、时间紧迫、空间受限、信息缺口，至少命中其一。",
+    "危险感优先落在环境、动作受阻和代价，不靠作者宣布绝望。",
+    "收益最好带新风险，避免纯爽无后果，也避免纯压迫无升级。"
   ],
   "forbidden_phrases": [
     "仿佛整个世界都",
@@ -25,21 +25,27 @@
     "阴冷",
     "窒息"
   ],
-  "allowed_phrases": [],
-  "allowed_authorial_patterns": [],
   "preferred_patterns": [
     "资源倒计时",
     "环境压迫",
-    "代价落地"
+    "代价落地",
+    "秩序重建"
   ],
+  "dialogue_ratio_baseline": "中低",
+  "rhythm_baseline": "高压碎拍，但关键判断处允许中句补链路",
+  "narration_density": "中低",
+  "sentence_cadence": "短句与中句交替，危机段偏碎拍",
+  "narration_distance": "贴近当前承压角色的身体负担和决策压力",
+  "must_keep_voice": "压迫、生存、后果、升级，不写成纯气氛词堆叠",
+  "target_reading_feel": "危险逼近、代价可见、活路在被硬撑出来",
+  "clarity_baseline": "默认清晰可判读，压迫感必须落到场面和代价，不写成一团黑雾",
+  "suspense_reveal_boundary": "可对未知感染源、敌情来源、暗线后果保留少量信息差，但不能遮住当前危机",
   "thresholds": {
     "authorial_narration_tolerance": 0,
     "soft_authorial_tolerance": 1,
     "abstract_word_tolerance": 2,
     "repeated_phrase_tolerance": 1,
-    "lyrical_paragraph_tolerance": 1
-  },
-  "notes": [
-    "适合作为尸潮、生存、据点经营、异能末世项目的题材兜底。"
-  ]
+    "lyrical_paragraph_tolerance": 1,
+    "vague_expression_tolerance": 1
+  }
 }

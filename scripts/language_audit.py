@@ -63,8 +63,56 @@ EXPLANATORY_PHRASES = (
     "也就是说", "换句话说", "换言之", "这意味着", "这说明", "显然",
     "其实", "原来", "本质上", "某种程度上", "可以说",
 )
+OUTLINE_EXPANSION_MARKERS = (
+    "说到底",
+    "归根结底",
+    "真正的问题是",
+    "关键在于",
+    "问题不在于",
+    "本质上",
+    "这意味着",
+    "这说明",
+    "也就是说",
+    "换句话说",
+)
+DIALOGUE_INFO_MARKERS = (
+    "也就是说",
+    "换句话说",
+    "意思是",
+    "你要知道",
+    "说白了",
+    "归根结底",
+    "本质上",
+    "关键在于",
+    "这意味着",
+    "这说明",
+    "因为",
+    "所以",
+)
+DIALOGUE_CONFLICT_MARKERS = (
+    "给我",
+    "闭嘴",
+    "滚",
+    "拿来",
+    "交出来",
+    "还我",
+    "不行",
+    "凭什么",
+    "现在",
+    "马上",
+    "先",
+    "分",
+    "让开",
+    "住手",
+    "别碰",
+)
 FAST_VOICE_MARKERS = ("快", "紧", "利落", "凌厉", "直给", "短促")
 RESTRAINED_VOICE_MARKERS = ("克制", "冷", "硬", "冷峻", "压住", "收着", "不外放")
+ACTION_MARKERS = (
+    "说", "问", "看", "走", "退", "冲", "扑", "伸手", "抬手", "落下", "推开",
+    "按住", "转身", "咬", "攥", "扯", "拿", "放", "摔", "踢", "站", "跪",
+    "拦", "躲", "抬眼", "低头", "掀", "端", "抱", "拖", "砸", "靠近",
+)
 DEFAULT_THRESHOLDS = {
     "authorial_narration_tolerance": 0,
     "soft_authorial_tolerance": 1,
@@ -332,6 +380,10 @@ def build_rewrite_plan(
         rewrite_plan.append("回查 voice.md / style.md 的单书 voice DNA，优先修掉解释腔、抒情腔和节拍漂移。")
     if dialogue_voice_issues:
         rewrite_plan.append("回查 character-voice-diff.md，拉开句长、语速、措辞和压力下的失真方式，避免多人同声。")
+    if any(item.get("type") == "outline_expansion_feel" for item in issues):
+        rewrite_plan.append("把提纲式结论拆回场面：保留判断，但改成动作受阻、体感变化、资源变化和局面变化。")
+    if any(item.get("type") == "dialogue_information_shuttle" for item in issues):
+        rewrite_plan.append("对白别替作者补课，优先改成争利益、推责任、压人、自保或试探。")
     if any(item.get("type") == "vague_expression" for item in issues):
         rewrite_plan.append("除悬疑关键点外，把“那个人/那件事/某种真相”改成读者一眼能懂的具体对象。")
     return rewrite_plan
@@ -507,6 +559,13 @@ def load_kb_genre_profile(kb_root: Path, genre: str) -> dict[str, object]:
         "allowed_authorial_patterns": [],
         "narration_rules": [],
         "preferred_patterns": [],
+        "dialogue_ratio_baseline": "",
+        "rhythm_baseline": "",
+        "narration_density": "",
+        "sentence_cadence": "",
+        "narration_distance": "",
+        "must_keep_voice": "",
+        "target_reading_feel": "",
         "thresholds": dict(DEFAULT_THRESHOLDS),
         "explicit_thresholds": {},
         "clarity_baseline": "",
@@ -533,6 +592,13 @@ def load_kb_genre_profile(kb_root: Path, genre: str) -> dict[str, object]:
                 "allowed_authorial_patterns": payload.get("allowed_authorial_patterns", []),
                 "narration_rules": payload.get("narration_rules", []),
                 "preferred_patterns": payload.get("preferred_patterns", []),
+                "dialogue_ratio_baseline": payload.get("dialogue_ratio_baseline", ""),
+                "rhythm_baseline": payload.get("rhythm_baseline", ""),
+                "narration_density": payload.get("narration_density", ""),
+                "sentence_cadence": payload.get("sentence_cadence", ""),
+                "narration_distance": payload.get("narration_distance", ""),
+                "must_keep_voice": payload.get("must_keep_voice", ""),
+                "target_reading_feel": payload.get("target_reading_feel", ""),
                 "clarity_baseline": payload.get("clarity_baseline", ""),
                 "suspense_reveal_boundary": payload.get("suspense_reveal_boundary", ""),
                 "thresholds": payload.get("thresholds", dict(DEFAULT_THRESHOLDS)),
@@ -557,6 +623,13 @@ def load_kb_book_profile(kb_root: Path, style_path: Path, title: str) -> dict[st
         "allowed_authorial_patterns": [],
         "narration_rules": [],
         "preferred_patterns": [],
+        "dialogue_ratio_baseline": "",
+        "rhythm_baseline": "",
+        "narration_density": "",
+        "sentence_cadence": "",
+        "narration_distance": "",
+        "must_keep_voice": "",
+        "target_reading_feel": "",
         "thresholds": dict(DEFAULT_THRESHOLDS),
         "explicit_thresholds": {},
         "clarity_baseline": "",
@@ -599,6 +672,13 @@ def load_kb_book_profile(kb_root: Path, style_path: Path, title: str) -> dict[st
                 "allowed_authorial_patterns": payload.get("allowed_authorial_patterns", []),
                 "narration_rules": payload.get("narration_rules", []),
                 "preferred_patterns": payload.get("preferred_patterns", []),
+                "dialogue_ratio_baseline": payload.get("dialogue_ratio_baseline", ""),
+                "rhythm_baseline": payload.get("rhythm_baseline", ""),
+                "narration_density": payload.get("narration_density", ""),
+                "sentence_cadence": payload.get("sentence_cadence", ""),
+                "narration_distance": payload.get("narration_distance", ""),
+                "must_keep_voice": payload.get("must_keep_voice", ""),
+                "target_reading_feel": payload.get("target_reading_feel", ""),
                 "clarity_baseline": payload.get("clarity_baseline", ""),
                 "suspense_reveal_boundary": payload.get("suspense_reveal_boundary", ""),
                 "thresholds": payload.get("thresholds", dict(DEFAULT_THRESHOLDS)),
@@ -788,10 +868,40 @@ def detect_lyrical_paragraph(paragraph: str) -> bool:
     sentences = split_sentences(paragraph)
     if not sentences:
         return False
-    action_markers = ("说", "问", "看", "走", "退", "冲", "伸手", "抬手", "落下", "推开", "按住", "转身")
     abstract_hits = sum(paragraph.count(word) for word in ABSTRACT_WORDS)
-    has_action = any(marker in paragraph for marker in action_markers)
+    has_action = any(marker in paragraph for marker in ACTION_MARKERS)
     return abstract_hits >= 2 and not has_action and len(sentences) >= 2
+
+
+def count_marker_hits(text: str, markers: tuple[str, ...]) -> int:
+    return sum(text.count(marker) for marker in markers)
+
+
+def detect_outline_expansion_issues(paragraphs: list[str]) -> list[dict[str, object]]:
+    issues: list[dict[str, object]] = []
+    summary_nouns = ("问题", "局势", "局面", "代价", "压力", "结果", "后果", "处境", "选择", "风险")
+    scene_action_markers = (
+        "伸手", "抬手", "转身", "推开", "按住", "扑过去", "掀开", "端起", "攥紧",
+        "扯住", "抬眼", "低头", "站起", "跪下", "抱住", "拖住", "砸下", "踢开",
+        "拦住", "躲开",
+    )
+    for index, paragraph in enumerate(paragraphs, start=1):
+        if "“" in paragraph or "\"" in paragraph:
+            continue
+        sentences = split_sentences(paragraph)
+        if len(sentences) < 2:
+            continue
+        summary_hits = count_marker_hits(paragraph, OUTLINE_EXPANSION_MARKERS)
+        abstract_summary_hits = sum(paragraph.count(word) for word in summary_nouns)
+        action_hits = count_marker_hits(paragraph, scene_action_markers)
+        if summary_hits >= 2 and abstract_summary_hits >= 2 and action_hits == 0:
+            issues.append(build_issue(
+                "outline_expansion_feel",
+                "high" if summary_hits >= 3 else "medium",
+                "段落有明显提纲扩写感：结论词和判断词偏多，但没有对应动作、体感或局面变化承载。",
+                f"p{index}",
+            ))
+    return issues
 
 
 def genre_prefers_suspense(profile: dict[str, object]) -> bool:
@@ -823,7 +933,7 @@ def detect_vague_expression_issues(
 
     severity = "medium" if suspense_like else "high"
     reason = (
-        f"段落用词太虚：{', '.join(hits)}。默认要说大白话，把人、事、结果写明白；"
+        f"段落用词太虚：{', '.join(hits)}。默认要保持清晰可判读，把人、事、结果落到场面里；"
         "只有悬疑关键点才允许少量留白。"
     )
     return [build_issue("vague_expression", severity, reason, f"p{index}")]
@@ -985,6 +1095,13 @@ def detect_dialogue_voice_issues(
         1 for line in dialogue_lines if any(phrase in line for phrase in EXPLANATORY_PHRASES)
     )
     same_length_count = sum(1 for line in dialogue_lines if 8 <= len(line) <= 16)
+    information_shuttle_count = sum(
+        1
+        for line in dialogue_lines
+        if any(marker in line for marker in DIALOGUE_INFO_MARKERS)
+        and not any(marker in line for marker in DIALOGUE_CONFLICT_MARKERS)
+        and (len(line) >= 16 or line.count("，") + line.count(",") >= 2)
+    )
 
     if uniqueness <= 0.45 and len(dialogue_lines) >= 6:
         issues.append({
@@ -1004,6 +1121,12 @@ def detect_dialogue_voice_issues(
             "severity": "medium",
             "reason": "多句对白长度过于整齐，节拍像同一模板裁出来，角色区分度不足。",
         })
+    if information_shuttle_count >= max(2, len(dialogue_lines) // 3):
+        issues.append({
+            "type": "dialogue_information_shuttle",
+            "severity": "high" if information_shuttle_count >= max(3, len(dialogue_lines) // 2) else "medium",
+            "reason": "多句对白更像在搬运信息或代作者讲道理，不像在争利益、压位置、试探底牌或自保。",
+        })
     if voice_entries and uniqueness <= 0.6:
         issues.append({
             "type": "dialogue_voice_diff_not_applied",
@@ -1016,6 +1139,7 @@ def detect_dialogue_voice_issues(
         "signature_uniqueness": round(uniqueness, 4),
         "explanatory_dialogue_count": explanatory_dialogue_count,
         "same_length_count": same_length_count,
+        "information_shuttle_count": information_shuttle_count,
         "configured_roles": len(voice_entries),
     }
     return issues, stats
@@ -1323,6 +1447,8 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
                 "高频抽象词或预警词过多：" + ", ".join(f"{word}x{count}" for word, count in high_freq_abstract.items()),
             )
         )
+
+    issues.extend(detect_outline_expansion_issues(paragraphs))
 
     style_consistency_issues, style_consistency_stats = detect_style_consistency_issues(
         text,

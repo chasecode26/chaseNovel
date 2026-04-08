@@ -1,781 +1,134 @@
-# 显式多 Agent 协同协议
+# 协作与复核最小协议
 
-这不是形式化摆拍，也不是把 MOSS 整包搬进来。
+这份文档只回答两件事：
+- 什么时候单人直写
+- 什么时候必须加复核
 
-它只做一件事：
+它不是“多 Agent 仪式说明书”，只保留最小可执行规则。
 
-**把 `chaseNovel` 的常用写作流程拆成几个稳定角色，并要求在 `/写`、`/续写`、`/修改` 时显式并行拉审查 agent，避免“写完凭感觉觉得没问题”。**
+## 1. 先判断要不要协作
 
----
+### 可单人完成
+- 开书前的轻量 brainstorming
+- 极短润色
+- 只改标题、简介、单段措辞
+- 用户明确只要草稿，不要复核
 
-## 一、默认角色
-
-### 1. Planner
-
-负责：
-
-- 题材定位
-- 一句话卖点
-- 开篇路线
-- 黄金三章
-- 卷纲 / 阶段目标
-
-主要产物：
-
-- `plan.md`
-- `arc_progress.md`
-- `/一键开书` 输出骨架
-
-### 2. Worldbuilder
-
-负责：
-
-- 世界观边界
-- 力量体系 / 规则体系
-- 术语口径
-- 考据词与虚构词的统一
-
-主要产物：
-
-- `worldbuilding-index.md`
-- `findings.md`
-- `plan.md` 中的世界规则部分
-
-### 3. Character
-
-负责：
-
-- 主角反差
-- 配角动机
-- 关系变化
-- 反工具人
-
-主要产物：
-
-- `characters.md`
-- `character_arcs.md`
-- `state.md` 的人物状态
-
-### 4. Writer
-
-负责：
-
-- 把规划和记忆落成可读正文
-- 输出章卡
-- 起草章节
-
-主要产物：
-
-- 章节正文
-- `summaries/recent.md`
-- `state.md` 的推进结果
-
-### 5. Reviewer
-
-负责：
-
-- 连续性
-- 重复桥段
-- 承诺拖欠
-- 门禁回退
-
-主要产物：
-
-- 门禁结论
-- 修订意见
-- 必要时回写 `foreshadowing.md`、`timeline.md`、`payoff_board.md`
-
-### 6. HookEmotion
-
-负责：
-
-- 情绪曲线
-- 章尾钩子
-- 爽点密度
-- 高点前蓄压与高点后余波
-
-主要产物：
-
-- 本章情绪曲线判断
-- 章尾钩子建议
-- 爽点 / 情绪风险提示
-
-### 7. StructureReviewer
-
-负责：
-
-- 开头第一屏有没有事
-- 主角是否尽快入场
-- 本章冲突是否越写越硬
-- 章尾钩子是否真的把下一章炸出来
-
-主要产物：
-
-- 结构问题定位
-- 开头抓力与冲突递进风险提示
-- 最小结构修法建议
-
-### 8. RhythmReviewer
-
-负责：
-
-- 哪里拖
-- 哪里在讲不是在打
-- 哪里该爆没爆
-- 哪里重复同一种压法
-
-主要产物：
-
-- 节奏问题定位
-- 爆点缺位与重复压法风险提示
-- 最小节奏修法建议
-
-### 9. StyleDialogue
-
-负责：
-
-- 对话口吻区分
-- 旁白发硬
-- 角色说话同质化
-- 台词是否需要读者自己翻译
-- 术语是否挡路
-
-主要产物：
-
-- 语言修订建议
-- 对话分层建议
-- 口吻与旁白风险提示
-- `templates/character-voice-diff.md` 的角色说话差分表
-
-### 10. LanguageReviewer
-
-负责：
-
-- AI 味过重
-- 机械过渡
-- 作者替读者总结
-- 信息搬运感
-- 半句悬空判断
-- “不是A，是B”式空反衬
-- 只报抽象结论、不报具体后果
-
-主要产物：
-
-- 语言去 AI 味审查结论
-- 高风险句段定位
-- `templates/language-anti-ai-review.md` 审查卡
-
-### 10.1 StyleConsistencyReviewer
-
-负责：
-- 单书 voice DNA
-- 叙述节拍
-- 角色声口一致性
-- 跨章节风格漂移
-
-主要产物：
-- 风格漂移定位
-- 最小修法建议
-- `templates/style-consistency-review.md` 审查卡
-### 11. ContinuityReviewer
-
-负责：
-
-- 世界规则连续性
-- 时间线连续性
-- 伏笔 / 承诺连续性
-- 已有效布置是否失忆
-- 认知边界是否越界
-
-主要产物：
-
-- 连续性风险定位
-- 必修连续性问题
-- `templates/continuity-review-card.md` 审查卡
-
-### 12. CausalityReviewer
-
-负责：
-
-- 转折前提是否成立
-- 人物决策是否合理
-- 结果是否靠布置推出
-- 后账是否接得住
-- 判断句是否先有事实再落后果
-
-主要产物：
-
-- 因果硬伤定位
-- 必修因果问题
-- `templates/causality-review-card.md` 审查卡
-
-### 13. ResearchMaterial
-
-负责：
-
-- 资料抽读
-- 考据压缩
-- 本地语料转写
-- 现实资料转成可写规则
-
-主要产物：
-
-- 题材资料摘要
-- 可直接落地的规则卡
-- 术语 / 资料来源清单
-- `references/contracts/07-research-material.md` 压缩卡
-
-## 二、Codex 子 Agent 映射
-
-为避免“写了角色名，但执行时没真拉 agent”，默认映射如下：
-
-| 写作角色 | Codex 子 agent |
-| --- | --- |
-| `Planner` | `planner` |
-| `Worldbuilder` | `architect` |
-| `Character` | `analyst` |
-| `HookEmotion` | `writer` |
-| `StructureReviewer` | `critic` |
-| `RhythmReviewer` | `critic` |
-| `StyleDialogue` | `writer` |
-| `LanguageReviewer` | `code-reviewer` |
-| `StyleConsistencyReviewer` | `critic` |
-| `ContinuityReviewer` | `critic` |
-| `CausalityReviewer` | `critic` |
-| `ResearchMaterial` | `researcher` |
-| `Writer` | `writer` |
-| `Reviewer` | `critic` |
-
-执行约束：
-
-- `/写`、`/续写`、`/修改` 默认按此映射显式拉起 Codex 子 agent
-- 若运行面当前无法显式拉起子 agent，必须按同一顺序手动执行检查项，并标注“未实际拉起子 agent”
-
----
-
-## 三、默认编排模式
-
-### 模式 A：开书编排
-
-顺序：
-
-`Planner -> Character -> Worldbuilder -> Reviewer`
-
-适用：
-
-- `/一键开书`
-- 新题材立项
-- 开篇三章重做
-
-最小交接：
-
-- Planner 先定卖点、路线、卷目标
-- Character 补主角反差、配角驱动、关系起手
-- ResearchMaterial 如有必要，先把题材资料压成可写规则，再交给 Worldbuilder
-- Worldbuilder 只补当前开篇必须用到的规则和术语
-- Reviewer 检查卖点是否落得住、第一章是否真能抓人
-
-### 模式 B：单章编排
-
-顺序：
-
-`Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> Writer/Planner 修正 -> Reviewer`
-
-适用：
-
+### 默认要加复核
 - `/写`
 - `/续写`
-- 批量章节中的单章执行
+- `/修改`
+- 开篇前 `1-10` 章
+- 牵涉伏笔、时间线、承诺兑现、资源状态的章节
+- 已经出现 AI 味、重复推进、断点没接住、人物口吻漂移的稿子
 
-最小交接：
+一句话判断：
+**只要这次产出会直接影响连载连续性，就不要只靠 Writer 一把过。**
 
-- Planner 先定本章功能、结果变化、情绪点、钩子
-- Planner 先补“写前锚定包”，明确时间、地点、在场人物、知情边界、资源状态、开放线程、`chapter_tier`、`target_word_count`
-- HookEmotion 先校正情绪曲线、高点位置和章尾钩子是否真的能决定下一章行动
-- Writer 负责成稿
-- `StructureReviewer` 单独盯开头第一屏、主角入场、冲突递进和章尾钩子是否真能带起下一章
-- `RhythmReviewer` 单独盯哪里拖、哪里在讲不是在打、哪里该爆没爆、哪里重复同一种压法
-- `StyleDialogue` 在不改结构的前提下拉开对白口吻和旁白硬度，防止多人一个声口
-- `LanguageReviewer` 单独盯 AI 味、机械过渡、解释感、概括腔
-- `StyleConsistencyReviewer` 单独盯单书 voice DNA、章节节拍、角色声口、跨章漂移
-- `ContinuityReviewer` 单独盯时间线、设定、伏笔、状态连续性和知情边界
-- `CausalityReviewer` 单独盯人物决策、转折前提和结果落地
-- `Reviewer` 专门盯章功能、冲突类型、结果类型、钩子类型是否与近 `3-5` 章重复
-- 汇总后，若命中幻读、知情越界、时间漂移、资源漂移、重复推进或 AI 味过重，不通过，直接回退给 Writer / Planner 修
+## 2. 最小角色集
 
-### 模式 C：重修编排
+### `Planner`
+- 负责：定本章功能、结果变化、章尾钩子；锚定时间、地点、在场人物、知情边界、资源状态；判断与近 `3-5` 章是否重复
+- 必交：本章章卡、`chapter_tier`、`target_word_count`、本章最小推进、结果变化
 
-顺序：
+### `Writer`
+- 负责：按已确认章卡起草正文，把规划落成可读场面
+- 不负责：擅自改卷纲、擅自新增重大设定、擅自跳过断点承接
 
-`Reviewer -> Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer] -> Writer 修正 -> Reviewer`
+### `Reviewer`
+- 负责：最终门禁、汇总 reviewer 结论、判断能否交稿
+- 必查：本章删掉后后文是否仍成立；本章相比近 `3-5` 章升级点是否成立；是否需要回写记忆文件
 
-适用：
+## 3. 按问题加的 reviewer
 
-- 太水
-- 重复
-- 人设崩
-- 钩子弱
-- AI 味重
+- `StyleDialogue`：对白口吻、角色区分、旁白发硬、故作含混
+- `LanguageReviewer`：AI 味、机械过渡、解释感、抽象判断不落地
+- `ContinuityReviewer`：时间线、设定、伏笔、承诺、资源状态、知情边界
+- `CausalityReviewer`：转折前提、人物决策、结果落地、后账承接
+- `HookEmotion`：断点承接、情绪高点、爽点密度、章尾钩子
+- `ResearchMaterial`：资料压缩、术语统一、现实材料转可写规则
 
-最小交接：
+默认搭配：
+- `/写`：`HookEmotion + StyleDialogue + LanguageReviewer + Reviewer`
+- `/续写`：`HookEmotion + ContinuityReviewer + LanguageReviewer + Reviewer`
+- `/修改`：`LanguageReviewer + ContinuityReviewer + CausalityReviewer + Reviewer`
+- 复杂题材：再补 `ResearchMaterial`
 
-- Reviewer 先指出问题类型和影响面
-- Planner 重定保留项与修法
-- HookEmotion 专门处理情绪跳、钩子弱、爽点不兑现这类问题
-- Writer 重写
-- StructureReviewer 先查开头抓力、主角入场、冲突递进和章尾钩子是否真修到了
-- RhythmReviewer 先查拖段、讲段、爆点缺位和重复压法有没有压下去
-- StyleDialogue 只修对白和口吻层
-- LanguageReviewer 单独压 AI 味和解释味
-- StyleConsistencyReviewer 单独修风格漂移，不抢结构判断
-- ContinuityReviewer 检查设定、时间线、伏笔、承诺是否被改崩
-- CausalityReviewer 检查修订后的转折和决策是否站得住
-- Reviewer 复核并决定是否再次回退
+## 4. 推荐顺序
 
-### 模式 D：复杂题材编排
+- `/写`：`Planner -> HookEmotion -> Writer -> reviewer 复核 -> Reviewer`
+- `/续写`：`Planner -> HookEmotion -> Writer -> reviewer 复核 -> Reviewer`
+  额外要求：先接上上一章断点，再决定要不要开新场面
+- `/修改`：`Reviewer 初检 -> Planner -> HookEmotion（如需要）-> Writer -> reviewer 复核 -> Reviewer`
+  额外要求：先诊断故障，再决定是小修还是重写
 
-顺序：
+## 5. 每个 reviewer 至少交什么
 
-`Planner -> ResearchMaterial -> Worldbuilder -> Character -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> Writer/Planner 修正 -> Reviewer`
-
-适用：
-
-- 历史 / 权谋
-- 盗墓 / 摸金
-- 设定密度高的修仙
-- 多势力并行的中长线题材
-
-原则：
-
-- ResearchMaterial 只压资料，不直接决定剧情
-- Worldbuilder 不抢剧情推进权
-- Character 不改世界规则
-- Writer 不擅自扩设定
-- StructureReviewer 不替 Writer 重写正文，只抓结构问题和最小修法
-- RhythmReviewer 不替 HookEmotion 重新排情绪，只抓节奏断点和重复压法
-- StyleDialogue 不擅自改结构
-- LanguageReviewer 不改剧情功能
-- StyleConsistencyReviewer 不另造新风格，只负责把章节拉回本书既有 voice
-- ContinuityReviewer 不重写正文，只抓硬伤
-- CausalityReviewer 不重排大纲，只抓因果断点
-- Reviewer 只做门禁和回退，不重新开大纲
-
----
-
-## 三、并行复核硬规则
-
-- `/写`、`/续写`、`/修改` 默认必须显式并行拉起：
-  - `StructureReviewer`
-  - `RhythmReviewer`
-  - `StyleDialogue`
-  - `LanguageReviewer`
-  - `StyleConsistencyReviewer`
-  - `ContinuityReviewer`
-  - `CausalityReviewer`
-  - `Reviewer`
-- 常规章默认目标字数 `2300-3500`；只有明确的高潮章、爆点章、阶段收束章，才允许放宽到 `4500`。
-- 若当前环境无法真正拉起多个子 agent，必须串行模拟全部 reviewer，并显式输出每个 reviewer 的单独结论，不得合并成一段笼统口头评价。
-- 开篇 `1-10` 章里，`Reviewer` 额外必须检查：
-  - 章功能是否重复
-  - 冲突类型是否重复
-  - 结果类型是否重复
-  - 钩子类型是否重复
-- 任一 reviewer 命中以下问题，默认不能直接交稿：
-  - 同一节点重复推进
-  - 同一结果重复拿到但无升级
-  - 相邻章节只是换说法，不换结果
-  - 解释重复压过新进展
-- 允许不并行的情况只限：
-  - `/一键开书`
-  - 极短润色
-  - 用户明确要求只给草稿
-
-### 并行复核固定输出
-
-每个复核 agent 默认必须交：
-
-- `chapter_function`
-- `conflict_type`
-- `result_type`
-- `hook_type`
+除 `Planner`、`Writer` 外，其余 reviewer 默认至少交：
 - `findings`
 - `blocking`
 - `suggested_fix`
 
-`Reviewer` 额外必须交：
+结构类 reviewer 可额外带：
+- `chapter_function`
+- `result_type`
+- `hook_type`
 
+`Reviewer` 额外必须交：
 - `repeat_window`
 - `upgrade_point`
+- `word_count_verdict`
 
-缺字段的复核，默认视为不完整，不得直接收口。
+## 6. 什么算阻断
 
-### 复核冲突裁决顺序
+出现以下任一项，`blocking` 默认记为 `yes`：
+- 断点没接住，却硬开新戏
+- 本章没有结果变化
+- 时间线、设定、知情边界冲突
+- 关键转折没有前提，像作者硬推
+- 对白故作含混，读者判不明真实作用
+- 叙述只给抽象判断，不落到具体事和具体后果
+- 与近 `3-5` 章重复同一种推进或钩子
+- 只是补解释、补背景，删掉也不影响后文
 
-当多个 reviewer 结论互相冲突时，统一按以下顺序裁决：
+## 7. 冲突裁决顺序
 
+当 reviewer 意见打架时，按这个顺序裁决：
 1. `ContinuityReviewer` / `CausalityReviewer`
 2. `Reviewer`
 3. `HookEmotion`
-4. `StructureReviewer` / `RhythmReviewer`
-5. `StyleDialogue` / `LanguageReviewer`
-6. `StyleConsistencyReviewer`
+4. `StyleDialogue` / `LanguageReviewer`
 
-规则：
+原则：
+- 连续性和因果没过，不进入纯语言收尾
+- 语言建议不能破坏既有设定、时间线和因果
 
-- 高优先级可覆盖低优先级修法
-- 低优先级建议若破坏高优先级成立条件，直接丢弃
-- 连续性 / 因果未过时，不进入纯语言收尾
+## 8. 串行回退方案
 
-### 开篇专用检查模板
+如果当前环境不能真的拉起多个子 agent，也不能省掉检查。
 
-开篇 `1-10` 章默认额外跑三张检查卡：
+串行顺序：
+1. `Planner`
+2. `HookEmotion`（若本章需要）
+3. `Writer`
+4. `StyleDialogue`
+5. `LanguageReviewer`
+6. `ContinuityReviewer`
+7. `CausalityReviewer`
+8. `Reviewer`
 
-1. `黄金三章检查卡`
-2. `递进防重复检查卡`
-3. `资源闭环检查卡`
+要求：
+- 每个角色单独给结论，不要合成一段模糊总评
+- 命中阻断项就回退，不继续硬收尾
 
-三张卡至少由 `Reviewer` 明确给结论，不允许省略。
+## 9. 什么时候不用拉满
 
-## 四、什么情况需要拉额外 Agent
+- 只做句子润色：`StyleDialogue -> LanguageReviewer`
+- 只补断点承接：`Planner -> HookEmotion -> Writer -> Reviewer`
+- 只查连续性：`Planner -> ContinuityReviewer -> Reviewer`
 
-### 必拉 Worldbuilder
+但只要涉及整章交付，`Reviewer` 不建议省。
 
-- 新题材设定多
-- 术语多且容易写混
-- 有真实考据词
-- 题材依赖规矩、门派、制度、机关、组织口径
+## 10. 一句话总纲
 
-### 必拉 Character
-
-- 群像开书
-- 配角开始工具人化
-- 关系推动是本章主要看点
-- 感情线 / 君臣 / 师徒 / 队友裂痕是核心推进器
-
-### 必拉 Reviewer
-
-- 批量写作
-- 开篇三章
-- 大改重修
-- 用户明确要求控节奏、重复
-
-### 必拉 HookEmotion
-
-- 章尾钩子弱
-- 情绪起伏不顺
-- 爽点密度不足
-- 连续几章收尾同质
-- 用户明确要求控节奏、抓追读
-
-### 必拉 StructureReviewer
-
-- 开头第一屏总是没事
-- 主角入场太慢
-- 本章冲突写到中段还没真正咬住
-- 章尾钩子只是更抓人，没有改变下一章行动
-- 用户明确要求查结构、抓开头、补钩子
-
-### 必拉 RhythmReviewer
-
-- 章节发拖
-- 一直在讲局势，不在现场推进
-- 该爆的时候没爆
-- 连着几章都在用同一种压法
-- 用户明确要求查节奏、加快反馈、别写成分析稿
-
-### 必拉 StyleDialogue
-
-- 对话发空
-- 旁白发硬
-- 角色说话区分不出来
-
-### 必拉 LanguageReviewer
-
-- AI 味重
-- 机械过渡太多
-- 作者替读者总结
-- 场景像信息搬运
-
-### 必拉 ContinuityReviewer
-
-- 世界观开始写混
-- 时间线容易打架
-- 伏笔、承诺、布置容易失忆
-- 用户明确要求“别崩设定”
-
-### 必拉 CausalityReviewer
-
-- 转折靠硬推
-- 人物决策像作者安排
-- 结果落地过快
-- 用户明确要求“剧情走向合理”
-
-### 必拉 ResearchMaterial
-
-- 历史 / 盗墓 / 权谋 / 修仙等资料依赖题材
-- 需要吸收本地下载小说样本
-- 真实资料很多，但还没转成可写规则
-- 新题材需要先做资料压缩
-
----
-
-## 五、每个 Agent 的输入边界
-
-### Planner 输入
-
-- 题材
-- 平台倾向
-- 当前阶段
-- 已有记忆文件
-
-不负责：
-
-- 直接出长正文
-
-### Worldbuilder 输入
-
-- 当前章节需要的规则
-- 当前卷需要的势力 / 术语 / 机制
-
-不负责：
-
-- 为了显得完整而扩写一整本百科
-
-### Character 输入
-
-- 当前章要推谁
-- 当前关系要怎么变
-
-不负责：
-
-- 替 Writer 直接写完整正文
-
-### Writer 输入
-
-- 已确认的章卡
-- 已确认的“写前锚定包”
-- 已确认的规则边界
-- 已确认的人物状态
-- 已确认的情绪曲线与钩子方向
-
-不负责：
-
-- 擅自新增重大设定
-- 擅自改卷纲
-- 擅自写出锚定包之外的新知情、新资源、新时间跳跃
-
-### Reviewer 输入
-
-- 成稿
-- 当前 plan / state / timeline / foreshadowing / character_arcs
-
-不负责：
-
-- 重写整章
-- 重开整套世界观
-
-必须额外检查：
-
-- 近 `3-5` 章章功能是否重复
-- 近 `3-5` 章结果类型是否重复
-- 开篇 `1-10` 章是否有递进失效
-- 本章删掉后后文是否仍基本成立
-- 开篇 `1-10` 章是否通过三张专用检查卡
-- 人物知情边界是否越线
-- 资源状态是否无依据跳变
-- 记忆文件之间、记忆文件与正文之间是否冲突
-
-默认补件：
-
-- 命中阶段复盘时，优先套 `templates/reviewer-stage-retro.md`
-
-### StructureReviewer 输入
-
-- 已成稿正文
-- 本章章卡
-- 近 1-3 章的开头方式、冲突方式、钩子方式
-
-不负责：
-
-- 直接重写整章
-- 代替 Planner 重定大纲
-
-默认补件：
-
-- 先检查：开头第一屏有没有事、主角是否尽快入场、冲突是否越写越硬、章尾钩子是否会把下一章炸出来
-
-### RhythmReviewer 输入
-
-- 已成稿正文
-- 本章情绪点与结果点
-- 近 1-3 章的节奏与爆点分布
-
-不负责：
-
-- 改章节功能
-- 代替 HookEmotion 重排整章情绪
-
-默认补件：
-
-- 先检查：哪里拖、哪里在讲不是在打、哪里该爆没爆、哪里重复同一种压法
-
-### HookEmotion 输入
-
-- 本章功能
-- 当前压力源
-- 本章结果类型
-- 近 1-3 章钩子与情绪走势
-
-不负责：
-
-- 擅自改主线
-- 单独定义世界规则
-
-### StyleDialogue 输入
-
-- 已成稿正文
-- 当前题材口吻
-- 角色说话边界
-
-不负责：
-
-- 改主线结论
-- 改章节功能
-
-默认补件：
-
-- 角色说话开始撞车时，先补 `templates/character-voice-diff.md`
-- 额外检查：台词是否需要读者二次翻译；凡是“看着有劲，意思不直给”的句子，直接判问题句
-
-### LanguageReviewer 输入
-
-- 已成稿正文
-- 已做过 StyleDialogue 的版本
-- 当前题材口吻
-- 写前锚定包中的场景目标与情绪目标
-
-不负责：
-
-- 改主线结论
-- 直接重排剧情
-
-默认补件：
-
-- 先套 `templates/language-anti-ai-review.md`
-- 再额外检查：机械连接词、总结腔、均质对白、作者代角色发言
-- 再额外检查：有没有“已经在流血了”“气息一下紧了”这类只下抽象判断、不落具体事和具体后果的虚描述
-
-### ContinuityReviewer 输入
-
-- 成稿
-- `plan.md` / `state.md` / `timeline.md` / `foreshadowing.md` / `payoff_board.md` / `character_arcs.md`
-- 写前锚定包
-
-不负责：
-
-- 代替 Worldbuilder 重建设定
-- 代替 Reviewer 做总审结论
-
-默认补件：
-
-- 先套 `templates/continuity-review-card.md`
-- 再额外检查：人物知情边界、时间跨度、资源账、场景移动是否与锚定包一致
-
-### CausalityReviewer 输入
-
-- 成稿
-- 本章章卡
-- 近章关键结果与布置
-
-不负责：
-
-- 直接改文风
-- 重开全书大纲
-
-默认补件：
-
-- 先套 `templates/causality-review-card.md`
-
-### ResearchMaterial 输入
-
-- 当前题材
-- 当前要解决的问题
-- 资料来源或本地样本范围
-
-不负责：
-
-- 直接起草正文
-- 把资料原样堆进设定
-
-默认补件：
-
-- 先按 `references/contracts/07-research-material.md` 压成规则卡，再交下游
-
----
-
-## 六、回写原则
-
-## 五点五、Reviewer 固定检查
-
-每次 `Reviewer` 收口，至少回答：
-
-- 本章有没有一句需要读者停一下自己翻译的术语句。
-- 本章有没有“不是试探，是要继续压”这种半悬空判断。
-- 本章有没有作者总结句压过场景。
-- 本章字数是否符合 `chapter_tier`。
-- 本章相比前章的升级点是什么。
-
-编排不是开会，必须落文件。
-
-### 开书后至少回写
-
-- `plan.md`
-- `characters.md`
-- `state.md`
-
-### 单章完成后至少回写
-
-- `summaries/recent.md`
-- `state.md`
-
-### 命中复杂规则时追加回写
-
-- 伏笔变动：`foreshadowing.md`
-- 时间变化：`timeline.md`
-- 关系推进：`character_arcs.md`
-- 术语新增：`worldbuilding-index.md`
-- 承诺兑现压力变化：`payoff_board.md`
-- 资料转写：`findings.md` / `worldbuilding-index.md`
-- 阶段复盘：`state.md` / `findings.md`
-
-### 复核后强制回写
-
-- 重复推进 / 递进失效 -> `findings.md`
-- 阶段节奏风险 / 下一章警告 -> `state.md`
-- 长线目标、阶段目标受影响 -> `plan.md`
-- 伏笔窗口改变 -> `foreshadowing.md`
-- 时间顺序调整 -> `timeline.md`
-- 人物关系、分工变化 -> `character_arcs.md`
-- 人物知情边界调整、误会建立或解除 -> `character_arcs.md` 或单独记入 `findings.md`
-- 资源状态被正文推进过 -> `state.md`，必要时同步 `timeline.md`
-
-语言层纯润色可不回写；结构性问题默认必须回写。
-
----
-
-## 七、最短执行口令
-
-如果不显式说明，默认这样理解：
-
-- `/一键开书`：走 `Planner -> Character -> Worldbuilder -> Reviewer`
-- `/写`：走 `Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
-- `/续写`：走 `Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
-- `/修改`：走 `Reviewer -> Planner -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer] -> 修正 -> Reviewer`
-- 高风险单章 / 世界观密集章：并行复核不减配，只增配
-- 复杂题材开书 / 复杂题材中盘：可扩成 `Planner -> ResearchMaterial -> Worldbuilder -> Character -> HookEmotion -> Writer -> [StructureReviewer || RhythmReviewer || StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> 修正 -> Reviewer`
-
----
-
-## 八、一句话原则
-
-**显式多 Agent 协同不是多几个人设，而是把“谁先写、谁并行挑错、什么情况下必须回退”固定下来。**
+**协作不是多几个人设，而是把“谁先定、谁来写、谁挑硬伤、谁拍板回退”固定下来。**

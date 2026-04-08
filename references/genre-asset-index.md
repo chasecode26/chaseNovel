@@ -1,286 +1,123 @@
-# 核心题材资产总索引
+# 核心题材索引
 
 这份文档只做一件事：
 
-**当你已经有很多专项资产时，先告诉你这次该读哪一份。**
+先告诉你“这次该读哪一份”，而不是把所有题材资料一次读完。
 
-当前重点覆盖六条核心题材：
+默认流程：
 
-- 历史权谋 / 边境战争
-- 末世囤货
-- 仙侠苟道
-- 都市系统流
-- 种田文
-- 盗墓 / 摸金 / 民国奇诡
+1. 先判断题材
+2. 再判断你卡在哪个问题
+3. 最后只读对应的 1-2 份资料
 
----
+## 题材总表
 
-## 一、历史权谋 / 边境战争
+| 题材 | 先看什么 | 常见卡点 |
+| --- | --- | --- |
+| 历史权谋 / 边境战争 | `historical-*` 系列 | 开局显局、中盘发散、阵营关系、军政后账 |
+| 末世囤货 | `moshi-*` 系列 | 囤货流水账、据点升级、秩序治理、团队裂痕 |
+| 仙侠苟道 | `goudao-*` 系列 | 只剩“苟”、不敢推进、关系互防写不出、假稳健 |
+| 都市系统流 | `dushi-*` 系列 | 只会装弱打脸、系统播报流水账、配角工具人 |
+| 种田文 | `zhongtian-*` 系列 | 经营流水账、关系太纸、局面不变、只有温度没有目标 |
+| 盗墓 / 摸金 / 民国奇诡 | `daomu-*` + 模板 | 开局不入局、墓内无压迫、术语虚、像副本重复 |
 
-### 如果你现在卡在开篇
+## 按问题选入口
 
-- 先读 `references/opening-sample-specialties.md`
-- 再读 `references/local-corpus-learning.md`
+### 开书 / 黄金三章
 
-### 如果你现在卡在中盘推进
+- 先看 [craft-and-platform.md](/D:/git/chaseNovel/references/craft-and-platform.md)
+- 再看 [opening-sample-specialties.md](/D:/git/chaseNovel/references/opening-sample-specialties.md)
+- 还不够时，再补 [local-corpus-learning.md](/D:/git/chaseNovel/references/local-corpus-learning.md)
 
-- 先读 `references/historical-midgame-learning.md`
-- 再读 `references/historical-volume-route-library.md`
+### 单章不会落地
 
-### 如果你现在卡在人物和阵营关系
+- 先看对应题材的 `*-chapter-card-library.md`
+- 如果是章尾或结果问题，再补 [hook-result-learning.md](/D:/git/chaseNovel/references/hook-result-learning.md)
 
-- 先读 `references/historical-character-learning.md`
-- 再读 `references/historical-relationship-card-deck.md`
+### 中盘发散 / 只会重复
 
-### 如果你现在卡在将领关系、军令分配和战后后账
+- 先看对应题材的 `*-volume-route-library.md`
+- 再看 [anti-repeat-rules.md](/D:/git/chaseNovel/references/anti-repeat-rules.md)
 
-- 先读 `references/historical-command-and-aftermath-library.md`
+### 人物和关系不动
 
-### 如果你已经知道方向，但不会落成一章
+- 先看对应题材的 `*-character-learning.md`
+- 历史权谋额外补 [historical-relationship-card-deck.md](/D:/git/chaseNovel/references/historical-relationship-card-deck.md)
 
-- 先读 `references/historical-chapter-card-library.md`
-- 再读 `references/historical-military-political-chapter-card-library.md`
+### 怀疑自己写成套路文
 
-### 如果你怀疑写成老三样
+- 直接看对应题材的 `*-negative-patterns.md`
 
-- 先读 `references/historical-negative-patterns.md`
-- 再读 `references/anti-repeat-rules.md`
+### 文风、对白、AI 味
 
-### 推荐阅读顺序
+- [style-runtime-core.md](/D:/git/chaseNovel/references/style-runtime-core.md)
+- [language-governance.md](/D:/git/chaseNovel/references/language-governance.md)
+- [chapter-emotion-and-ai-check.md](/D:/git/chaseNovel/references/chapter-emotion-and-ai-check.md)
 
-1. `references/local-corpus-learning.md`
-2. `references/historical-midgame-learning.md`
-3. `references/historical-character-learning.md`
-4. `references/historical-relationship-card-deck.md`
-5. `references/historical-command-and-aftermath-library.md`
-6. `references/historical-chapter-card-library.md`
-7. `references/historical-military-political-chapter-card-library.md`
-8. `references/historical-volume-route-library.md`
-9. `references/historical-negative-patterns.md`
+## 各题材最小阅读路径
 
----
+### 历史权谋 / 边境战争
 
-## 二、末世囤货
+- 开局不显局：`opening-sample-specialties.md`
+- 中盘散：`historical-midgame-learning.md`
+- 阵营关系难写：`historical-character-learning.md`
+- 军政后账难写：`historical-command-and-aftermath-library.md`
+- 单章不会落：`historical-chapter-card-library.md`
+- 怀疑写成老三样：`historical-negative-patterns.md`
 
-### 如果你现在卡在开篇
+### 末世囤货
 
-- 先读 `references/opening-sample-specialties.md`
-- 再读 `references/local-corpus-learning.md`
+- 开局不抓人：`opening-sample-specialties.md`
+- 只会囤货：`moshi-volume-route-library.md`
+- 据点 / 规则 / 治理：`moshi-bastion-and-order-library.md`
+- 团队裂痕与站队：`moshi-character-learning.md`
+- 单章不会落：`moshi-chapter-card-library.md`
+- 怀疑写成囤货流水账：`moshi-negative-patterns.md`
 
-### 如果你现在卡在本章收束
+### 仙侠苟道
 
-- 先读 `references/hook-result-learning.md`
+- 开局不稳：`opening-sample-specialties.md`
+- 只剩“苟”：`goudao-volume-route-library.md`
+- 互防关系难写：`goudao-character-learning.md`
+- 单章不会落：`goudao-chapter-card-library.md`
+- 怀疑写成假苟道：`goudao-negative-patterns.md`
 
-### 如果你现在卡在整卷只会囤货
+### 都市系统流
 
-- 先读 `references/moshi-volume-route-library.md`
+- 开局不够抓：`opening-sample-specialties.md`
+- 只会打脸：`dushi-volume-route-library.md`
+- 配角和站队单薄：`dushi-character-learning.md`
+- 单章不会落：`dushi-chapter-card-library.md`
+- 怀疑写成系统播报流水账：`dushi-negative-patterns.md`
 
-### 如果你现在卡在据点升级、规则建立和势力治理
+### 种田文
 
-- 先读 `references/moshi-bastion-and-order-library.md`
+- 开局不立局：`opening-sample-specialties.md`
+- 只会种、卖、赚、扩：`zhongtian-volume-route-library.md`
+- 关系与共同体推进弱：`zhongtian-character-learning.md`
+- 单章不会落：`zhongtian-chapter-card-library.md`
+- 怀疑写成电子账本：`zhongtian-negative-patterns.md`
 
-### 如果你现在卡在团队、仇人、规则推进
+### 盗墓 / 摸金 / 民国奇诡
 
-- 先读 `references/moshi-character-learning.md`
-
-### 如果你不会把这一章落地
-
-- 先读 `references/moshi-chapter-card-library.md`
-- 再读 `references/moshi-bastion-governance-chapter-cards.md`
-
-### 如果你怀疑写成囤货流水账
-
-- 先读 `references/moshi-negative-patterns.md`
-- 再读 `references/anti-repeat-rules.md`
-
-### 推荐阅读顺序
-
-1. `references/local-corpus-learning.md`
-2. `references/hook-result-learning.md`
-3. `references/moshi-volume-route-library.md`
-4. `references/moshi-bastion-and-order-library.md`
-5. `references/moshi-character-learning.md`
-6. `references/moshi-chapter-card-library.md`
-7. `references/moshi-bastion-governance-chapter-cards.md`
-8. `references/moshi-negative-patterns.md`
-
----
-
-## 三、仙侠苟道
-
-### 如果你现在卡在开篇
-
-- 先读 `references/opening-sample-specialties.md`
-- 再读 `references/local-corpus-learning.md`
-
-### 如果你现在卡在结果和章尾钩子
-
-- 先读 `references/hook-result-learning.md`
-
-### 如果你写着写着只剩“苟”
-
-- 先读 `references/goudao-volume-route-library.md`
-
-### 如果你不会写互防、借力、因果关系
-
-- 先读 `references/goudao-character-learning.md`
-
-### 如果你知道方向，但不会落成一章
-
-- 先读 `references/goudao-chapter-card-library.md`
-
-### 如果你怀疑写成假苟道
-
-- 先读 `references/goudao-negative-patterns.md`
-- 再读 `references/anti-repeat-rules.md`
-
-### 推荐阅读顺序
-
-1. `references/local-corpus-learning.md`
-2. `references/hook-result-learning.md`
-3. `references/goudao-volume-route-library.md`
-4. `references/goudao-character-learning.md`
-5. `references/goudao-chapter-card-library.md`
-6. `references/goudao-negative-patterns.md`
-
----
-
-## 四、都市系统流
-
-### 如果你现在卡在开篇
-
-- 先读 `references/opening-sample-specialties.md`
-- 再读 `references/local-corpus-learning.md`
-
-### 如果你现在卡在整卷只会装弱打脸
-
-- 先读 `references/dushi-volume-route-library.md`
-
-### 如果你现在卡在配角送脸、站队变化和关系后账
-
-- 先读 `references/dushi-character-learning.md`
-
-### 如果你知道方向，但不会落成一章
-
-- 先读 `references/dushi-chapter-card-library.md`
-
-### 如果你怀疑写成系统播报流水账
-
-- 先读 `references/dushi-negative-patterns.md`
-- 再读 `references/anti-repeat-rules.md`
-
-### 推荐阅读顺序
-
-1. `references/opening-sample-specialties.md`
-2. `references/dushi-volume-route-library.md`
-3. `references/dushi-character-learning.md`
-4. `references/dushi-chapter-card-library.md`
-5. `references/dushi-negative-patterns.md`
-
----
-
-## 五、种田文
-
-### 如果你现在卡在开篇
-
-- 先读 `references/opening-sample-specialties.md`
-- 再读 `references/local-corpus-learning.md`
-
-### 如果你现在卡在整卷只会种、卖、赚、扩
-
-- 先读 `references/zhongtian-volume-route-library.md`
-
-### 如果你现在卡在合作关系、家族关系和共同体推进
-
-- 先读 `references/zhongtian-character-learning.md`
-
-### 如果你知道方向，但不会落成一章
-
-- 先读 `references/zhongtian-chapter-card-library.md`
-
-### 如果你怀疑写成电子账本
-
-- 先读 `references/zhongtian-negative-patterns.md`
-- 再读 `references/anti-repeat-rules.md`
-
-### 推荐阅读顺序
-
-1. `references/opening-sample-specialties.md`
-2. `references/zhongtian-volume-route-library.md`
-3. `references/zhongtian-character-learning.md`
-4. `references/zhongtian-chapter-card-library.md`
-5. `references/zhongtian-negative-patterns.md`
-
----
-
-## 六、盗墓 / 摸金 / 民国奇诡
-
-### 如果你现在卡在开篇
-
-- 先读 `references/daomu-writing-notes.md`
-- 再读 `references/title-and-selling.md`
-
-### 如果你现在卡在墓里气氛和危险落不下来
-
-- 先读 `templates/genres/10-daomu-minguo.md`
-- 再读 `references/chapter-emotion-and-ai-check.md`
-
-### 如果你现在卡在术语、规矩和世界观检索
-
-- 先读 `templates/worldbuilding-index.md`
-
-### 如果你怀疑写成重复副本
-
-- 先读 `references/daomu-writing-notes.md`
-- 再读 `references/anti-repeat-rules.md`
-
-### 推荐阅读顺序
-
-1. `references/title-and-selling.md`
-2. `references/daomu-writing-notes.md`
-3. `templates/genres/10-daomu-minguo.md`
-4. `templates/worldbuilding-index.md`
-5. `references/chapter-emotion-and-ai-check.md`
-
----
-
-## 七、通用入口
-
-### 开书 / 黄金三章 / 平台节奏
-
-- `references/craft-and-platform.md`
-- `references/title-and-selling.md`
-- `templates/opening-route-cheatsheet.md`
-- `templates/golden-three-route-cheatsheet.md`
-
-### 本章结果 / 钩子 / 中盘换挡
-
-- `templates/result-route-cheatsheet.md`
-- `templates/hook-route-cheatsheet.md`
-- `templates/midgame-fatigue-cheatsheet.md`
-
-### 重复 / 修章 / 语言问题
-
-- `references/anti-repeat-rules.md`
-- `references/revision-and-diagnostics.md`
-- `references/language-governance.md`
-- `references/chapter-emotion-and-ai-check.md`
-
----
-
-## 八、最短决策表
+- 开局入不了局：`daomu-writing-notes.md`
+- 书名 / 卖点不抓人：`title-and-selling.md`
+- 墓内无压迫：`templates/genres/10-daomu-minguo.md`
+- 术语和世界规则要统一：`templates/worldbuilding-index.md`
+- 怀疑写成副本重复：`daomu-writing-notes.md` + `anti-repeat-rules.md`
+
+## 最短决策表
 
 如果你只想立刻知道先读哪份：
 
-- 开篇不稳：`references/opening-sample-specialties.md`
-- 书名 / 卖点发空：`references/title-and-selling.md`
-- 单章不会收：`references/hook-result-learning.md`
-- 中盘发散：对应题材的 `*-volume-route-library.md`
-- 人物关系僵：对应题材的 `*-character-learning.md`
-- 不会做章卡：对应题材的 `*-chapter-card-library.md`
-- 怀疑写烂：对应题材的 `*-negative-patterns.md`
-- 情绪跳 / AI 味重：`references/chapter-emotion-and-ai-check.md`
+- 开篇不稳：`opening-sample-specialties.md`
+- 书名 / 卖点发空：`title-and-selling.md`
+- 单章落不下来：对应题材 `*-chapter-card-library.md`
+- 中盘发散：对应题材 `*-volume-route-library.md`
+- 人物关系发木：对应题材 `*-character-learning.md`
+- 怀疑套路化：对应题材 `*-negative-patterns.md`
+- AI 味 / 文风发硬：`style-runtime-core.md`
 
 一句话原则：
 
-**先按问题找入口，再按题材下钻，不要一次把全部资产读完。**
+先按问题找入口，再按题材下钻，不要一次把所有资料读完。
