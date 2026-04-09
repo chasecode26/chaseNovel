@@ -155,6 +155,22 @@ SUMMARY_STYLE_MARKERS = (
     "这意味着",
     "这说明",
 )
+AUTHORIAL_SUMMARY_BLACKLIST = (
+    "真正的问题是",
+    "关键在于",
+    "本质上",
+    "归根到底",
+    "归根结底",
+    "说到底",
+    "这意味着",
+    "这说明",
+    "说白了",
+    "说穿了",
+    "无非是",
+    "像极了",
+    "终究是",
+    "从来都是",
+)
 SUMMARY_ABSTRACT_NOUNS = (
     "局势",
     "局面",
@@ -169,6 +185,8 @@ SUMMARY_ABSTRACT_NOUNS = (
     "本质",
     "那口气",
 )
+EUNUCH_ADDRESS_TERMS = ("公公",)
+CIVIL_OFFICIAL_TITLE_TERMS = ("郎中", "侍郎", "尚书", "御史", "给事中", "学士", "祭酒", "主事")
 DIALOGUE_INFO_MARKERS = (
     "也就是说",
     "换句话说",
@@ -478,6 +496,10 @@ def build_rewrite_plan(
         rewrite_plan.append("把提纲式结论拆回场面：保留判断，但改成动作受阻、体感变化、资源变化和局面变化。")
     if any(item.get("type") == "summary_statement_overwrite" for item in issues):
         rewrite_plan.append("把概括句、提炼句、讲道理句拆开：改成谁在做事、哪条线在坏、慢一步会丢什么，不要替读者总结。")
+    if any(item.get("type") == "authorial_summary_blacklist" for item in issues):
+        rewrite_plan.append("删掉“真正的问题是 / 关键在于 / 本质上 / 像极了”这类作者提炼句，改成读者一眼能看见的场面、后果和人物说法。")
+    if any(item.get("type") == "address_identity_mismatch" for item in issues):
+        rewrite_plan.append("回查人物身份和场合称谓：宦官才叫公公，外朝官员按大人或官职称呼；不确定身份时别乱叫。")
     if any(item.get("type") == "dialogue_information_shuttle" for item in issues):
         rewrite_plan.append("对白别替作者补课，优先改成争利益、推责任、压人、自保或试探。")
     if any(item.get("type") == "vague_expression" for item in issues):
@@ -1270,6 +1292,51 @@ def detect_summary_statement_issues(
     return []
 
 
+def detect_authorial_summary_blacklist_issues(
+    paragraph: str,
+    index: int,
+) -> list[dict[str, object]]:
+    sentences = split_sentences(paragraph)
+    if not sentences:
+        return []
+
+    scene_markers = ACTION_MARKERS + WAR_FACT_MARKERS + ORDER_MARKERS + ORDER_TARGET_MARKERS
+    for sentence in sentences:
+        stripped = sentence.strip()
+        if len(stripped) < 8:
+            continue
+        hits = [phrase for phrase in AUTHORIAL_SUMMARY_BLACKLIST if phrase in stripped]
+        if not hits:
+            continue
+        scene_hits = count_marker_hits(stripped, scene_markers)
+        if scene_hits == 0:
+            return [build_issue(
+                "authorial_summary_blacklist",
+                "high",
+                "命中作者提炼句黑名单："
+                + ", ".join(hits)
+                + "。这类句子很容易替场面下结论、替人物讲道理，默认要改成具体人话。",
+                f"p{index}",
+            )]
+    return []
+
+
+def detect_address_identity_mismatch_issues(
+    paragraph: str,
+    index: int,
+) -> list[dict[str, object]]:
+    if not any(term in paragraph for term in EUNUCH_ADDRESS_TERMS):
+        return []
+    if not any(term in paragraph for term in CIVIL_OFFICIAL_TITLE_TERMS):
+        return []
+    return [build_issue(
+        "address_identity_mismatch",
+        "high",
+        "称谓和身份打架：段落里把人叫成了“公公”，后面却又落成外朝官职。默认要统一成符合身份和场合的叫法。",
+        f"p{index}",
+    )]
+
+
 def genre_prefers_suspense(profile: dict[str, object]) -> bool:
     markers = " ".join(
         [
@@ -1749,6 +1816,8 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
         next_paragraph = paragraphs[index] if index < len(paragraphs) else ""
         issues.extend(detect_vague_expression_issues(paragraph, index, effective_profile))
         issues.extend(detect_summary_statement_issues(paragraph, index))
+        issues.extend(detect_authorial_summary_blacklist_issues(paragraph, index))
+        issues.extend(detect_address_identity_mismatch_issues(paragraph, index))
         issues.extend(detect_opaque_tactical_expression_issues(paragraph, index))
         issues.extend(detect_war_term_explanation_issues(paragraph, next_paragraph, index, seen_war_terms))
         issues.extend(detect_war_causality_issues(paragraph, next_paragraph, index))
