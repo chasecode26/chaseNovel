@@ -69,6 +69,11 @@
 ## 3. Writer 成稿
 [正文]
 
+写前补充硬要求：
+- 不准先写省力句、提炼句、抽象收口句占位
+- 不准靠“后面再修”放过第一轮正文质量
+- 默认先保质量，再保速度
+
 ## 4. StructureReviewer 结果
 - `chapter_function`：
 - `conflict_type`：
