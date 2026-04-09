@@ -7,6 +7,28 @@
 - 开篇校准：`../../references/opening-sample-library.md` | `../../references/title-and-selling.md`
 - 情绪与语言：`../../references/chapter-emotion-and-ai-check.md` | `../../references/language-governance.md`
 - 世界观与术语：`../worldbuilding-index.md`
+- 开书骨架：`../../templates/opening-setup-checklist.md`（先看“盗墓 / 民国奇诡”部分）
+
+---
+
+## 开书前必须先补齐的骨架
+
+盗墓 / 民国奇诡开书时，至少先锁清：
+
+- 墓外线：为什么下墓，谁出钱，谁逼着主角去
+- 墓内规则：机关、风水、异象、禁忌哪些是真的会反复用到
+- 文物流转链：摸出来以后卖给谁，藏到哪，谁会盯上
+- 势力盘：军阀、帮会、同行、学界、洋人、黑市怎么咬合
+- 旧案 / 历史线：这座墓跟哪段旧事连着，后面会怎么反咬现实
+- 队伍结构：谁掌眼，谁下手，谁最可能反水
+- 反派池：同行、雇主、旧仇、墓里东西本身带出的后患
+
+不补这些，后面很容易只剩：
+
+- 一直下墓闯关
+- 一直靠黑话撑气氛
+- 出墓就断线
+- 宝物拿到了，但后账没人接
 
 ---
 

@@ -5,6 +5,26 @@
 **补读导航**：
 - 专项库：`../../references/zhongtian-chapter-card-library.md` | `../../references/zhongtian-character-learning.md` | `../../references/zhongtian-volume-route-library.md` | `../../references/zhongtian-negative-patterns.md`
 - 通用技法：`../../references/writing-patterns.md`（资源账本、节奏与对话节拍可迁移）
+- 开书骨架：`../../templates/opening-setup-checklist.md`（先看“种田 / 基建”部分）
+
+---
+
+## 开书前必须先补齐的骨架
+
+种田 / 基建文开书时，至少先锁清：
+
+- 家里到底几口人，谁能干活，谁会拖后腿
+- 地、水、种子、农具、牲口、手艺最缺哪几项
+- 当前季节和未来几轮季节约束
+- 税、债、粮、药、劳力哪一个最卡脖子
+- 村庄 / 族老 / 乡绅 / 商路怎么卡主角
+- 后面靠什么从“活下去”升到“过得越来越好”
+
+不补这些，后面很容易只剩：
+
+- 流水账种地
+- 收成数字涨了，但生活秩序没变
+- 邻里和市场都像背景板
 
 ---
 

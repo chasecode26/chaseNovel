@@ -25,6 +25,7 @@
 
 ### 开书 / 黄金三章
 
+- 若总觉得“能开头，但后面容易写崩”，先看 [opening-setup-checklist.md](/D:/git/chaseNovel/templates/opening-setup-checklist.md)
 - 先看 [craft-and-platform.md](/D:/git/chaseNovel/references/craft-and-platform.md)
 - 再看 [opening-sample-specialties.md](/D:/git/chaseNovel/references/opening-sample-specialties.md)
 - 还不够时，再补 [local-corpus-learning.md](/D:/git/chaseNovel/references/local-corpus-learning.md)
@@ -111,6 +112,7 @@
 如果你只想立刻知道先读哪份：
 
 - 开篇不稳：`opening-sample-specialties.md`
+- 开书骨架不全：`templates/opening-setup-checklist.md`
 - 书名 / 卖点发空：`title-and-selling.md`
 - 单章落不下来：对应题材 `*-chapter-card-library.md`
 - 中盘发散：对应题材 `*-volume-route-library.md`

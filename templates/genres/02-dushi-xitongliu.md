@@ -6,6 +6,25 @@
 - 专项库：`../../references/dushi-chapter-card-library.md` | `../../references/dushi-character-learning.md` | `../../references/dushi-volume-route-library.md` | `../../references/dushi-negative-patterns.md`
 - 通用技法：`../../references/writing-patterns.md`（配合本题材模板吸收都市系统循环与对话节拍）
 - 可选快反馈覆盖：`../../templates/substyles/fanqie-kuai-fankui-shuangdian.md`（仅平台或项目明确要求时启用）
+- 开书骨架：`../../templates/opening-setup-checklist.md`（先看“都市 / 系统流”部分）
+
+---
+
+## 开书前必须先补齐的骨架
+
+都市系统流开书时，至少先锁清：
+
+- 系统怎么改变现实，而不是只会播报
+- 主角混哪条现实赛道，规则和门槛是什么
+- 奖励怎么落到钱、名、人脉、地位或规则优势
+- 信息怎么扩散，谁能压消息，谁会带节奏
+- 至少三层反派：眼前对手、制度 / 资本 / 关系型对手、更高层对手
+
+不补这些，后面很容易只剩：
+
+- 系统面板念稿
+- 反派轮流瞧不起人
+- 爽点全靠围观震惊
 
 ---
 

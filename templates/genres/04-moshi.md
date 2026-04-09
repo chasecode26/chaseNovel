@@ -7,6 +7,28 @@
 - 据点升级：`../../references/moshi-bastion-and-order-library.md` | `../../references/moshi-bastion-governance-chapter-cards.md`
 - 钩子/结果路线：`../../references/hook-result-learning.md`
 - 本地语料：`../../references/local-corpus-learning.md`（末世部分）
+- 开书骨架：`../../templates/opening-setup-checklist.md`（先看“末世 / 废土生存”部分）
+
+---
+
+## 开书前必须先补齐的骨架
+
+末世 / 废土文开书时，至少先锁清：
+
+- 威胁生态：怪物、感染、掠夺者、极端天气分别怎么逼命
+- 地图：据点、安全区、危险区、补给点、撤离线怎么分布
+- 物资账：水、粮、药、电、武器、交通最缺什么
+- 团队分工：谁能打、谁能守、谁能判断、谁能后勤
+- 秩序规则：队伍或据点内部靠什么维持秩序
+- 倒计时：尸潮、断电、缺药、暴露、寒潮至少有一个真实时限
+- 反派池：外敌、内鬼、上位者、非人威胁不能只剩一种
+
+不补这些，后面很容易只剩：
+
+- 一直逃命
+- 一直打怪
+- 一直囤货
+- 但局面结构根本没立住
 
 ---
 

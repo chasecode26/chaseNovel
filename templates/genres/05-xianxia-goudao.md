@@ -6,6 +6,27 @@
 - 专项库：`../../references/goudao-chapter-card-library.md` | `../../references/goudao-character-learning.md` | `../../references/goudao-volume-route-library.md` | `../../references/goudao-negative-patterns.md`
 - 钩子/结果路线：`../../references/hook-result-learning.md`
 - 本地语料：`../../references/local-corpus-learning.md`（苟道部分）
+- 开书骨架：`../../templates/opening-setup-checklist.md`（先看“仙侠 / 苟道”部分）
+
+---
+
+## 开书前必须先补齐的骨架
+
+仙侠 / 苟道开书时，至少先锁清：
+
+- 主角为什么必须苟，一暴露到底会死在哪
+- 哪些底牌能藏，哪些资源不能露，边界要明白
+- 安全区和危险区怎么分，主角为什么能在这片地方先活下来
+- 稳定变强靠什么，不是一直等天降机缘
+- 风险升级链：主角越强，会招来哪几层新麻烦
+- 反派池：同门试探、宗门规则、外部猎杀、旧仇追索分别怎么压过来
+
+不补这些，后面很容易只剩：
+
+- 主角一直躲
+- 一直忍
+- 一直藏底牌
+- 但读者看不见他为什么这样做，也看不见这样做换来了什么
 
 ---
 

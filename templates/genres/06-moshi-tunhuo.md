@@ -6,6 +6,28 @@
 - 末世通用：`04-moshi.md`
 - 专项库：`../../references/moshi-chapter-card-library.md` | `../../references/moshi-volume-route-library.md` | `../../references/moshi-bastion-and-order-library.md`
 - 本地语料：`../../references/local-corpus-learning.md`（末世囤货部分）| `../../references/local-corpus-priority-map.md`
+- 开书骨架：`../../templates/opening-setup-checklist.md`（先看“末世 / 囤货”部分）
+
+---
+
+## 开书前必须先补齐的骨架
+
+末世 / 囤货开书时，至少先锁清：
+
+- 囤货目标表：到底缺什么，优先级怎么排
+- 灾变时间线：什么时候开始乱，什么时候全面失控
+- 仓储边界：空间多大、怎么运、怎么藏、怎么守
+- 前期社会秩序：灾变前怎么买、怎么运、怎么避开注意
+- 中后期消耗线：囤货之后怎么补、怎么换、怎么守
+- 安全屋 / 据点升级线：不是只买东西，还得知道后面怎么活
+- 反派池：亲友消耗、邻里觊觎、组织掠夺、秩序崩盘后的武力冲突
+
+不补这些，后面很容易只剩：
+
+- 采购清单
+- 仓库数字
+- 空间炫技
+- 但真正的生存压力和秩序压力没有立起来
 
 ---
 

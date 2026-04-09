@@ -297,6 +297,7 @@
 ### 番茄作为平台策略时的写法约束
 
 - `/一键开书` 时优先给出：一句话卖点、主角最大反差、前 3 章抓人点、前 10 章连续反馈机制
+- `/一键开书` 时不要只停在卖点层；先按 `templates/opening-setup-checklist.md` 补齐当前题材的结构骨架，再决定黄金三章
 - `/写` 时优先保证：开头 200-500 字内出现有效信息或冲突动作
 - 世界观、系统规则、背景设定，能拆开说就不要一次灌完
 - 每章最好至少有一个能让读者复述的结果点
@@ -411,6 +412,7 @@
 
 - `/一键开书`、开篇规划、前三章校准、自动推荐前三章节拍：详见 `templates/golden-three-route-cheatsheet.md`
 - 先按题材定位三章功能，再结合当前卖点、主线目标与主角处境做本地化改写
+- 若题材属于强结构依赖型，先补 `templates/opening-setup-checklist.md` 对应题材模块，再写三章功能链
 - 模板只定义开篇功能，不定义固定剧情
 
 ---
@@ -434,6 +436,7 @@
 - 本章结果怎么换、怎么避免又是上一章那套：详见 `templates/result-route-cheatsheet.md`
 - 章尾收束发平、钩子总重复、想快速选收尾路线：详见 `templates/hook-route-cheatsheet.md`
 - 6 条常用主战题材对应的写法重点、常见失误、推进技巧与短对照范文：先读 `templates/genre-writing-guide.md`，再按题材下钻到 `templates/genres/*.md`
+- 开书时需要先补“后面能不能长写”的题材骨架：读 `templates/opening-setup-checklist.md`
 - 古代权谋里偏边关争霸、养兵夺权、男频立威：补读 `templates/substyles/bianguan-zhengba-nanpin.md`
 - 平台目标偏番茄、需要更强章节反馈密度：补读 `templates/substyles/fanqie-kuai-fankui-shuangdian.md`
 - 主线里需要慢热、克制、共谋型关系推进：补读 `templates/substyles/manre-gongmou-ganqingxian.md`
