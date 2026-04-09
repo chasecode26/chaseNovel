@@ -163,3 +163,48 @@
 ### 输出要求
 - 复盘结论直接写进 `state.md`、`findings.md` 或阶段摘要
 - 不额外维持一套独立的周期自检报告目录
+
+## 6. 战争文双闸
+
+涉及守城、军报、敌情分析、调兵、烽燧、粮道、权谋推理时，`Writer` 写完后、`Reviewer` 交稿前，默认并行过两道闸门：
+
+### `language_block`
+
+必查：
+
+- 是否存在黑名单词句硬顶关键信息
+- 首次术语是否在同句或下一句就地解释
+- 句子是否一遍能懂，不需要读者自己翻译
+- 问答是否正面答题
+- 军令是否写成可执行动作，而不是口号
+
+输出格式：
+
+- `plain_language_pass: yes | no`
+- `term_explained_on_first_use: yes | no`
+- `qa_matched: yes | no`
+- `order_can_execute: yes | no`
+
+### `causality_block`
+
+必查：
+
+- 判断前是否先给了现场事实
+- 判断后是否写清了不处理会出的后果
+- 主角判断依据是否已经落地
+- 战场条件是否同时考虑了敌我双方
+- 是否存在“作者懂，但读者要自己补逻辑”的句子
+
+输出格式：
+
+- `fact_judgment_consequence_clear: yes | no`
+- `protagonist_reasoning_clear: yes | no`
+- `shared_conditions_checked: yes | no`
+- `reader_inference_gap: yes | no`
+
+### 裁决规则
+
+- 任一闸门出现 `no`，默认 `verdict: revise`
+- 语言过了但因果没过，照样返工
+- 因果过了但句子还是黑话，照样返工
+- 优先修逻辑和信息，不准先修文气冒充过关

@@ -49,16 +49,69 @@ VAGUE_EXPRESSIONS = (
 OPAQUE_TACTICAL_TERMS = (
     "主口",
     "主杀招",
+    "这一口",
+    "那一口",
+    "压不住",
+    "接刃",
+    "错灯",
 )
 OPAQUE_TACTICAL_PATTERNS = (
-    r"有鬼(?:。|！|？|,|，|$)",
-    r"不是主杀招",
-    r"不走主口",
+    "有鬼(?:。|！|？|,|，|$)",
+    "不是主杀招",
+    "不走主口",
+    "事情严重了(?:。|！|？|,|，|$)",
+    "局势更坏了(?:。|！|？|,|，|$)",
+    "气息一下紧了(?:。|！|？|,|，|$)",
 )
 OPAQUE_TACTICAL_METAPHOR_PATTERNS = (
     (r"把(?:咱们|我们)?眼睛(?:全)?(?:拽|拖|引)(?:过去|到(?:这|那)边)", "把眼睛拽过去"),
     (r"把(?:咱们|我们)?(?:目光|视线)(?:全)?(?:拽|拖|引)(?:过去|到(?:这|那)边)", "把目光拖过去"),
 )
+WAR_CONTEXT_MARKERS = (
+    "敌军", "敌人", "叛军", "攻城", "守城", "军报", "斥候", "探子", "城墙", "东坡", "西坡",
+    "烽火", "烽燧", "粮道", "调兵", "军令", "弓手", "骑兵", "步卒", "前营", "后营", "守军",
+)
+WAR_FIRST_USE_TERMS = (
+    "回风高燧", "高燧", "烽燧", "白甲队", "前屏", "辎重", "哨骑", "游骑", "拒马", "床弩",
+    "瓮城", "垛口", "鹿角", "偏师", "疑兵", "督战队", "狼烟台", "烽火台",
+)
+WAR_TERM_EXPLANATION_PATTERNS = (
+    "是", "就是", "指的是", "也就是", "意思是", "其实是", "专门", "负责", "用来", "拿来",
+)
+WAR_JUDGMENT_MARKERS = (
+    "说明", "看来", "显然", "不是试探", "不是主杀招", "不走主口", "多半", "应该", "就是想",
+    "这是要", "要断", "要打", "会从", "要从",
+)
+WAR_FACT_MARKERS = (
+    "火把", "脚步", "喊", "鼓", "烟", "箭", "脚印", "军报", "斥候", "探子", "上人", "墙根",
+    "东坡", "西坡", "正面", "侧面", "城墙", "粮车", "伤兵", "黑着", "没点", "还在", "前排",
+)
+WAR_CONSEQUENCE_MARKERS = (
+    "不然", "否则", "再拖", "慢一步", "就会", "就要", "会让", "会把", "就得", "守不住",
+    "失守", "断粮", "散掉", "摸上来", "空出来", "顶不住",
+)
+WAR_SHARED_CONDITION_MARKERS = (
+    "夜里", "夜色", "天黑", "大雨", "雨夜", "风", "雪", "雾", "地形", "坡", "城墙", "粮道", "山口",
+)
+OUR_SIDE_MARKERS = ("咱们", "我们", "守军", "城里", "本阵", "自家")
+ENEMY_SIDE_MARKERS = ("敌军", "敌人", "他们", "对面", "叛军", "外头", "攻城的")
+ORDER_MARKERS = (
+    "传令", "下令", "军令", "听令", "号令", "速去", "立刻", "马上", "调", "撤", "守", "封", "补", "点火",
+)
+ORDER_EXECUTION_PATTERNS = (
+    r"(?:你|他|她|他们|亲兵|斥候|弓手|骑兵|步卒|老卒|新兵|守军|白甲队|哨骑).{0,4}(?:去|带|领|押|守|撤|封|补|点|烧|搬|堵|压)",
+    r"(?:先|立刻|马上).{0,6}(?:调|撤|守|封|补|点|烧|搬|堵|压)",
+)
+ORDER_TARGET_MARKERS = (
+    "人", "马", "粮", "箭", "门", "坡", "墙", "烽火", "火把", "辎重", "营", "队", "口", "道", "桥",
+)
+QUESTION_REASON_MARKERS = ("为什么", "凭什么", "怎么判断", "为何", "怎么会")
+QUESTION_ACTION_MARKERS = ("怎么办", "怎么做", "现在怎么办", "下一步", "接下来", "先干什么")
+QUESTION_YES_NO_MARKERS = ("是不是", "有没有", "能不能", "要不要", "行不行", "对不对", "会不会", "该不该", "你是说")
+ANSWER_REASON_MARKERS = (
+    "因为", "所以", "看", "听", "前面", "后头", "刚才", "已经", "火把", "人", "马", "粮", "坡", "墙", "门", "探子", "军报",
+)
+STANCE_ONLY_MARKERS = ("闭嘴", "少废话", "照做", "听令", "先别问", "总之", "反正", "看着就知道")
 SUSPENSE_MARKERS = (
     "真相",
     "线索",
@@ -838,6 +891,248 @@ def unique_items(items: list[str]) -> list[str]:
     return result
 
 
+def shorten_text(text: str, limit: int = 18) -> str:
+    compact = re.sub(r"\s+", "", text)
+    if len(compact) <= limit:
+        return compact
+    return compact[:limit] + "..."
+
+
+def extract_dialogue_turns(text: str) -> list[dict[str, object]]:
+    turns: list[dict[str, object]] = []
+    for index, match in enumerate(re.finditer(r"[\u201c\"]([^\u201d\"]+)[\u201d\"]", text), start=1):
+        content = match.group(1).strip()
+        if not content:
+            continue
+        turns.append({"index": index, "text": content})
+    return turns
+
+
+def is_war_context(text: str) -> bool:
+    return any(marker in text for marker in WAR_CONTEXT_MARKERS)
+
+
+def term_is_explained(term: str, text: str) -> bool:
+    if re.search(rf"{re.escape(term)}[\uff08(][^\uff09)]{{1,24}}[\uff09)]", text):
+        return True
+    return any(
+        re.search(rf"{re.escape(term)}.{{0,10}}{pattern}", text)
+        or re.search(rf"{pattern}.{{0,10}}{re.escape(term)}", text)
+        for pattern in WAR_TERM_EXPLANATION_PATTERNS
+    )
+
+
+def detect_war_term_explanation_issues(
+    paragraph: str,
+    next_paragraph: str,
+    index: int,
+    seen_terms: set[str],
+) -> list[dict[str, object]]:
+    if not is_war_context(paragraph + next_paragraph):
+        return []
+
+    issues: list[dict[str, object]] = []
+    window = paragraph + "\n" + next_paragraph
+    for term in WAR_FIRST_USE_TERMS:
+        if term not in paragraph or term in seen_terms:
+            continue
+        seen_terms.add(term)
+        if term_is_explained(term, window):
+            continue
+        issues.append(
+            build_issue(
+                "war_term_first_use_unexplained",
+                "high",
+                f"术语“{term}”第一次出现时没有就地解释清楚。默认要在同句或下一句写明它是什么、现在拿来做什么、会影响谁。",
+                f"p{index}",
+            )
+        )
+    return issues
+
+
+def line_looks_like_question(line: str) -> bool:
+    return (
+        "？" in line
+        or "?" in line
+        or any(marker in line for marker in QUESTION_REASON_MARKERS + QUESTION_ACTION_MARKERS + QUESTION_YES_NO_MARKERS)
+    )
+
+
+def line_has_yes_no_answer(line: str) -> bool:
+    return any(token in line for token in ("是", "不是", "有", "没有", "能", "不能", "要", "不要", "行", "不行", "会", "不会", "该", "不该"))
+
+
+def line_has_reason_answer(line: str) -> bool:
+    return any(marker in line for marker in ANSWER_REASON_MARKERS)
+
+
+def line_has_action_answer(line: str) -> bool:
+    return any(marker in line for marker in ACTION_MARKERS + ORDER_MARKERS)
+
+
+def line_is_stance_only(line: str) -> bool:
+    return any(marker in line for marker in STANCE_ONLY_MARKERS) and not (
+        line_has_yes_no_answer(line) or line_has_reason_answer(line) or line_has_action_answer(line)
+    )
+
+
+def detect_dialogue_question_answer_issues(text: str) -> tuple[list[dict[str, object]], dict[str, object]]:
+    turns = extract_dialogue_turns(text)
+    issues: list[dict[str, object]] = []
+    checked_pairs = 0
+    mismatch_count = 0
+
+    for current, nxt in zip(turns, turns[1:]):
+        question = str(current["text"])
+        answer = str(nxt["text"])
+        if not line_looks_like_question(question):
+            continue
+
+        checked_pairs += 1
+        if any(marker in question for marker in QUESTION_REASON_MARKERS):
+            matched = line_has_reason_answer(answer) or line_has_action_answer(answer)
+        elif any(marker in question for marker in QUESTION_ACTION_MARKERS):
+            matched = line_has_action_answer(answer) or line_has_reason_answer(answer)
+        elif any(marker in question for marker in QUESTION_YES_NO_MARKERS):
+            matched = line_has_yes_no_answer(answer) or line_has_reason_answer(answer) or line_has_action_answer(answer)
+        else:
+            matched = line_has_yes_no_answer(answer) or line_has_reason_answer(answer) or line_has_action_answer(answer)
+
+        if matched and not line_is_stance_only(answer):
+            continue
+
+        mismatch_count += 1
+        issues.append(
+            build_issue(
+                "dialogue_question_missed_answer",
+                "high",
+                f"对白问答没对位：前一句问“{shorten_text(question)}”，后一句答“{shorten_text(answer)}”，没有正面落到结论、原因或下一步动作。",
+                f"q{current['index']}",
+            )
+        )
+
+    return issues, {
+        "qa_pairs_checked": checked_pairs,
+        "qa_mismatch_count": mismatch_count,
+    }
+
+
+def detect_military_order_issues(
+    paragraph: str,
+    next_paragraph: str,
+    index: int,
+) -> list[dict[str, object]]:
+    context = paragraph + "\n" + next_paragraph
+    if not is_war_context(context):
+        return []
+    if not any(marker in paragraph for marker in ORDER_MARKERS):
+        return []
+
+    actor_action = any(re.search(pattern, context) for pattern in ORDER_EXECUTION_PATTERNS)
+    target_or_resource = any(marker in context for marker in ORDER_TARGET_MARKERS)
+    consequence = any(marker in context for marker in WAR_CONSEQUENCE_MARKERS)
+    if sum((actor_action, target_or_resource, consequence)) >= 2:
+        return []
+
+    return [
+        build_issue(
+            "military_order_execution_chain_missing",
+            "high",
+            "军令已经下了，但 1-3 句内没交代谁去做、先动什么、慢一步会怎样，像口号，不像执行链。",
+            f"p{index}",
+        )
+    ]
+
+
+def detect_war_causality_issues(
+    paragraph: str,
+    next_paragraph: str,
+    index: int,
+) -> list[dict[str, object]]:
+    context = paragraph + "\n" + next_paragraph
+    if not is_war_context(context):
+        return []
+
+    has_judgment = (
+        any(marker in paragraph for marker in WAR_JUDGMENT_MARKERS)
+        or any(term in paragraph for term in OPAQUE_TACTICAL_TERMS)
+        or any(re.search(pattern, paragraph) for pattern in OPAQUE_TACTICAL_PATTERNS)
+    )
+    if not has_judgment:
+        return []
+
+    has_fact = any(marker in paragraph for marker in WAR_FACT_MARKERS)
+    has_consequence = any(marker in context for marker in WAR_CONSEQUENCE_MARKERS)
+    issues: list[dict[str, object]] = []
+
+    if not has_fact or not has_consequence:
+        missing = []
+        if not has_fact:
+            missing.append("前置事实")
+        if not has_consequence:
+            missing.append("后果")
+        issues.append(
+            build_issue(
+                "war_causality_incomplete",
+                "high",
+                f"战争文判断链不完整，缺少{'和'.join(missing)}。默认先写现场事实，再写判断，最后落到不处理会怎样。",
+                f"p{index}",
+            )
+        )
+
+    if not has_fact and any(marker in paragraph for marker in ("说明", "显然", "多半", "应该", "就是想", "不是")):
+        issues.append(
+            build_issue(
+                "war_reasoning_gap",
+                "high",
+                "这段更像直接下判断，读者看不到判断依据；先把人、火、坡、墙、兵力变化这些现场证据摆出来。",
+                f"p{index}",
+            )
+        )
+
+    shared_condition = any(marker in context for marker in WAR_SHARED_CONDITION_MARKERS)
+    only_our_side = any(marker in context for marker in OUR_SIDE_MARKERS) and not any(marker in context for marker in ENEMY_SIDE_MARKERS)
+    if shared_condition and only_our_side and has_judgment:
+        issues.append(
+            build_issue(
+                "war_shared_conditions_missing",
+                "high",
+                "写了夜色、地形、粮道这类双方共用条件，却只写我方，不写敌方为什么也能借这个条件行动，因果仍是半截。",
+                f"p{index}",
+            )
+        )
+
+    return issues
+
+
+def build_gate_stats(issues: list[dict[str, object]]) -> dict[str, dict[str, str]]:
+    issue_types = {str(item.get("type", "")) for item in issues}
+    inference_gap_types = {
+        "opaque_tactical_expression",
+        "war_term_first_use_unexplained",
+        "war_causality_incomplete",
+        "war_reasoning_gap",
+        "dialogue_question_missed_answer",
+        "military_order_execution_chain_missing",
+        "war_shared_conditions_missing",
+    }
+    return {
+        "language_block": {
+            "plain_language_pass": "no" if issue_types & {"opaque_tactical_expression", "war_term_first_use_unexplained", "vague_expression", "forced_atmosphere"} else "yes",
+            "term_explained_on_first_use": "no" if "war_term_first_use_unexplained" in issue_types else "yes",
+            "qa_matched": "no" if "dialogue_question_missed_answer" in issue_types else "yes",
+            "order_can_execute": "no" if "military_order_execution_chain_missing" in issue_types else "yes",
+        },
+        "causality_block": {
+            "fact_judgment_consequence_clear": "no" if "war_causality_incomplete" in issue_types else "yes",
+            "protagonist_reasoning_clear": "no" if issue_types & {"war_reasoning_gap", "opaque_tactical_expression"} else "yes",
+            "shared_conditions_checked": "no" if "war_shared_conditions_missing" in issue_types else "yes",
+            "reader_inference_gap": "yes" if issue_types & inference_gap_types else "no",
+        },
+    }
+
+
+
 def repeated_phrases(sentences: list[str], style_profile: dict[str, object]) -> list[dict[str, object]]:
     phrases = unique_items(
         list(style_profile["forbidden_phrases"])
@@ -1386,6 +1681,7 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
     voice_profile = parse_voice_file(voice_root / "voice.md")
     character_voice_entries = parse_character_voice_diff(voice_root / "character-voice-diff.md")
     lyrical_streak = 0
+    seen_war_terms: set[str] = set()
     lyrical_tolerance = int(effective_profile["thresholds"]["lyrical_paragraph_tolerance"])
     authorial_tolerance = int(effective_profile["thresholds"]["authorial_narration_tolerance"])
     soft_authorial_tolerance = int(effective_profile["thresholds"].get("soft_authorial_tolerance", 1))
@@ -1394,8 +1690,12 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
     allowed_phrases = set(effective_profile.get("allowed_phrases", []))
 
     for index, paragraph in enumerate(paragraphs, start=1):
+        next_paragraph = paragraphs[index] if index < len(paragraphs) else ""
         issues.extend(detect_vague_expression_issues(paragraph, index, effective_profile))
         issues.extend(detect_opaque_tactical_expression_issues(paragraph, index))
+        issues.extend(detect_war_term_explanation_issues(paragraph, next_paragraph, index, seen_war_terms))
+        issues.extend(detect_war_causality_issues(paragraph, next_paragraph, index))
+        issues.extend(detect_military_order_issues(paragraph, next_paragraph, index))
         hard_authorial_hits = [
             pattern for pattern in AUTHORIAL_HARD_PATTERNS
             if pattern not in allowed_authorial_patterns and pattern in paragraph
@@ -1511,6 +1811,9 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
         character_voice_entries,
     )
     issues.extend(dialogue_voice_issues)
+    dialogue_qa_issues, dialogue_qa_stats = detect_dialogue_question_answer_issues(text)
+    issues.extend(dialogue_qa_issues)
+    gate_stats = build_gate_stats(issues)
 
     scores = build_scores(issues, style_consistency_issues, dialogue_voice_issues)
     rewrite_plan = build_rewrite_plan(
@@ -1545,6 +1848,8 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
             "abstract_word_counts": abstract_counts,
             "style_consistency": style_consistency_stats,
             "dialogue_voice": dialogue_voice_stats,
+            "dialogue_qa": dialogue_qa_stats,
+            "hard_gates": gate_stats,
         },
         "style_profile": {
             "title": effective_profile["title"],
