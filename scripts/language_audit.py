@@ -132,6 +132,7 @@ EXPLANATORY_PHRASES = (
 OUTLINE_EXPANSION_MARKERS = (
     "说到底",
     "归根结底",
+    "归根到底",
     "真正的问题是",
     "关键在于",
     "问题不在于",
@@ -140,6 +141,33 @@ OUTLINE_EXPANSION_MARKERS = (
     "这说明",
     "也就是说",
     "换句话说",
+)
+SUMMARY_STYLE_MARKERS = (
+    "总的来说",
+    "总结来说",
+    "说白了",
+    "归根到底",
+    "归根结底",
+    "说到底",
+    "本质上",
+    "真正的问题是",
+    "关键在于",
+    "这意味着",
+    "这说明",
+)
+SUMMARY_ABSTRACT_NOUNS = (
+    "局势",
+    "局面",
+    "处境",
+    "代价",
+    "后果",
+    "压力",
+    "风险",
+    "选择",
+    "问题",
+    "根子",
+    "本质",
+    "那口气",
 )
 DIALOGUE_INFO_MARKERS = (
     "也就是说",
@@ -445,9 +473,11 @@ def build_rewrite_plan(
     if style_consistency_issues:
         rewrite_plan.append("回查 voice.md / style.md 的单书 voice DNA，优先修掉解释腔、抒情腔和节拍漂移。")
     if dialogue_voice_issues:
-        rewrite_plan.append("回查 character-voice-diff.md，拉开句长、语速、措辞和压力下的失真方式，避免多人同声。")
+        rewrite_plan.append("回查 character-voice-diff.md，按角色身份、性格和压力状态重写声口；别只求更顺嘴，要先像这个人会说的话。")
     if any(item.get("type") == "outline_expansion_feel" for item in issues):
         rewrite_plan.append("把提纲式结论拆回场面：保留判断，但改成动作受阻、体感变化、资源变化和局面变化。")
+    if any(item.get("type") == "summary_statement_overwrite" for item in issues):
+        rewrite_plan.append("把概括句、提炼句、讲道理句拆开：改成谁在做事、哪条线在坏、慢一步会丢什么，不要替读者总结。")
     if any(item.get("type") == "dialogue_information_shuttle" for item in issues):
         rewrite_plan.append("对白别替作者补课，优先改成争利益、推责任、压人、自保或试探。")
     if any(item.get("type") == "vague_expression" for item in issues):
@@ -1214,6 +1244,32 @@ def detect_outline_expansion_issues(paragraphs: list[str]) -> list[dict[str, obj
     return issues
 
 
+def detect_summary_statement_issues(
+    paragraph: str,
+    index: int,
+) -> list[dict[str, object]]:
+    sentences = split_sentences(paragraph)
+    if not sentences:
+        return []
+
+    scene_markers = ACTION_MARKERS + WAR_FACT_MARKERS + ORDER_MARKERS + ORDER_TARGET_MARKERS
+    for sentence in sentences:
+        stripped = sentence.strip()
+        if len(stripped) < 10:
+            continue
+        summary_hits = count_marker_hits(stripped, SUMMARY_STYLE_MARKERS)
+        abstract_hits = count_marker_hits(stripped, SUMMARY_ABSTRACT_NOUNS)
+        scene_hits = count_marker_hits(stripped, scene_markers)
+        if summary_hits >= 1 and abstract_hits >= 1 and scene_hits == 0:
+            return [build_issue(
+                "summary_statement_overwrite",
+                "high" if summary_hits + abstract_hits >= 3 else "medium",
+                "句子在概括局势、提炼判断或讲道理，但没把场面、后果、执行动作落出来。默认要改成读者看得见的具体人话。",
+                f"p{index}",
+            )]
+    return []
+
+
 def genre_prefers_suspense(profile: dict[str, object]) -> bool:
     markers = " ".join(
         [
@@ -1467,7 +1523,7 @@ def detect_dialogue_voice_issues(
         issues.append({
             "type": "dialogue_voice_diff_not_applied",
             "severity": "medium",
-            "reason": "项目里已有角色说话差分表，但当前对白仍然偏同声，说明差分没有真正落进正文。",
+            "reason": "项目里已有角色说话差分表，但当前对白仍然偏同声，说明差分没有真正落进正文；语言在被统一修平，没有按身份、性格和压力状态分开。",
         })
 
     stats = {
@@ -1692,6 +1748,7 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
     for index, paragraph in enumerate(paragraphs, start=1):
         next_paragraph = paragraphs[index] if index < len(paragraphs) else ""
         issues.extend(detect_vague_expression_issues(paragraph, index, effective_profile))
+        issues.extend(detect_summary_statement_issues(paragraph, index))
         issues.extend(detect_opaque_tactical_expression_issues(paragraph, index))
         issues.extend(detect_war_term_explanation_issues(paragraph, next_paragraph, index, seen_war_terms))
         issues.extend(detect_war_causality_issues(paragraph, next_paragraph, index))
