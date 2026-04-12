@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from novel_utils import count_chapter_files, detect_current_chapter, read_text
+from novel_utils import count_chapter_files, detect_current_chapter, extract_state_value, read_text
 
 
 REQUIRED_DIRS = [
@@ -54,12 +54,15 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     state_text = read_text(project_dir / "00_memory" / "state.md")
     current_chapter = detect_current_chapter(state_text) or None
     chapters = count_chapter_files(project_dir)
+    current_place = extract_state_value(state_text, "当前地点")
 
     warnings: list[str] = []
     if chapters == 0:
         warnings.append("当前项目还没有正文章节，无法做连续性与反重复回归。")
     if current_chapter is None:
         warnings.append("state.md 中未识别到“当前章节”，上下文编译会退回默认章节。")
+    if not current_place:
+        warnings.append("state.md 中缺少“当前地点”，章节起章站位与转场校验会偏弱。")
     elif chapters and current_chapter > chapters + 1:
         warnings.append(
             f"state.md 当前章节为第{current_chapter}章，但正文章节仅检测到 {chapters} 章，状态可能超前。"
@@ -68,6 +71,10 @@ def build_payload(project_dir: Path) -> dict[str, object]:
         warnings.append("缺少 next_context.md；建议运行 context_compiler.py 或 chase context。")
     if not (project_dir / "00_memory" / "style_guardrails.md").exists():
         warnings.append("缺少 style_guardrails.md；建议补齐风格护栏，避免后续章节持续发虚或术语挡路。")
+    if chapters >= 10 and not (project_dir / "00_memory" / "summaries" / "mid.md").exists():
+        warnings.append("章节已达 10 章以上但缺少 summaries/mid.md，断更恢复会逐渐变慢。")
+    if chapters >= 15 and not (project_dir / "01_outline" / "volume_blueprint.md").exists():
+        warnings.append("章节已达 15 章以上但缺少 volume_blueprint.md，卷级节奏与收束风险会上升。")
 
     status = "pass"
     if missing_dirs or missing_files:

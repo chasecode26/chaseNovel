@@ -1184,6 +1184,72 @@ def build_gate_stats(issues: list[dict[str, object]]) -> dict[str, dict[str, str
     }
 
 
+def build_findings(issues: list[dict[str, object]]) -> list[str]:
+    return [
+        f"{item.get('position', 'global')} {item.get('type', 'unknown')}: {item.get('reason', '')}"
+        for item in issues
+    ]
+
+
+def derive_ai_tone_source(issues: list[dict[str, object]]) -> list[str]:
+    focus_types = {
+        "authorial_narration",
+        "authorial_narration_soft",
+        "summary_statement",
+        "authorial_summary_blacklist",
+        "outline_expansion",
+        "forced_atmosphere",
+        "vague_expression",
+        "opaque_tactical_expression",
+    }
+    hits: list[str] = []
+    for item in issues:
+        issue_type = str(item.get("type", ""))
+        if issue_type in focus_types or issue_type.startswith("war_"):
+            hits.append(issue_type)
+    deduped: list[str] = []
+    for item in hits:
+        if item not in deduped:
+            deduped.append(item)
+    return deduped[:5]
+
+
+def derive_first_fix_priority(issues: list[dict[str, object]]) -> str:
+    issue_types = {str(item.get("type", "")) for item in issues}
+    if issue_types & {
+        "opaque_tactical_expression",
+        "war_term_first_use_unexplained",
+        "war_causality_incomplete",
+        "war_reasoning_gap",
+        "military_order_execution_chain_missing",
+        "dialogue_question_missed_answer",
+        "war_shared_conditions_missing",
+    }:
+        return "plain_language_and_causality"
+    if issue_types & {
+        "authorial_narration",
+        "authorial_narration_soft",
+        "summary_statement",
+        "authorial_summary_blacklist",
+        "outline_expansion",
+        "forced_atmosphere",
+        "vague_expression",
+    }:
+        return "remove_ai_tone_and_restore_scene_carrying"
+    if any(item.startswith("dialogue_") for item in issue_types):
+        return "dialogue_voice_and_qa"
+    return "language_clarity"
+
+
+def derive_rewrite_scope(issues: list[dict[str, object]]) -> str:
+    high_severity_count = sum(1 for item in issues if item.get("severity") == "high")
+    if high_severity_count >= 2 or len(issues) >= 8:
+        return "full_chapter"
+    if high_severity_count == 1 or len(issues) >= 4:
+        return "multi_paragraph"
+    return "flagged_paragraphs"
+
+
 
 def repeated_phrases(sentences: list[str], style_profile: dict[str, object]) -> list[dict[str, object]]:
     phrases = unique_items(
@@ -1961,13 +2027,31 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
     elif issues:
         verdict = "warn"
 
+    findings = build_findings(issues)
+    rewrite_scope = derive_rewrite_scope(issues)
+    first_fix_priority = derive_first_fix_priority(issues)
+    ai_tone_source = derive_ai_tone_source(issues)
+    blocking = "yes" if verdict == "rewrite" else "no"
+
     return {
         "issues": issues,
+        "findings": findings,
+        "blocking": blocking,
+        "suggested_fix": rewrite_plan[:5],
+        "ai_tone_source": ai_tone_source,
+        "needs_full_rewrite": "yes" if rewrite_scope == "full_chapter" else "no",
+        "return_to": "Writer" if verdict in {"rewrite", "warn"} else "",
+        "rewrite_scope": rewrite_scope if issues else "",
+        "first_fix_priority": first_fix_priority if issues else "",
+        "recheck_order": "LanguageReviewer" if issues else "",
         "scores": scores,
         "rewrite_plan": rewrite_plan,
         "suggestions": suggestions,
         "rewritten_text": rewritten_text,
         "verdict": verdict,
+        "hard_gates": gate_stats,
+        "language_block": gate_stats["language_block"],
+        "causality_block": gate_stats["causality_block"],
         "stats": {
             "paragraphs": len(paragraphs),
             "sentences": len(sentences),
@@ -2158,6 +2242,18 @@ def main() -> int:
         "style_path": style_path.as_posix(),
         "mode": args.mode,
         "verdict": analysis["verdict"],
+        "blocking": analysis["blocking"],
+        "findings": analysis["findings"],
+        "suggested_fix": analysis["suggested_fix"],
+        "ai_tone_source": analysis["ai_tone_source"],
+        "needs_full_rewrite": analysis["needs_full_rewrite"],
+        "return_to": analysis["return_to"],
+        "rewrite_scope": analysis["rewrite_scope"],
+        "first_fix_priority": analysis["first_fix_priority"],
+        "recheck_order": analysis["recheck_order"],
+        "hard_gates": analysis["hard_gates"],
+        "language_block": analysis["language_block"],
+        "causality_block": analysis["causality_block"],
         "report_path": report_path.as_posix(),
         "result_path": result_path.as_posix(),
         "rewrite_out": rewrite_out.as_posix() if rewrite_out else "",

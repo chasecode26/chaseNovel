@@ -1,82 +1,64 @@
 # chaseNovel
 
-`chaseNovel` 是一套面向中文网文长篇连载的写作技能仓库。
+`chaseNovel` 是一套面向中文长篇小说连载的本地技能与脚本工作台。
 
-它解决的不是“给我一个 prompt 写一章”，而是把连载写作拆成可复用的：
+它不解决“给我一个 prompt 写一章”这种单点问题，解决的是长篇连载真正会失控的地方：
 
-- 规则
-- 记忆文件
-- 审查模板
-- 质量门槛
-- 本地脚本工具
+- 项目记忆
+- 章节规划
+- 正文推进
+- 多 Agent 复审
+- 质量门禁
+- 脚本体检
 
-目标很明确：让项目在几十章、几百章之后，仍然能稳住节奏、设定、人物和追读动力。
+核心目标只有一个：在几十章、几百章的推进过程中，尽量稳住节奏、设定、人物、伏笔、文风和追读动力。
 
-## 它适合什么
+## 当前版本重点
 
-- 开新书，做题材定位、卖点、黄金三章、卷纲和阶段目标
-- 继续写已有项目，依赖 `plan.md`、`state.md`、时间线、人物弧和伏笔表推进
-- 修改烂章、水章、重复章、AI 味重的章
-- 做断更恢复、阶段体检、伏笔回收排期、反重复扫描
-- 管理“书级 voice”而不是只管某一章顺不顺
+当前默认走质量优先的多 Agent 链路：
 
-## 它不适合什么
+`Planner -> HookEmotion -> Writer -> (LanguageReviewer || StyleDialogue || ContinuityReviewer || CausalityReviewer) -> Reviewer`
 
-- 只想要一句灵感文案
-- 只想随手润色一小段，不关心长线连续性
-- 只做文学评论，不推进创作
-- 明确不要项目记忆、不要质量门槛、不要连载约束
+这里的 `Reviewer` 指总审角色，不是普通 reviewer。
 
-## 现在这套版本的核心变化
+硬规则如下：
 
-这版 `chaseNovel` 不再把所有书默认压成统一“番茄腔”或“口水化大白话”。
+- 同一章同一时刻只允许一个 `Writer`
+- 任一 reviewer 给出 `blocking=yes`，直接回退
+- `Reviewer` 拥有最终放行权
+- 脚本通过不等于可交稿
+- 整章读感不过，默认返工
 
-当前默认基线是：
+## 适用场景
 
-- 清晰可判读
-- 章节功能优先
-- 结果变化要落地
-- 对白要有真实功能
-- 文风要服从题材、角色和项目自己的 `voice.md`
+- 开新书，做题材定位、卖点、黄金三章、卷纲、阶段目标
+- 依赖 `plan.md`、`state.md`、时间线、人物弧、伏笔表推进后续章节
+- 修复水章、重复章、AI 味重、人物失真、因果不稳的章节
+- 做断更恢复、批量体检、伏笔排期、反重复扫描
+- 管理书级 `voice` 与 `style`，而不是只润单章句子
 
-只有在用户明确指定平台，或题材天然要求高密度快反馈时，才启用番茄向覆盖策略。
+## 不适用场景
 
-换句话说：
+- 只想临时要一句灵感文案
+- 只想随手润一小段，不关心长线连续性
+- 明确不要项目记忆、不要质量门禁、不要复审流程
 
-- 默认不是“统一短句快推”
-- 默认不是“所有对白都直给”
-- 默认不是“写清楚 = 扁平化”
+## 仓库结构
 
-## 仓库里有什么
-
-- [SKILL.md](/D:/git/chaseNovel/SKILL.md)
-  主入口。定义工作流、任务路由、默认 Agent 编排、门槛和引用导航。
-- [references/](/D:/git/chaseNovel/references)
-  规则、contracts、诊断文档、题材资料、平台策略和执行说明。
-- [templates/](/D:/git/chaseNovel/templates)
-  记忆模板、章卡模板、审查模板、风格模板。
-- [technique-kb/](/D:/git/chaseNovel/technique-kb)
-  供脚本和人工共用的结构化技法知识库。
-- [scripts/](/D:/git/chaseNovel/scripts)
-  本地质量工具：planning、context、timeline、repeat、gate、audit、dashboard 等。
-- [bin/chase.js](/D:/git/chaseNovel/bin/chase.js)
-  CLI 入口。
-- [ARCHITECTURE.md](/D:/git/chaseNovel/ARCHITECTURE.md)
-  设计目标、分层和项目布局说明。
-
-## 快速上手
-
-1. 先看 [SKILL.md](/D:/git/chaseNovel/SKILL.md) 顶部“快速入口”。
-2. 用 `chase bootstrap --project "novel_书名"` 初始化项目。
-3. 用 `chase doctor --project "novel_书名"` 检查结构是否完整。
-4. 写下一章前，先跑 `chase planning` 或 `chase check`，把规划和上下文锚点补齐。
-5. 草稿完成后，再跑 `gate`、`draft`、`audit` 一类脚本做闸门。
-
-说明：
-
-- `check` 不是宽松绿灯，它是严格体检。
-- 一个刚 bootstrap、但还没补齐规划和记忆文件的项目，`check` 失败是正常的。
-- 这不是流程设计失误，而是为了阻止“没锚点硬写”。
+- [SKILL.md](/D:/ai/chaseNovel/SKILL.md)
+  技能主入口，定义默认流程、角色链路、质量门槛和资源导航
+- [ARCHITECTURE.md](/D:/ai/chaseNovel/ARCHITECTURE.md)
+  架构说明，描述分层、职责和边界
+- [references/](/D:/ai/chaseNovel/references)
+  执行规则、contracts、协作规范、诊断说明
+- [templates/](/D:/ai/chaseNovel/templates)
+  项目模板、记忆模板、文风模板、审查模板
+- [technique-kb/](/D:/ai/chaseNovel/technique-kb)
+  结构化写作规则库
+- [scripts/](/D:/ai/chaseNovel/scripts)
+  本地体检、审查、门禁、报告脚本
+- [bin/chase.js](/D:/ai/chaseNovel/bin/chase.js)
+  CLI 入口
 
 ## 默认工作流
 
@@ -84,24 +66,40 @@
 
 `Planner -> Character -> Worldbuilder -> Reviewer`
 
+这里的 `Reviewer` 仍然是总审角色，但开书链不进入章节级四审。
+
 ### 写章 / 续写
 
-`Planner -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer || Reviewer] -> Writer/Planner 修正 -> Reviewer`
+`Planner -> HookEmotion -> Writer -> (LanguageReviewer || StyleDialogue || ContinuityReviewer || CausalityReviewer) -> Reviewer`
 
 ### 改章
 
-`Reviewer -> Planner -> HookEmotion -> Writer -> [StyleDialogue || LanguageReviewer || StyleConsistencyReviewer || ContinuityReviewer || CausalityReviewer] -> Writer 修正 -> Reviewer`
+`Reviewer -> Planner -> HookEmotion(如需要) -> Writer -> (LanguageReviewer || StyleDialogue || ContinuityReviewer || CausalityReviewer) -> Reviewer`
 
-## 质量门槛
+## 质量门禁
 
-写作不是“先写完再说”，而是默认带门槛推进：
+`chaseNovel` 默认不是先写完再说，而是边推进边过门。
 
-- 写前先做章节规划预审
-- 写后先过连续性和因果闸门
-- 语言层再过 AI 味、对白差分、风格漂移审计
-- 项目级持续检查时间线、伏笔、人物弧和重复风险
+当前脚本层与文档契约已经对齐，核心会显式输出：
 
-关键脚本：
+- `blocking`
+- `return_to`
+- `rewrite_scope`
+- `first_fix_priority`
+- `recheck_order`
+- `language_block`
+- `causality_block`
+
+脚本放行结论统一看“脚本放行结论”字段：
+
+- 聚合层常见字段为 `final_release`
+- `chapter_gate.py` 当前输出字段为 `script_final_release`
+
+含义一致，都是“脚本层是否建议继续推进”。
+
+## 本地脚本
+
+核心脚本包括：
 
 - `chapter_planning_review.py`
 - `chapter_gate.py`
@@ -112,10 +110,76 @@
 - `foreshadow_scheduler.py`
 - `arc_tracker.py`
 - `dashboard_snapshot.py`
+- `workflow_runner.py`
 
-## CLI 命令面
+其中：
 
-实际可用命令如下：
+- `planning` 负责章节规划预审与回退契约
+- `audit` 负责语言、AI 味、黑话简称、双闸题材检查
+- `gate` 负责连续性、因果、语言门禁汇总
+- `check` 负责整条 dry-run 体检
+
+## 脚本给谁用
+
+这些 `py` 不是只给 agent 用的内部脚本，而是一套“人和 agent 共用”的本地工具层。
+
+| 类型 | 谁在用 | 常见入口 | 主要作用 |
+|------|--------|----------|----------|
+| 人直接使用 | 作者 / 操作人 | `chase check`、`chase context`、`chase volume` | 手动体检、生成报告、排查问题 |
+| Agent 直接使用 | Codex / 其他 agent | `python scripts/*.py --project ... --json` | 读取状态、跑审计、生成上下文 |
+| 编排器内部使用 | `workflow_runner.py` | `chase run`、`chase check` | 串起多步脚本，形成完整工作流 |
+| 报告与检索层消费 | `dashboard_snapshot.py`、`context_compiler.py`、retrieval | 继续消费 `05_reports/*.json` 与 `00_memory/retrieval/*.json` |
+
+更准确地说：
+- `scripts/*.py` 是能力层
+- `bin/chase.js` 是统一 CLI 入口
+- `workflow_runner.py` 是编排层
+- `05_reports` 与 `00_memory/retrieval` 是产物消费层
+
+## 脚本分工速查
+
+### 直接给人和 agent 跑的能力脚本
+
+| 脚本 | 入口 | 主要作用 |
+|------|------|----------|
+| `project_bootstrap.py` | `chase bootstrap` | 初始化项目骨架 |
+| `project_doctor.py` | `chase doctor` | 检查项目能否继续工作 |
+| `context_compiler.py` | `chase context` | 生成 `next_context` |
+| `chapter_planning_review.py` | `chase planning` | 做章节规划预审 |
+| `draft_gate.py` | `chase draft` | 检查草稿级问题 |
+| `chapter_gate.py` | `chase gate` | 做章节门禁汇总 |
+| `language_audit.py` | `chase audit` | 查语言、AI 味与风格问题 |
+| `anti_repeat_scan.py` | `chase repeat` | 查重复与中盘疲劳 |
+| `timeline_check.py` | `chase timeline` | 查时间线冲突 |
+| `foreshadow_scheduler.py` | `chase foreshadow` | 排期伏笔与回收窗口 |
+| `arc_tracker.py` | `chase arc` | 跟踪角色弧/主线弧推进 |
+| `memory_update.py` | `chase memory` | 更新 `recent.md`、`mid.md`、同步队列 |
+| `volume_audit.py` | `chase volume` | 做卷级健康审计 |
+| `milestone_audit.py` | `chase milestone` | 做节点/字数审计 |
+| `dashboard_snapshot.py` | `chase dashboard` | 生成 dashboard 与风险摘要 |
+
+### 主要给编排器调用的脚本
+
+| 脚本 | 谁调用它 | 作用 |
+|------|----------|------|
+| `workflow_runner.py` | `chase run` / `chase check` / agent | 串起多步脚本并输出统一 pipeline 报告 |
+| `batch_gate.py` | 人 / agent / 批处理 | 批量检查多章 |
+
+### 主要给其他脚本导入的辅助脚本
+
+| 脚本 | 谁用它 | 作用 |
+|------|--------|------|
+| `novel_utils.py` | 几乎所有 `scripts/*.py` | 提供项目读写、章节识别、题材识别、Markdown 表格解析等基础函数 |
+
+## 推荐使用方式
+
+- 人手动使用：优先走 `chase <command>`
+- Agent 自动化：优先走 `python scripts/*.py --json` 或 `chase run/check`
+- 需要整链体检：走 `chase check`
+- 需要自定义步骤：走 `chase run --steps ...`
+- 需要给后续写作喂状态：看 `00_memory/retrieval/next_context.*` 与 `health_digest.*`
+
+## CLI
 
 ```bash
 chase planning --project <dir> [--chapter <n> | --target-chapter <n>]
@@ -141,38 +205,17 @@ chase run --project <dir> [--chapter <n>] [--steps <csv>]
 ```bash
 chase bootstrap --project "novel_书名"
 chase doctor --project "novel_书名"
-chase check --project "novel_书名" --chapter 12
 chase planning --project "novel_书名" --target-chapter 12
-chase context --project "novel_书名" --chapter 12
+chase check --project "novel_书名" --chapter 12
 chase gate --project "novel_书名" --chapter-no 12
-chase draft --project "novel_书名" --chapter-no 12
 chase audit --project "novel_书名" --chapter-no 12
-chase run --project "novel_书名" --chapter 12
 ```
 
-补充规则：
+## 记忆文件
 
-- `planning` 默认看“下一章”；`--chapter` 表示当前已存在草稿章。
-- `run --chapter N` 传的是“已经写出来的第 N 章”，不是下一章。
-- `check` 是一次 dry-run 健康扫描：`doctor + planning + context + foreshadow + arc + timeline + repeat + dashboard`。
+这套技能的核心假设是：长篇连载不能只靠当前会话上下文。
 
-## 推荐阅读顺序
-
-1. [SKILL.md](/D:/git/chaseNovel/SKILL.md)
-2. [references/execution_workflow.md](/D:/git/chaseNovel/references/execution_workflow.md)
-3. [references/output-contracts.md](/D:/git/chaseNovel/references/output-contracts.md)
-4. [references/agent-collaboration.md](/D:/git/chaseNovel/references/agent-collaboration.md)
-5. 再按任务类型进入对应 `references/`
-6. 需要固定骨架时看 `templates/`
-7. 需要做批量校验时看 `scripts/`
-
-## 记忆文件为什么重要
-
-`chaseNovel` 的核心假设是：
-
-长篇连载不能只靠当前聊天上下文。
-
-所以项目状态默认落在 Markdown 文件里，而不是只活在会话里。常见记忆文件包括：
+所以状态默认落在项目文件里，而不是只活在聊天里。常用文件包括：
 
 - `plan.md`
 - `state.md`
@@ -186,60 +229,21 @@ chase run --project "novel_书名" --chapter 12
 - `scene_preferences.md`
 - `summaries/recent.md`
 
-其中：
+最关键的 4 个文件：
 
-- `style.md` 负责书级语言基线、禁写表达、慎用表达
-- `voice.md` 负责“这一本书怎么说话”
-- `character-voice-diff.md` 负责角色台词差分，不让所有人说成一个声口
+- `plan.md`
+- `state.md`
+- `style.md`
+- `voice.md`
 
-## 目录结构
+## 推荐阅读顺序
 
-```text
-repo/
-├── SKILL.md
-├── README.md
-├── ARCHITECTURE.md
-├── bin/
-├── references/
-├── templates/
-├── technique-kb/
-├── scripts/
-├── schemas/
-└── skill.json
-```
-
-典型小说项目结构：
-
-```text
-novel_{book}/
-├── 00_memory/
-├── 01_outline/
-├── 02_knowledge/
-├── 03_chapters/
-├── 04_gate/
-└── 05_reports/
-```
-
-## 文风治理现在会抓什么
-
-当前语言治理不只是查“句子顺不顺”，还会查这些问题：
-
-- 作者替角色下结论
-- 抽象氛围词堆叠
-- 故意写虚、强行吊着不说
-- 提纲扩写感
-- 对白像在搬运信息
-- 多角色同声
-- 书级 voice 漂移
-
-对应入口：
-
-- [references/language-governance.md](/D:/git/chaseNovel/references/language-governance.md)
-- [references/style-runtime-core.md](/D:/git/chaseNovel/references/style-runtime-core.md)
-- [templates/language-anti-ai-review.md](/D:/git/chaseNovel/templates/language-anti-ai-review.md)
-- [templates/character-voice-diff.md](/D:/git/chaseNovel/templates/character-voice-diff.md)
-- [scripts/language_audit.py](/D:/git/chaseNovel/scripts/language_audit.py)
+1. [SKILL.md](/D:/ai/chaseNovel/SKILL.md)
+2. [references/execution_workflow.md](/D:/ai/chaseNovel/references/execution_workflow.md)
+3. [references/output-contracts.md](/D:/ai/chaseNovel/references/output-contracts.md)
+4. [references/agent-collaboration.md](/D:/ai/chaseNovel/references/agent-collaboration.md)
+5. 再按任务类型进入对应 `references/`
 
 ## 一句话总结
 
-`chaseNovel` 不是“网文 prompt 集”，而是一套把长篇连载写作文件化、可恢复、可审查、可持续推进的本地工作台。
+`chaseNovel` 不是“网文 prompt 集”，而是一套把长篇连载写作文件化、可恢复、可复审、可校验、可持续推进的本地技能工作台。

@@ -41,10 +41,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--project", required=True, help="Path to the novel project root")
     parser.add_argument("--chapter-no", type=int, help="Target chapter number")
     parser.add_argument("--chapter", help="Path to a specific chapter markdown file")
-    parser.add_argument(
-        "--templates-root",
-        help="Path to the chaseNovel templates directory; defaults to ../templates",
-    )
     parser.add_argument("--style", help="Path to a specific style.md file")
     parser.add_argument("--skip-language", action="store_true", help="Skip language audit integration")
     parser.add_argument("--rewrite-out", help="Optional output path for the full suggested rewrite")
@@ -187,6 +183,50 @@ def summarize_language_analysis(language_analysis: dict[str, object]) -> tuple[l
     return blockers, warnings
 
 
+def build_script_gate_contract(
+    continuity_verdict: str,
+    language_analysis: dict[str, object],
+    blockers: list[str],
+    warnings: list[str],
+) -> dict[str, str]:
+    language_blocking = str(language_analysis.get("blocking", "no"))
+    if continuity_verdict == "block":
+        return {
+            "blocking": "yes",
+            "return_to": "Planner + Writer + ContinuityReviewer",
+            "rewrite_scope": "chapter_card + chapter_draft",
+            "first_fix_priority": "continuity_and_memory_alignment",
+            "recheck_order": "planning -> gate",
+            "script_final_release": "revise",
+        }
+    if language_blocking == "yes":
+        return {
+            "blocking": "yes",
+            "return_to": str(language_analysis.get("return_to", "Writer")),
+            "rewrite_scope": str(language_analysis.get("rewrite_scope", "flagged_paragraphs")),
+            "first_fix_priority": str(language_analysis.get("first_fix_priority", "language_clarity")),
+            "recheck_order": "LanguageReviewer -> gate",
+            "script_final_release": "revise",
+        }
+    if blockers or warnings:
+        return {
+            "blocking": "no",
+            "return_to": "",
+            "rewrite_scope": "",
+            "first_fix_priority": "advisory_cleanup",
+            "recheck_order": "gate",
+            "script_final_release": "revise",
+        }
+    return {
+        "blocking": "no",
+        "return_to": "",
+        "rewrite_scope": "",
+        "first_fix_priority": "",
+        "recheck_order": "",
+        "script_final_release": "pass",
+    }
+
+
 def render_language_suggestions(suggestions: list[dict[str, object]]) -> str:
     if not suggestions:
         return "- 无局部改写建议"
@@ -201,6 +241,73 @@ def render_language_suggestions(suggestions: list[dict[str, object]]) -> str:
             "",
         ])
     return "\n".join(blocks).rstrip()
+
+
+def render_gate_markdown(analysis: dict[str, object]) -> str:
+    lines = [
+        f"# Chapter {int(analysis['chapter_no']):03d} Continuity Gate",
+        "",
+        f"- generated_at: `{datetime.now().strftime('%Y-%m-%d %H:%M')}`",
+        f"- chapter_path: `{analysis['chapter_path']}`",
+        f"- style_path: `{analysis['style_path']}`",
+        "",
+        "## Core Anchors",
+        f"- absolute_time: {analysis['absolute_time']}",
+        f"- relative_time: {analysis['relative_time']}",
+        f"- current_place: {analysis['current_place']}",
+        f"- danger_hits: {', '.join(analysis['danger_hits']) if analysis['danger_hits'] else 'none'}",
+        f"- has_arrangements: {'yes' if analysis['has_arrangements'] else 'no'}",
+        f"- has_foreshadowing: {'yes' if analysis['has_foreshadowing'] else 'no'}",
+        "",
+        "## Planning Gate",
+        f"- planning_status: {str(analysis['planning_status']).upper()}",
+        f"- planning_verdict: {str(analysis['planning_verdict']).upper()}",
+        f"- planning_report_path: {analysis['planning_report_path'] or 'missing'}",
+        "",
+        "### Planning Blockers",
+        render_list(list(analysis["planning_blockers"]), "none"),
+        "",
+        "### Planning Warnings",
+        render_list(list(analysis["planning_warnings"]), "none"),
+        "",
+        "## Language Gate",
+        f"- language_verdict: {str(analysis['language_verdict']).upper()}",
+        f"- language_scores: {json.dumps(analysis['language_scores'], ensure_ascii=False)}",
+        f"- language_style_title: {analysis['language_style_profile'].get('title', 'unknown') or 'unknown'}",
+        f"- language_style_genre: {analysis['language_style_profile'].get('genre', 'unknown') or 'unknown'}",
+        f"- language_block: {json.dumps(analysis['language_block'], ensure_ascii=False)}",
+        f"- causality_block: {json.dumps(analysis['causality_block'], ensure_ascii=False)}",
+        "",
+        "### Language Blockers",
+        render_list(list(analysis["language_blockers"]), "none"),
+        "",
+        "### Language Warnings",
+        render_list(list(analysis["language_warnings"]), "none"),
+        "",
+        "## Script Contract",
+        f"- continuity_verdict: {str(analysis['continuity_verdict']).upper()}",
+        f"- final_verdict: {str(analysis['verdict']).upper()}",
+        f"- blocking: {analysis['blocking']}",
+        f"- return_to: {analysis['return_to'] or 'n/a'}",
+        f"- rewrite_scope: {analysis['rewrite_scope'] or 'n/a'}",
+        f"- first_fix_priority: {analysis['first_fix_priority'] or 'n/a'}",
+        f"- recheck_order: {analysis['recheck_order'] or 'n/a'}",
+        f"- script_final_release: {str(analysis['script_final_release']).upper()}",
+        "",
+        "## Blockers",
+        render_list(list(analysis["blockers"]), "none"),
+        "",
+        "## Warnings",
+        render_list(list(analysis["warnings"]), "none"),
+        "",
+        "## Rewrite Plan",
+        render_list(list(analysis["language_rewrite_plan"]), "none"),
+        "",
+        "## Language Suggestions",
+        render_language_suggestions(list(analysis["language_suggestions"])),
+        "",
+    ]
+    return "\n".join(lines)
 
 
 def load_planning_review(project_dir: Path, chapter_no: int) -> dict[str, object]:
@@ -358,6 +465,7 @@ def build_gate_analysis(
     }
     language_blockers, language_warnings = summarize_language_analysis(language_analysis)
     verdict = map_overall_verdict(continuity_verdict, str(language_analysis["verdict"]), skip_language)
+    script_contract = build_script_gate_contract(continuity_verdict, language_analysis, blockers, warnings)
 
     return {
         "chapter_no": chapter_no,
@@ -373,6 +481,9 @@ def build_gate_analysis(
         "language_verdict": language_analysis["verdict"],
         "language_scores": language_analysis.get("scores", {}),
         "language_style_profile": language_analysis.get("style_profile", {}),
+        "language_hard_gates": language_analysis.get("hard_gates", {}),
+        "language_block": language_analysis.get("language_block", {}),
+        "causality_block": language_analysis.get("causality_block", {}),
         "planning_status": planning_status,
         "planning_verdict": planning_verdict,
         "planning_blockers": planning_blockers,
@@ -389,17 +500,18 @@ def build_gate_analysis(
         "language_rewritten_text": language_analysis.get("rewritten_text", chapter_content),
         "warnings": warnings,
         "blockers": blockers,
+        "blocking": script_contract["blocking"],
+        "return_to": script_contract["return_to"],
+        "rewrite_scope": script_contract["rewrite_scope"],
+        "first_fix_priority": script_contract["first_fix_priority"],
+        "recheck_order": script_contract["recheck_order"],
+        "script_final_release": script_contract["script_final_release"],
         "verdict": verdict,
     }
 
 
-def load_template(templates_root: Path, name: str) -> str:
-    return (templates_root / name).read_text(encoding="utf-8")
-
-
 def write_outputs(
     project_dir: Path,
-    templates_root: Path,
     analysis: dict[str, object],
     dry_run: bool,
     rewrite_out: Path | None,
@@ -409,37 +521,7 @@ def write_outputs(
     report_path = gate_dir / "continuity_report.md"
     result_path = gate_dir / "result.json"
     gate_dir.mkdir(parents=True, exist_ok=True)
-
-    template = load_template(templates_root, "continuity-report.md")
-    rendered = template.format(
-        chapter_no=f"{chapter_no:03d}",
-        generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
-        chapter_path=analysis["chapter_path"],
-        style_path=analysis["style_path"],
-        absolute_time=analysis["absolute_time"],
-        relative_time=analysis["relative_time"],
-        current_place=analysis["current_place"],
-        danger_hits=", ".join(analysis["danger_hits"]) if analysis["danger_hits"] else "无",
-        arrangement_status="是" if analysis["has_arrangements"] else "否",
-        foreshadow_status="是" if analysis["has_foreshadowing"] else "否",
-        planning_status=str(analysis["planning_status"]).upper(),
-        planning_verdict=str(analysis["planning_verdict"]).upper(),
-        planning_report_path=analysis["planning_report_path"] or "未找到",
-        planning_blockers=render_list(list(analysis["planning_blockers"]), "无规划预审阻断项"),
-        planning_warnings=render_list(list(analysis["planning_warnings"]), "无规划预审预警项"),
-        continuity_verdict=str(analysis["continuity_verdict"]).upper(),
-        language_verdict=str(analysis["language_verdict"]).upper(),
-        language_style_title=analysis["language_style_profile"].get("title", "未命名") or "未命名",
-        language_style_genre=analysis["language_style_profile"].get("genre", "未设定") or "未设定",
-        language_scores=json.dumps(analysis["language_scores"], ensure_ascii=False),
-        language_blockers=render_list(list(analysis["language_blockers"]), "无语言阻断项"),
-        language_warnings=render_list(list(analysis["language_warnings"]), "无语言预警项"),
-        language_rewrite_plan=render_list(list(analysis["language_rewrite_plan"]), "无需额外语言改写"),
-        language_suggestions=render_language_suggestions(list(analysis["language_suggestions"])),
-        verdict=str(analysis["verdict"]).upper(),
-        blockers=render_list(list(analysis["blockers"]), "无阻断项"),
-        warnings=render_list(list(analysis["warnings"]), "无预警项"),
-    )
+    rendered = render_gate_markdown(analysis)
 
     if not dry_run:
         report_path.write_text(rendered, encoding="utf-8")
@@ -470,12 +552,6 @@ def main() -> int:
     project_dir = Path(args.project).resolve()
     style_path = Path(args.style).resolve() if args.style else (project_dir / "00_memory" / "style.md")
     rewrite_out = Path(args.rewrite_out).resolve() if args.rewrite_out else None
-    templates_root = (
-        Path(args.templates_root).resolve()
-        if args.templates_root
-        else (Path(__file__).resolve().parent.parent / "templates")
-    )
-
     try:
         chapter_no, chapter_path = detect_existing_chapter_file(project_dir, args.chapter, args.chapter_no)
     except ValueError as exc:
@@ -483,13 +559,22 @@ def main() -> int:
         return 1
 
     analysis = build_gate_analysis(project_dir, chapter_no, chapter_path, style_path, args.skip_language)
-    report_path, result_path = write_outputs(project_dir, templates_root, analysis, args.dry_run, rewrite_out)
+    report_path, result_path = write_outputs(project_dir, analysis, args.dry_run, rewrite_out)
 
     payload = {
         "chapter_no": chapter_no,
         "verdict": analysis["verdict"],
+        "blocking": analysis["blocking"],
+        "return_to": analysis["return_to"],
+        "rewrite_scope": analysis["rewrite_scope"],
+        "first_fix_priority": analysis["first_fix_priority"],
+        "recheck_order": analysis["recheck_order"],
+        "script_final_release": analysis["script_final_release"],
         "continuity_verdict": analysis["continuity_verdict"],
         "language_verdict": analysis["language_verdict"],
+        "language_hard_gates": analysis["language_hard_gates"],
+        "language_block": analysis["language_block"],
+        "causality_block": analysis["causality_block"],
         "style_path": analysis["style_path"],
         "planning_status": analysis["planning_status"],
         "planning_verdict": analysis["planning_verdict"],

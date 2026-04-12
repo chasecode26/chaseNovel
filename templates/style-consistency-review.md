@@ -1,6 +1,10 @@
 # 风格一致性审查卡
 
-用于 `StyleConsistencyReviewer` 在单章、续写、修章后检查本书 voice DNA 是否漂移。
+用于 `StyleDialogue` 在单章、续写、修章后检查本书 `voice` DNA 是否漂移。
+
+说明：
+- 这张卡是 `StyleDialogue` 的补充骨架，不是独立总审角色
+- 若命中硬伤，仍需回到主链，再交由 `Reviewer` 做总审放行
 
 ## 1. 单书 voice DNA
 
@@ -14,7 +18,7 @@
 - 主角说话的底层习惯：
 - 核心配角 A 的声口特征：
 - 核心配角 B 的声口特征：
-- 本章是否出现多人同声：
+- 本章是否出现多人同声：是 / 否
 
 ## 3. 章节读感
 
@@ -29,6 +33,11 @@
 - 漂移类型：口吻漂移 / 节拍漂移 / 叙述视角漂移 / 人物声口漂移
 - 是否阻断：yes / no
 - 最小修法：
+- 若 `blocking=yes`：
+- `return_to`：
+- `rewrite_scope`：
+- `first_fix_priority`：
+- `recheck_order`：
 
 ## 5. 收口结论
 

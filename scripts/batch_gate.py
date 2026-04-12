@@ -19,7 +19,6 @@ def parse_args() -> argparse.Namespace:
         description="Run chapter gate in batch mode and emit summary reports."
     )
     parser.add_argument("--project", required=True, help="Path to the novel project root")
-    parser.add_argument("--templates-root", help="Path to templates directory; defaults to ../templates")
     parser.add_argument("--style", help="Path to a specific style.md file")
     parser.add_argument("--skip-language", action="store_true", help="Skip language audit integration")
     parser.add_argument("--from", dest="chapter_from", type=int, help="Start chapter number")
@@ -106,11 +105,6 @@ def main() -> int:
 
     args = parse_args()
     project_dir = Path(args.project).resolve()
-    templates_root = (
-        Path(args.templates_root).resolve()
-        if args.templates_root
-        else (Path(__file__).resolve().parent.parent / "templates")
-    )
     style_path = Path(args.style).resolve() if args.style else (project_dir / "00_memory" / "style.md")
     chapters = detect_chapters(project_dir, args.chapter_from, args.chapter_to)
     if not chapters:
@@ -125,7 +119,7 @@ def main() -> int:
 
     for chapter_no, chapter_path in chapters:
         analysis = build_gate_analysis(project_dir, chapter_no, chapter_path, style_path, args.skip_language)
-        write_outputs(project_dir, templates_root, analysis, args.dry_run, None)
+        write_outputs(project_dir, analysis, args.dry_run, None)
 
         verdict_counter[str(analysis["verdict"])] += 1
         continuity_counter[str(analysis["continuity_verdict"])] += 1

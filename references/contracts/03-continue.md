@@ -1,159 +1,137 @@
-### `/续写`
-输出：
-- Planner 结果
-- HookEmotion 结果
-- 章节规划预审
-- Writer 续写
-- StructureReviewer 结果
-- RhythmReviewer 结果
-- StyleDialogue 结果
-- LanguageReviewer 结果
-- ContinuityReviewer 结果
-- CausalityReviewer 结果
-- Reviewer 结论
+### `/继续`
 
-#### `/续写` 固定输出模板
+输出：
+
+- `Planner` 结果
+- `HookEmotion` 结果
+- 章节规划预审
+- `Writer` 续写
+- `LanguageReviewer` 结果
+- `StyleDialogue` 结果
+- `ContinuityReviewer` 结果
+- `CausalityReviewer` 结果
+- `Reviewer` 结论
+- 需要更新的记忆点
+
+#### `/继续` 固定输出模板
 
 ```markdown
 # 续写方案
 
 ## Agent 编排
-- 默认顺序：`Planner -> HookEmotion -> Writer -> StructureReviewer -> RhythmReviewer -> StyleDialogue -> LanguageReviewer -> ContinuityReviewer -> CausalityReviewer -> Reviewer`
+- 默认顺序：`Planner -> HookEmotion -> Writer -> (LanguageReviewer || StyleDialogue || ContinuityReviewer || CausalityReviewer) -> Reviewer`
 
 ## 1. Planner 结果
 
 ### 1.1 恢复结论
-- 当前位置：
+- 当前推进位置：
 - 当前卷 / 阶段：
 - 当前主冲突：
 - 最近关键结果：
 - 本次续写最该接住什么：
 
-### 1.2 当前状态摘要
-- 主角当前状态：
-- 关键配角状态：
-- 当前有效布置：
-- 当前承诺兑现压力：
-- 当前伏笔触发压力：
-
-### 1.3 下一章目标
-- 本章功能：
-- 本章最小推进：
-- 本章结果变化：
-- 本章章尾钩子方向：
+### 1.2 下一章章卡
+- `chapter_function`：
+- `result_change`：
+- `hook_type`：
 - `chapter_tier`：
 - `target_word_count`：
+- `time_anchor`：
+- `location_anchor`：
+- `present_characters`：
+- `scene_focal_character`：
+- `knowledge_boundary`：
+- `resource_state`：
+- `open_threads`：
+- `forbidden_inventions`：
 
 ## 2. HookEmotion 结果
-- 本章情绪延续点：
-- 断点钩子是否被接住：
-- 本章高点应该落在哪：
-- 本章章尾钩子建议：
-- 情绪 / 节奏风险提示：
+- `entry_pressure`：
+- `midpoint_pressure`：
+- `peak_moment`：
+- `aftershock`：
+- 断点是否接住：
+- `hook_type`：
+- `hook_line_or_direction`：
+- `blocking`：yes / no
+- `suggested_fix`：
 
 ## 2.1 章节规划预审
-- 是否通过：pass / revise
-- 断点钩子是否已经接住：是 / 否（说明）
-- 本章功能是否与最近 `3-5` 章重复：否 / 是（说明）
-- 本章结果是否有升级：是 / 否（说明）
-- 本章钩子是否会改变下一章行动：是 / 否（说明）
-- 状态、时间、资源、知情边界是否已钉死：是 / 否（说明）
+- `planning_verdict`：pass / revise
+- 断点钩子是否已接住：
+- 本章功能是否重复近 `3-5` 章：
+- 本章结果变化是否成立：
+- 本章钩子是否会改变下章行动：
+- 状态、时间、资源、知情边界是否已钉牢：
 
 ## 3. Writer 续写
+- `draft_scope`：
+- `self_check`：
+- `known_risks`：
+- `memory_writeback_needed`：
+
 [正文]
 
-写前补充硬要求：
-- 不准先写省力句、提炼句、抽象收口句占位
-- 不准靠“后面再修”放过第一轮正文质量
-- 默认先保质量，再保速度
-
-## 4. StructureReviewer 结果
-- `chapter_function`：
-- `conflict_type`：
-- `result_type`：
-- `hook_type`：
-- `chapter_tier`：
-- `target_word_count`：
+## 4. LanguageReviewer 结果
 - `findings`：
 - `blocking`：yes / no
 - `suggested_fix`：
-
-## 4.1 RhythmReviewer 结果
-- `chapter_function`：
-- `conflict_type`：
-- `result_type`：
-- `hook_type`：
-- `chapter_tier`：
-- `target_word_count`：
-- `findings`：
-- `blocking`：yes / no
-- `suggested_fix`：
+- `ai_tone_source`：
+- `needs_full_rewrite`：yes / no
+- `return_to`：
+- `rewrite_scope`：
+- `first_fix_priority`：
+- `recheck_order`：
 
 ## 5. StyleDialogue 结果
-- 是否延续既有口吻：
-- 哪些段落容易显得像补作业：
-- 哪些对白需要拉开角色区分：
-- 哪些台词已经偏离人物原有身份 / 性格声口：
-- 哪些台词故作含混，续写后难以判明真实作用：
-- 哪些地方该接得更清晰，哪些地方可以保留断点余味：
-- 语言层优先修订项：
-
-## 6. LanguageReviewer 结果
-- 是否已整章通读后再拆句审：是 / 否
-- 通篇读完最重的 1-3 个问题：
-- 哪些句段最像 AI 在补背景：
-- 是否有过量书面过渡：
-- 哪些段落解释重、动作轻：
-- 哪些地方已经把断点接明白了，哪些地方还在说虚话：
-- 哪些叙述只给抽象判断，没有落到具体事和具体后果：
-- 哪些句子还在概括局势、提炼判断、讲道理，没有把续写现场落出来：
-- 哪些敌情、军报、推理句只剩“主口 / 主杀招 / 有鬼”这类黑话，没有把判断结论说透：
-- 哪些地方逻辑不通或因果接不上：
-- 哪些表达不够严谨，读者读完仍拿不准真实指向：
-- 哪些关键词、判断、句式在反复重复：
-- 哪些台词或口气不符合说话者身份、性格、场合和压力：
-- 哪些地方作者站到台前替人物、替局势、替读者发声：
-- 哪些地方写得太省，术语、关系、判断、后果需要读者自己补：
-- 哪些称谓和人物身份、官职、场合不一致：
-- 哪些留白是为了悬疑、反转或情绪余波，哪些留白只是拖信息：
-- 去 AI 味优先修订项：
-
-## 6.1 ContinuityReviewer 结果
-- `chapter_function`：
-- `conflict_type`：
-- `result_type`：
-- `hook_type`：
 - `findings`：
 - `blocking`：yes / no
 - `suggested_fix`：
+- `voice_conflict`：
+- `naming_conflict`：
+- `return_to`：
+- `rewrite_scope`：
+- `first_fix_priority`：
+- `recheck_order`：
 
-## 6.2 CausalityReviewer 结果
-- `chapter_function`：
-- `conflict_type`：
-- `result_type`：
-- `hook_type`：
+## 6. ContinuityReviewer 结果
 - `findings`：
 - `blocking`：yes / no
 - `suggested_fix`：
+- `continuity_conflict`：
+- `memory_files_affected`：
+- `return_to`：
+- `rewrite_scope`：
+- `first_fix_priority`：
+- `recheck_order`：
 
-## 7. Reviewer 结论
-- 是否已完整通篇复核：是 / 否
-- 是否接住了断点：是 / 否
-- 是否延续既有口吻：是 / 否
-- 是否存在状态错位：否 / 是（说明）
-- 是否存在时间线风险：否 / 是（说明）
-- 是否存在重复推进：否 / 是（说明）
-- 是否存在 AI 味风险：否 / 是（说明）
-- `word_count_verdict`：
+## 7. CausalityReviewer 结果
+- `findings`：
+- `blocking`：yes / no
+- `suggested_fix`：
+- `causality_gap`：
+- `fact_judgment_consequence_clear`：yes / no
+- `return_to`：
+- `rewrite_scope`：
+- `first_fix_priority`：
+- `recheck_order`：
+
+## 8. Reviewer 结论
+- `full_chapter_read`：yes / no
+- `blocking`：yes / no
+- 断点是否接住：
+- `human_read_verdict`：
 - `repeat_window`：
 - `upgrade_point`：
-- 是否通过人眼读感复核：是 / 否
-- 是否存在脚本未报、但人读仍明显别扭的问题：否 / 是（说明）
-- 是否建议直接进入下一章：是 / 否
-- 若否，必须交回给谁重写：`Writer / StyleDialogue / ContinuityReviewer / CausalityReviewer`
-- 若否，优先回修项：
+- `script_missed_issue`：
+- `rewrite_handoff`：
+- `final_release`：pass / revise
+- `final_release` 表示总审放行结论
+- 若 `final_release=revise`，交回给谁：
+- 若 `final_release=revise`，先修哪一层：
+- 若 `final_release=revise`，修完先复查什么：
 
-## 8. 需更新的记忆点
+## 9. 需要更新的记忆点
 - `state.md`：
 - `summaries/recent.md`：
 - `timeline.md`：
@@ -165,7 +143,8 @@
 
 补充约束：
 
-- `/续写` 默认先读 `plan.md`、`state.md`，必要时补 `findings.md` 与 `summaries/recent.md`
-- 若断点前存在强钩子，本章必须先接钩子，不要直接跳去新场面
-- 先由 `HookEmotion` 判断断点情绪和钩子是否续上，再交给 `Writer`
+- `/继续` 默认先读 `plan.md`、`state.md`，必要时补 `findings.md` 与 `summaries/recent.md`
+- 若断点前存在强钩子，本章必须先接钩子，再开新场景
+- `HookEmotion` 先判断断点情绪和钩子是否续上，再交给 `Writer`
+- 若任一 reviewer `blocking=yes`，必须补齐回退四字段
 - 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `references/agent-collaboration.md`
