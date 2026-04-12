@@ -16,13 +16,16 @@ const COMMAND_SPECS = {
   arc: { script: "arc_tracker.py" },
   timeline: { script: "timeline_check.py" },
   repeat: { script: "anti_repeat_scan.py" },
+  volume: { script: "volume_audit.py" },
+  milestone: { script: "milestone_audit.py" },
   bootstrap: { script: "project_bootstrap.py" },
   memory: { script: "memory_update.py" },
+  "memory-apply": { script: "memory_sync_apply.py" },
   run: { script: "workflow_runner.py" },
   doctor: { script: "project_doctor.py" },
   check: {
     script: "workflow_runner.py",
-    injectArgs: ["--dry-run", "--steps", "doctor,planning,context,foreshadow,arc,timeline,repeat,dashboard"],
+    injectArgs: ["--dry-run", "--steps", "doctor,context,planning,foreshadow,arc,timeline,repeat,volume,milestone,dashboard"],
   },
 };
 
@@ -118,7 +121,10 @@ function printHelp(errorMessage) {
   chase arc --project <dir>
   chase timeline --project <dir>
   chase repeat --project <dir>
+  chase volume --project <dir>
+  chase milestone --project <dir>
   chase memory --project <dir> [--chapter <n>]
+  chase memory-apply --project <dir> [--targets <csv> | --all]
   chase gate --project <dir> [--chapter-no <n>]
   chase draft --project <dir> [--chapter-no <n>]
   chase batch --project <dir> [--from <n> --to <n>]
@@ -131,9 +137,9 @@ function printHelp(errorMessage) {
 Notes:
   - planning reviews the next chapter by default; --chapter means current drafted chapter
   - existing gate and audit scripts are passed through unchanged
-  - check is a dry-run health sweep: doctor + planning + context + foreshadow + arc + timeline + repeat + dashboard
+  - check is a dry-run health sweep: doctor + context + planning + foreshadow + arc + timeline + repeat + volume + milestone + dashboard
   - check keeps planning blockers strict; a freshly bootstrapped but unplanned project is expected to fail
-  - default run steps: doctor,planning,context,memory,foreshadow,arc,timeline,repeat,dashboard
+  - default run steps: doctor,context,planning,draft,memory,foreshadow,arc,timeline,repeat,volume,milestone,dashboard
   - chase run --chapter expects an already drafted chapter number; do not pass the next unwritten chapter
   - project defaults to the current directory`);
 }

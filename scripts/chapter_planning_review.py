@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
@@ -20,6 +20,9 @@ from novel_utils import (
     render_list,
     useful_lines,
 )
+
+
+HEALTH_DIGEST_LIMIT = 3
 
 
 UPGRADE_KEYWORDS = (
@@ -86,6 +89,44 @@ HOOK_KEYWORDS = (
     "旧账",
 )
 
+PRIORITY_DEBT_RULES = (
+    {
+        "key": "repeat_variation",
+        "label": "重复债",
+        "markers": ("repeat_warning_threshold", "重复阈值"),
+        "reason": "近章重复风险已经抬头，本章不能只是复写旧冲突或旧钩子。",
+        "action": "优先做结果升级或钩子换型，让本章产生不同于近章的净变化。",
+    },
+    {
+        "key": "promise_payoff",
+        "label": "承诺债",
+        "markers": ("promise_threshold", "承诺阈值"),
+        "reason": "高压承诺积压过多，爽点与兑现不能继续后拖。",
+        "action": "优先推进或兑现至少一条高压承诺，并明确代价变化。",
+    },
+    {
+        "key": "foreshadow_payoff",
+        "label": "伏笔债",
+        "markers": ("overdue_foreshadow_threshold", "伏笔阈值"),
+        "reason": "到期伏笔正在堆积，读者会开始感到悬念只埋不收。",
+        "action": "优先回收一条到期伏笔，或让它进入明确可见的兑现链路。",
+    },
+    {
+        "key": "arc_progression",
+        "label": "弧线债",
+        "markers": ("stalled_arc_threshold", "停滞阈值"),
+        "reason": "角色/主线弧存在停滞风险，本章需要给弧线一个可见位移。",
+        "action": "优先推进当前弧线阶段，让人物关系、目标或局势至少有一格变化。",
+    },
+    {
+        "key": "milestone_delivery",
+        "label": "节点债",
+        "markers": ("checkpoint_words", "due_soon_window", "节点字数", "预警窗口"),
+        "reason": "阶段节点已经逼近，本章不能继续空转铺垫。",
+        "action": "优先落地阶段性结果，让本章承担节点前的关键推进职责。",
+    },
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -102,6 +143,55 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json", action="store_true", help="Print JSON result")
     parser.add_argument("--dry-run", action="store_true", help="Do not write output files")
     return parser.parse_args()
+
+
+def load_json(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(read_text(path))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def load_health_digest(project_dir: Path) -> list[str]:
+    candidates = [
+        project_dir / "05_reports" / "pipeline_report.json",
+        project_dir / "00_memory" / "retrieval" / "health_digest.json",
+        project_dir / "00_memory" / "retrieval" / "dashboard_cache.json",
+    ]
+    for path in candidates:
+        payload = load_json(path)
+        digest = payload.get("health_digest", [])
+        if isinstance(digest, list) and digest:
+            return [str(item) for item in digest[:HEALTH_DIGEST_LIMIT]]
+    return []
+
+
+def derive_priority_debt(health_digest: list[str]) -> dict[str, str]:
+    if not health_digest:
+        return {}
+
+    for digest_line in health_digest:
+        lowered = digest_line.lower()
+        for rule in PRIORITY_DEBT_RULES:
+            if any(marker.lower() in lowered for marker in rule["markers"]):
+                return {
+                    "key": str(rule["key"]),
+                    "label": str(rule["label"]),
+                    "reason": str(rule["reason"]),
+                    "action": str(rule["action"]),
+                    "source": digest_line,
+                }
+
+    return {
+        "key": "general_health_debt",
+        "label": "健康债",
+        "reason": "health_digest 已提示跨步骤风险，本章需要优先处理其中最紧的一项。",
+        "action": "优先回应首条风险，不让新的章节继续累积旧债。",
+        "source": health_digest[0],
+    }
 
 
 def extract_present_line(text: str, label: str) -> str:
@@ -204,24 +294,24 @@ def parse_chapter_card(card_text: str) -> dict[str, str]:
         "present_characters": parse_heading_value(card_text, ["present_characters", "在场人物"]),
         "knowledge_boundary": parse_heading_value(card_text, ["knowledge_boundary", "知情边界"]),
         "resource_state": parse_heading_value(card_text, ["resource_state", "资源状态"]),
-        "open_threads": parse_heading_value(card_text, ["open_threads", "开放线程"]),
+        "open_threads": parse_heading_value(card_text, ["open_threads", "开放线索", "开放线程"]),
         "forbidden_inventions": parse_heading_value(card_text, ["forbidden_inventions", "禁止发明"]),
-        "chapter_function": parse_heading_value(card_text, ["本章功能"]),
-        "chapter_goal": parse_heading_value(card_text, ["本章目标"]),
-        "conflict_type": parse_heading_value(card_text, ["本章冲突"]),
-        "result_change": parse_heading_value(card_text, ["本章结果变化"]),
-        "result_type": parse_heading_value(card_text, ["本章结果类型"]),
-        "emotion_point": parse_heading_value(card_text, ["本章爽点 / 情绪点", "本章爽点/情绪点"]),
-        "relationship_shift": parse_heading_value(card_text, ["本章关系刷新点"]),
+        "chapter_function": parse_heading_value(card_text, ["chapter_function", "本章功能"]),
+        "chapter_goal": parse_heading_value(card_text, ["chapter_goal", "本章目标"]),
+        "conflict_type": parse_heading_value(card_text, ["conflict_type", "本章冲突"]),
+        "result_change": parse_heading_value(card_text, ["result_change", "本章结果变化"]),
+        "result_type": parse_heading_value(card_text, ["result_type", "本章结果类型"]),
+        "emotion_point": parse_heading_value(card_text, ["emotion_point", "本章爽点 / 情绪点", "本章爽点/情绪点"]),
+        "relationship_shift": parse_heading_value(card_text, ["relationship_shift", "本章关系刷新点"]),
         "promise_progress": parse_heading_value(
             card_text,
-            ["本章承诺推进 / 延后说明", "本章承诺推进/延后说明"],
+            ["promise_progress", "本章承诺推进 / 延后说明", "本章承诺推进/延后说明"],
         ),
-        "hook_type": parse_heading_value(card_text, ["章尾钩子类型"]),
-        "hook_text": parse_heading_value(card_text, ["本章章尾钩子"]),
-        "opening_focus": parse_heading_value(card_text, ["开头先落什么"]),
-        "mid_focus": parse_heading_value(card_text, ["中段必须推进什么"]),
-        "ending_focus": parse_heading_value(card_text, ["结尾必须留下什么"]),
+        "hook_type": parse_heading_value(card_text, ["hook_type", "章尾钩子类型"]),
+        "hook_text": parse_heading_value(card_text, ["hook_text", "本章章尾钩子"]),
+        "opening_focus": parse_heading_value(card_text, ["opening_focus", "开头先落什么"]),
+        "mid_focus": parse_heading_value(card_text, ["mid_focus", "中段必须推进什么"]),
+        "ending_focus": parse_heading_value(card_text, ["ending_focus", "结尾必须留下什么"]),
     }
 
 
@@ -259,6 +349,88 @@ def is_done_status(text: str) -> bool:
     return "已完成" in text or "✅" in text or "完成" == text.strip()
 
 
+def derive_first_fix_priority(
+    chapter_card: dict[str, str],
+    next_goal: str,
+    blockers: list[str],
+    warnings: list[str],
+    priority_debt: dict[str, str],
+) -> str:
+    if not next_goal and not chapter_card.get("chapter_function", ""):
+        return "chapter_function"
+    if not chapter_card.get("result_change", ""):
+        return "result_change"
+    if not chapter_card.get("hook_text", ""):
+        return "hook_and_next_action"
+    if any("voice.md" in item or "style.md" in item for item in blockers):
+        return "style_voice_guardrails"
+    if any("absolute" in item.lower() or "state.md" in item for item in blockers):
+        return "state_anchors"
+    if priority_debt.get("key", ""):
+        return priority_debt["key"]
+    if warnings:
+        return "planning_consistency"
+    return "chapter_card"
+
+
+def build_planning_contract(
+    target_chapter: int,
+    chapter_card: dict[str, str],
+    next_goal: str,
+    blockers: list[str],
+    warnings: list[str],
+    health_digest: list[str],
+    priority_debt: dict[str, str],
+) -> dict[str, object]:
+    blocking = "yes" if blockers else "no"
+    hook_line = chapter_card.get("hook_text", "") or chapter_card.get("ending_focus", "")
+    rewrite_scope = "chapter_card" if chapter_card else "state.md + next_context.md"
+    priority_label = priority_debt.get("label", "")
+    priority_action = priority_debt.get("action", "")
+    priority_source = priority_debt.get("source", "")
+    first_fix_priority = derive_first_fix_priority(chapter_card, next_goal, blockers, warnings, priority_debt)
+    return {
+        "target_chapter": target_chapter,
+        "blocking": blocking,
+        "return_to": "Planner" if blockers else "",
+        "rewrite_scope": rewrite_scope if blockers else "",
+        "first_fix_priority": first_fix_priority if blockers or warnings or priority_label else "",
+        "recheck_order": "Planner -> HookEmotion -> planning" if blockers or warnings or priority_label else "",
+        "planner_contract": {
+            "chapter_function": chapter_card.get("chapter_function", "") or next_goal,
+            "result_change": chapter_card.get("result_change", ""),
+            "hook_type": chapter_card.get("hook_type", ""),
+            "chapter_tier": chapter_card.get("chapter_tier", ""),
+            "target_word_count": chapter_card.get("target_word_count", ""),
+            "time_anchor": chapter_card.get("time_anchor", ""),
+            "location_anchor": chapter_card.get("location_anchor", ""),
+            "present_characters": chapter_card.get("present_characters", ""),
+            "scene_focal_character": chapter_card.get("present_characters", ""),
+            "knowledge_boundary": chapter_card.get("knowledge_boundary", ""),
+            "resource_state": chapter_card.get("resource_state", ""),
+            "open_threads": chapter_card.get("open_threads", ""),
+            "forbidden_inventions": chapter_card.get("forbidden_inventions", ""),
+            "health_digest": health_digest,
+            "priority_debt": priority_label,
+            "priority_debt_hint": priority_action,
+            "priority_debt_source": priority_source,
+            "planning_verdict": "pass" if not blockers else "revise",
+        },
+        "hook_emotion_contract": {
+            "entry_pressure": chapter_card.get("opening_focus", "") or next_goal,
+            "midpoint_pressure": chapter_card.get("mid_focus", "") or chapter_card.get("conflict_type", ""),
+            "peak_moment": chapter_card.get("result_change", "") or chapter_card.get("emotion_point", ""),
+            "aftershock": chapter_card.get("ending_focus", "") or hook_line,
+            "hook_type": chapter_card.get("hook_type", ""),
+            "hook_line_or_direction": hook_line,
+            "must_resolve_first": priority_label,
+            "priority_debt_hint": priority_action,
+            "blocking": blocking,
+            "suggested_fix": blockers[0] if blockers else (priority_action or (warnings[0] if warnings else "")),
+        },
+    }
+
+
 def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
     memory_dir = project_dir / "00_memory"
     plan_text = read_text(memory_dir / "plan.md")
@@ -278,6 +450,8 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
     next_goal = extract_next_goal(state_text)
     due_foreshadow_ids = load_due_foreshadow_ids(project_dir, target_chapter)
     milestones = parse_plan_milestones(plan_text)
+    health_digest = load_health_digest(project_dir)
+    priority_debt = derive_priority_debt(health_digest)
 
     overdue_milestones = [
         str(item["description"])
@@ -362,6 +536,16 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
     elif warnings:
         status = "warn"
 
+    contract = build_planning_contract(
+        target_chapter,
+        chapter_card,
+        next_goal,
+        blockers,
+        warnings,
+        health_digest,
+        priority_debt,
+    )
+
     return {
         "target_chapter": target_chapter,
         "status": status,
@@ -385,10 +569,23 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
         "due_foreshadow_ids": due_foreshadow_ids,
         "due_milestones": due_milestones,
         "overdue_milestones": overdue_milestones,
+        "health_digest": health_digest,
+        "priority_debt": priority_debt.get("label", ""),
+        "priority_debt_key": priority_debt.get("key", ""),
+        "priority_debt_reason": priority_debt.get("reason", ""),
+        "priority_debt_hint": priority_debt.get("action", ""),
+        "priority_debt_source": priority_debt.get("source", ""),
         "warnings": warnings,
         "warning_count": len(warnings),
         "blockers": blockers,
         "blocker_count": len(blockers),
+        "blocking": contract["blocking"],
+        "return_to": contract["return_to"],
+        "rewrite_scope": contract["rewrite_scope"],
+        "first_fix_priority": contract["first_fix_priority"],
+        "recheck_order": contract["recheck_order"],
+        "planner_contract": contract["planner_contract"],
+        "hook_emotion_contract": contract["hook_emotion_contract"],
         "context_excerpt": useful_lines(next_context_text, 8),
         "voice_excerpt": useful_lines(voice_text or style_text, 8),
         "plan_excerpt": useful_lines(plan_text, 8),
@@ -457,6 +654,87 @@ def render_markdown(project_dir: Path, analysis: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
+def render_markdown_v2(project_dir: Path, analysis: dict[str, object]) -> str:
+    target_chapter = int(analysis["target_chapter"])
+    planner_contract = analysis.get("planner_contract", {})
+    hook_contract = analysis.get("hook_emotion_contract", {})
+    lines = [
+        f"# Chapter {target_chapter:03d} Planning Review",
+        "",
+        f"- generated_at: `{datetime.now().isoformat(timespec='seconds')}`",
+        f"- project: `{project_dir.as_posix()}`",
+        f"- planning_verdict: `{str(analysis['planning_verdict']).upper()}`",
+        f"- status: `{str(analysis['status']).upper()}`",
+        f"- chapter_card_path: `{analysis['chapter_card_path'] or 'missing'}`",
+        "",
+        "## Planner Contract",
+        f"- chapter_function: {planner_contract.get('chapter_function', '') or analysis['chapter_reason']}",
+        f"- result_change: {planner_contract.get('result_change', '') or analysis['new_progress']}",
+        f"- hook_type: {planner_contract.get('hook_type', '') or analysis['hook_upgrade']}",
+        f"- chapter_tier: {planner_contract.get('chapter_tier', '') or 'missing'}",
+        f"- target_word_count: {planner_contract.get('target_word_count', '') or 'missing'}",
+        f"- time_anchor: {planner_contract.get('time_anchor', '') or analysis['absolute_time']}",
+        f"- location_anchor: {planner_contract.get('location_anchor', '') or analysis['current_place']}",
+        f"- present_characters: {planner_contract.get('present_characters', '') or 'missing'}",
+        f"- knowledge_boundary: {planner_contract.get('knowledge_boundary', '') or 'missing'}",
+        f"- resource_state: {planner_contract.get('resource_state', '') or 'missing'}",
+        f"- open_threads: {planner_contract.get('open_threads', '') or 'missing'}",
+        f"- priority_debt: {planner_contract.get('priority_debt', '') or analysis['priority_debt'] or 'none'}",
+        f"- priority_debt_hint: {planner_contract.get('priority_debt_hint', '') or analysis['priority_debt_hint'] or 'none'}",
+        f"- priority_debt_source: {planner_contract.get('priority_debt_source', '') or analysis['priority_debt_source'] or 'none'}",
+        "",
+        "## HookEmotion Contract",
+        f"- entry_pressure: {hook_contract.get('entry_pressure', '') or 'missing'}",
+        f"- midpoint_pressure: {hook_contract.get('midpoint_pressure', '') or 'missing'}",
+        f"- peak_moment: {hook_contract.get('peak_moment', '') or 'missing'}",
+        f"- aftershock: {hook_contract.get('aftershock', '') or 'missing'}",
+        f"- hook_line_or_direction: {hook_contract.get('hook_line_or_direction', '') or 'missing'}",
+        f"- must_resolve_first: {hook_contract.get('must_resolve_first', '') or analysis['priority_debt'] or 'none'}",
+        f"- priority_debt_hint: {hook_contract.get('priority_debt_hint', '') or analysis['priority_debt_hint'] or 'none'}",
+        "",
+        "## Continuity Anchors",
+        f"- active_volume: {analysis['active_volume']}",
+        f"- active_arc: {analysis['active_arc']}",
+        f"- absolute_time: {analysis['absolute_time']}",
+        f"- current_place: {analysis['current_place']}",
+        f"- due_foreshadow_ids: {', '.join(analysis['due_foreshadow_ids']) if analysis['due_foreshadow_ids'] else 'none'}",
+        f"- due_milestones: {', '.join(analysis['due_milestones']) if analysis['due_milestones'] else 'none'}",
+        f"- overdue_milestones: {', '.join(analysis['overdue_milestones']) if analysis['overdue_milestones'] else 'none'}",
+        "",
+        "## Contract Gate",
+        f"- blocking: {analysis['blocking']}",
+        f"- return_to: {analysis['return_to'] or 'n/a'}",
+        f"- rewrite_scope: {analysis['rewrite_scope'] or 'n/a'}",
+        f"- first_fix_priority: {analysis['first_fix_priority'] or 'n/a'}",
+        f"- recheck_order: {analysis['recheck_order'] or 'n/a'}",
+        f"- blocker_count: {analysis['blocker_count']}",
+        f"- warning_count: {analysis['warning_count']}",
+        "",
+        "## Blockers",
+        render_list(list(analysis["blockers"]), "none"),
+        "",
+        "## Warnings",
+        render_list(list(analysis["warnings"]), "none"),
+        "",
+        "## Health Digest",
+        render_list(list(analysis["health_digest"]), "none"),
+        "",
+        "## Plan Excerpt",
+        render_list(list(analysis["plan_excerpt"]), "none"),
+        "",
+        "## Chapter Card Excerpt",
+        render_list(list(analysis["chapter_card_excerpt"]), "none"),
+        "",
+        "## Context Excerpt",
+        render_list(list(analysis["context_excerpt"]), "none"),
+        "",
+        "## Voice Excerpt",
+        render_list(list(analysis["voice_excerpt"]), "none"),
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def write_outputs(
     project_dir: Path,
     analysis: dict[str, object],
@@ -470,7 +748,7 @@ def write_outputs(
     if not dry_run:
         report_path.parent.mkdir(parents=True, exist_ok=True)
         result_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(render_markdown(project_dir, analysis), encoding="utf-8")
+        report_path.write_text(render_markdown_v2(project_dir, analysis), encoding="utf-8")
         result_path.write_text(json.dumps(analysis, ensure_ascii=False, indent=2), encoding="utf-8")
     return report_path, result_path
 
@@ -492,6 +770,19 @@ def main() -> int:
         "target_chapter": target_chapter,
         "status": analysis["status"],
         "planning_verdict": analysis["planning_verdict"],
+        "blocking": analysis["blocking"],
+        "return_to": analysis["return_to"],
+        "rewrite_scope": analysis["rewrite_scope"],
+        "first_fix_priority": analysis["first_fix_priority"],
+        "recheck_order": analysis["recheck_order"],
+        "health_digest": analysis["health_digest"],
+        "priority_debt": analysis["priority_debt"],
+        "priority_debt_key": analysis["priority_debt_key"],
+        "priority_debt_reason": analysis["priority_debt_reason"],
+        "priority_debt_hint": analysis["priority_debt_hint"],
+        "priority_debt_source": analysis["priority_debt_source"],
+        "planner_contract": analysis["planner_contract"],
+        "hook_emotion_contract": analysis["hook_emotion_contract"],
         "warnings": analysis["warnings"],
         "warning_count": analysis["warning_count"],
         "blockers": analysis["blockers"],
@@ -507,6 +798,7 @@ def main() -> int:
         print(f"target_chapter={target_chapter}")
         print(f"status={analysis['status']}")
         print(f"planning_verdict={analysis['planning_verdict']}")
+        print(f"priority_debt={analysis['priority_debt'] or 'none'}")
         print(f"warning_count={analysis['warning_count']}")
         print(f"blocker_count={analysis['blocker_count']}")
         print(f"report={report_path.as_posix()}")
@@ -515,3 +807,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

@@ -34,6 +34,8 @@ TEMPLATE_MAP = {
     "00_memory/scene_preferences.md": "scene_preferences.md",
     "00_memory/findings.md": "findings.md",
     "00_memory/summaries/recent.md": "summaries_recent.md",
+    "00_memory/summaries/mid.md": "summaries_mid.md",
+    "01_outline/volume_blueprint.md": "volume_blueprint.md",
 }
 
 
