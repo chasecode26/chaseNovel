@@ -92,6 +92,13 @@ def run_fixture_flow(repo_root: Path) -> None:
         if open_payload.get("status") == "fail":
             raise SystemExit("fixture open-book readiness failed after bootstrap")
 
+        status_payload = run_capture_json(
+            ["python", "./scripts/book_health.py", "--project", str(project_dir), "--json"],
+            cwd=repo_root,
+        )
+        if status_payload.get("status") == "fail":
+            raise SystemExit("fixture status health check failed after bootstrap")
+
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent

@@ -81,5 +81,5 @@ npm run smoke
 它当前会覆盖：
 - `chase --help`
 - Python 脚本语法编译
-- 临时项目 fixture：`bootstrap -> doctor -> open`
+- 临时项目 fixture：`bootstrap -> doctor -> open -> status`
 - `npm pack --dry-run`
