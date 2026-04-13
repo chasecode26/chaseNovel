@@ -19,3 +19,17 @@
 - 公共风格资产：`assets/common/`
 - 结构化技法库：`assets/technique-kb/`（Phase 1 先保留旧物理路径兼容）
 - 示例资产：`assets/examples/`
+
+## 仍保留的题材旧资料
+如果你维护的是老项目，以下旧资料还在 `references/`，但它们已不再是默认入口：
+
+- 都市：`references/dushi-volume-route-library.md`
+- 苟道：`references/goudao-volume-route-library.md`
+- 历史：`references/historical-volume-route-library.md`
+- 末世：`references/moshi-volume-route-library.md`
+- 种田 / 中田：`references/zhongtian-volume-route-library.md`
+- 盗墓 / 民国：`references/daomu-writing-notes.md`
+
+默认策略仍然是：
+- 新项目先看 `assets/genres/*/pack.md`
+- 旧资料只在你明确需要兼容历史写法时再补读
