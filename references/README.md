@@ -12,11 +12,11 @@
 - `genre-asset-index.md`
 - `output-contracts.md`
 
-另外一部分已进一步处理为“根层 shim + legacy 归档”的结构，例如：
-- `execution_workflow.md` -> `references/legacy/execution_workflow.md`
-- `agent-collaboration.md` -> `references/legacy/agent-collaboration.md`
-- `revision-and-diagnostics.md` -> `references/legacy/revision-and-diagnostics.md`
-- `craft-and-platform.md` -> `references/legacy/craft-and-platform.md`
+另外一部分已进一步处理为“根层 shim + 源码仓库归档”的结构，例如：
+- `execution_workflow.md`
+- `agent-collaboration.md`
+- `revision-and-diagnostics.md`
+- `craft-and-platform.md`
 
 新的默认入口已经迁到：
 - `docs/core/`
@@ -33,6 +33,7 @@
 当前对 `references/legacy/*` 的定位已经基本稳定：
 - 可以继续保留为归档
 - 但不再承担默认阅读职责
+- npm 分发默认不再携带这层归档
 - 未来除非出现新的高频使用证据，否则不再继续拆散成更多平级入口
 
 除非需要查兼容旧资料，否则不要再默认从 `references/` 平铺下钻。

@@ -9,7 +9,8 @@
   "files": [
     "ARCHITECTURE.md",
     "bin",
-    "references",
+    "references/*.md",
+    "references/contracts",
     "schemas",
     "scripts/*.py",
     "templates",
