@@ -36,4 +36,13 @@
 - npm 分发默认不再携带这层归档
 - 未来除非出现新的高频使用证据，否则不再继续拆散成更多平级入口
 
+另外，一些当前未被主入口或资产层默认引用的深层参考文档，会继续保留在源码仓库中，但默认不随 npm 包分发。
+
+当前默认不随 npm 包分发的零引用旧参考文档包括：
+- `break_writers_block.md`
+- `language-audit.md`
+- `narration-and-atmosphere.md`
+- `style-profile.md`
+- `style-runtime-core.md`
+
 除非需要查兼容旧资料，否则不要再默认从 `references/` 平铺下钻。
