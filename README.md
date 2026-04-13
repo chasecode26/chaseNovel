@@ -104,6 +104,16 @@ chase run --project <dir> [--chapter <n>] [--steps <csv>]
 - `quality` 当前支持统一子检查协议：`--check all|chapter|draft|language|batch`
 - `check` 现在也优先走 `doctor + open + status`
 
+## 仓库维护校验
+```bash
+npm run smoke
+```
+
+它当前会做三件事：
+- 检查 `chase --help`
+- 编译全部 Python 脚本语法
+- 执行 `npm pack --dry-run`
+
 ## 推荐阅读顺序
 1. `SKILL.md`
 2. `docs/core/cli-quickstart.md`

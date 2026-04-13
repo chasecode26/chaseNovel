@@ -72,3 +72,8 @@ chase write --project my-book --chapter 12
 3. `docs/core/write-workflow.md`
 4. `docs/core/status-workflow.md`
 5. `docs/core/task-contracts.md`
+
+## 维护仓库时的最小校验
+```bash
+npm run smoke
+```

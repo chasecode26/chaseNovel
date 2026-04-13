@@ -26,7 +26,9 @@
   "scripts": {
     "doctor:project": "node ./bin/chase.js doctor --project .",
     "doctor": "node ./bin/chase.js doctor --project .",
-    "check": "node ./bin/chase.js check --project ."
+    "check": "node ./bin/chase.js check --project .",
+    "smoke": "python ./scripts/smoke_check.py",
+    "pack:dry-run": "npm pack --dry-run"
   },
   "keywords": [
     "codex-skill",
