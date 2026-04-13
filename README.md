@@ -109,11 +109,43 @@ chase run --project <dir> [--chapter <n>] [--steps <csv>]
 npm run smoke
 ```
 
-它当前会做三件事：
+它当前会做四件事：
 - 检查 `chase --help`
 - 编译全部 Python 脚本语法
 - 跑一轮临时项目 fixture：`bootstrap -> doctor -> open -> status`
 - 执行 `npm pack --dry-run`
+
+## 当前维护状态
+
+当前仓库已经进入“稳定维护版”阶段：
+- 主入口已收口
+- `docs/core/*` 已成为默认阅读路径
+- `references/` 主要承担兼容层与题材资料层职责
+- `references/legacy/` 仅保留源码仓库归档，不再进入 npm 分发包
+- 根层若干模板只保留 shim，真实内容已下沉到分层目录
+
+这意味着后续工作更偏向：
+- 维护型优化
+- fixture / smoke 校验增强
+- 分发面继续瘦身
+- 兼容层按需清理
+
+## npm 分发策略
+
+当前 npm 包默认分发：
+- `docs/`
+- `assets/`
+- `templates/`
+- `schemas/`
+- `scripts/*.py`
+- 仍有默认入口价值的 `references/*`
+- `references/contracts/*`
+
+当前 npm 包默认不分发：
+- `references/legacy/*`
+- 若干零引用、仅源码仓库保留的旧参考文档
+
+如果你维护的是源码仓库，可以看到完整归档；如果你消费的是 npm 包，拿到的是更偏“当前可用主路径”的精简分发面。
 
 ## 推荐阅读顺序
 1. `SKILL.md`
