@@ -1,0 +1,16 @@
+# goudao-xianxia 题材资产包
+
+## 定位
+这是 Phase 1 建立的题材资产入口页。当前先保留旧资料原路径兼容，后续 Phase 2/3 再做物理迁移和去重。
+
+## 建议用途
+- 开书时补题材基线
+- 写作中遇到题材特有问题时按需补读
+- 不要把整包资料一次性灌进主链
+
+## 当前来源
+- `references/goudao-chapter-card-library.md`
+- `references/goudao-character-learning.md`
+- `references/goudao-negative-patterns.md`
+- `references/goudao-volume-route-library.md`
+- `assets/genres/05-xianxia-goudao.md`

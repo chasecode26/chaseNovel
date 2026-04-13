@@ -240,7 +240,7 @@
 
 ## 六、接入当前技能的用法
 
-- 想给第一章选路线：先读 `templates/opening-route-cheatsheet.md`
+- 想给第一章选路线：先读 `templates/launch/opening-kit.md`
 - 想结合本地下载样本校准题材：先读本文件，再下钻对应 `references/*-library.md`
 - 想用本地样本修正“玄幻 / 修仙”覆盖不足：优先读本文件中的“玄幻 / 修仙 / 苟道”部分，再补建对应专项库
 - 若本地下载文件疑似残缺，先更换为完整文本，再继续学习

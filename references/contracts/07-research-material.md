@@ -56,7 +56,7 @@
 
 ## 7. 回写建议
 - 建议写入 `findings.md` 的内容：
-- 建议写入 `worldbuilding-index.md` 的内容：
+- 建议写入 `templates/launch/worldbuilding-kit.md` 或项目世界设定文件的内容：
 - 建议交给 `Planner` / `Worldbuilder` / `Writer` 的一句话结论：
 ```
 

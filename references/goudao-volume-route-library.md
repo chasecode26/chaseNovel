@@ -10,7 +10,7 @@
 
 - `references/hook-result-learning.md`
 - `templates/volume_blueprint.md`
-- `templates/genres/01-xuanhuan-xiuxian.md`
+- `assets/genres/01-xuanhuan-xiuxian.md`
 
 ---
 

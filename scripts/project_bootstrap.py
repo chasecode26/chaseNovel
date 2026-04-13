@@ -19,23 +19,21 @@ DIRS = [
 ]
 
 TEMPLATE_MAP = {
-    "00_memory/plan.md": "plan.md",
-    "00_memory/state.md": "state.md",
-    "00_memory/arc_progress.md": "arc-progress.md",
-    "00_memory/characters.md": "characters.md",
-    "00_memory/character_arcs.md": "character-arcs.md",
-    "00_memory/character-voice-diff.md": "character-voice-diff.md",
-    "00_memory/timeline.md": "timeline.md",
-    "00_memory/foreshadowing.md": "foreshadowing.md",
-    "00_memory/payoff_board.md": "payoff-board.md",
-    "00_memory/style.md": "style.md",
-    "00_memory/style_guardrails.md": "style-guardrails.md",
-    "00_memory/voice.md": "voice.md",
-    "00_memory/scene_preferences.md": "scene_preferences.md",
-    "00_memory/findings.md": "findings.md",
-    "00_memory/summaries/recent.md": "summaries_recent.md",
-    "00_memory/summaries/mid.md": "summaries_mid.md",
-    "01_outline/volume_blueprint.md": "volume_blueprint.md",
+    "00_memory/plan.md": "core/plan.md",
+    "00_memory/state.md": "core/state.md",
+    "00_memory/arc_progress.md": "core/arc-progress.md",
+    "00_memory/characters.md": "core/characters.md",
+    "00_memory/character_arcs.md": "core/character-arcs.md",
+    "00_memory/character-voice-diff.md": "core/character-voice-diff.md",
+    "00_memory/timeline.md": "core/timeline.md",
+    "00_memory/foreshadowing.md": "core/foreshadowing.md",
+    "00_memory/payoff_board.md": "core/payoff-board.md",
+    "00_memory/style.md": "core/style.md",
+    "00_memory/style_guardrails.md": "core/style-guardrails.md",
+    "00_memory/voice.md": "core/voice.md",
+    "00_memory/scene_preferences.md": "core/scene_preferences.md",
+    "00_memory/findings.md": "core/findings.md",
+    "00_memory/summaries/recent.md": "core/summaries_recent.md",
 }
 
 
@@ -56,6 +54,16 @@ def copy_template(src: Path, dst: Path, force: bool) -> None:
     dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def resolve_template(templates_root: Path, template_name: str) -> Path:
+    direct = templates_root / template_name
+    if direct.exists():
+        return direct
+    legacy = templates_root / Path(template_name).name
+    if legacy.exists():
+        return legacy
+    raise FileNotFoundError(f"template not found: {template_name}")
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -66,7 +74,7 @@ def main() -> int:
     for rel_dir in DIRS:
         (project_dir / rel_dir).mkdir(parents=True, exist_ok=True)
     for rel_path, template_name in TEMPLATE_MAP.items():
-        copy_template(templates_root / template_name, project_dir / rel_path, args.force)
+        copy_template(resolve_template(templates_root, template_name), project_dir / rel_path, args.force)
     print(f"project={project_dir.as_posix()}")
     print("status=bootstrapped")
     return 0

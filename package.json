@@ -11,13 +11,14 @@
     "bin",
     "references",
     "schemas",
-    "scripts",
-    "technique-kb",
+    "scripts/*.py",
     "templates",
     "skill.json",
     "SKILL.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "docs",
+    "assets"
   ],
   "engines": {
     "node": ">=18"

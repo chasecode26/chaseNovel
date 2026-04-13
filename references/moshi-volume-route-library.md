@@ -10,7 +10,7 @@
 
 - `references/hook-result-learning.md`
 - `templates/volume_blueprint.md`
-- `templates/genres/04-moshi.md`
+- `assets/genres/04-moshi.md`
 
 ---
 

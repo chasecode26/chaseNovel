@@ -5,27 +5,28 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const COMMAND_SPECS = {
-  gate: { script: "chapter_gate.py" },
-  draft: { script: "draft_gate.py" },
-  planning: { script: "chapter_planning_review.py" },
-  batch: { script: "batch_gate.py" },
-  audit: { script: "language_audit.py" },
-  context: { script: "context_compiler.py" },
-  foreshadow: { script: "foreshadow_scheduler.py" },
-  dashboard: { script: "dashboard_snapshot.py" },
-  arc: { script: "arc_tracker.py" },
-  timeline: { script: "timeline_check.py" },
-  repeat: { script: "anti_repeat_scan.py" },
-  volume: { script: "volume_audit.py" },
-  milestone: { script: "milestone_audit.py" },
-  bootstrap: { script: "project_bootstrap.py" },
-  memory: { script: "memory_update.py" },
-  "memory-apply": { script: "memory_sync_apply.py" },
-  run: { script: "workflow_runner.py" },
-  doctor: { script: "project_doctor.py" },
+  open: { script: "open_book.py" },
+  quality: { script: "quality_gate.py" },
+  gate: { script: "quality_gate.py", injectArgs: ["--check", "chapter"] },
+  draft: { script: "quality_gate.py", injectArgs: ["--check", "draft"] },
+  planning: { script: "planning_context.py" },
+  write: { script: "engine_runner.py" },
+  status: { script: "book_health.py" },
+  batch: { script: "quality_gate.py", injectArgs: ["--check", "batch"] },
+  audit: { script: "quality_gate.py", injectArgs: ["--check", "language"] },
+  context: { script: "planning_context.py" },
+  foreshadow: { script: "book_health.py", injectArgs: ["--focus", "foreshadow"] },
+  dashboard: { script: "book_health.py", injectArgs: ["--focus", "dashboard"] },
+  arc: { script: "book_health.py", injectArgs: ["--focus", "arc"] },
+  timeline: { script: "book_health.py", injectArgs: ["--focus", "timeline"] },
+  repeat: { script: "book_health.py", injectArgs: ["--focus", "repeat"] },
+  bootstrap: { script: "bootstrap.py" },
+  memory: { script: "memory_sync.py" },
+  run: { script: "engine_runner.py" },
+  doctor: { script: "doctor.py" },
   check: {
-    script: "workflow_runner.py",
-    injectArgs: ["--dry-run", "--steps", "doctor,context,planning,foreshadow,arc,timeline,repeat,volume,milestone,dashboard"],
+    script: "engine_runner.py",
+    injectArgs: ["--dry-run", "--steps", "doctor,open,status"],
   },
 };
 
@@ -113,33 +114,38 @@ function printHelp(errorMessage) {
   if (errorMessage) {
     console.error(errorMessage);
   }
-  console.log(`Usage:
+  console.log(`Primary commands:
+  chase bootstrap --project <dir> [--force]
+  chase doctor --project <dir> [--json]
+  chase open --project <dir> [--chapter <n>]
+  chase quality --project <dir> [--chapter-no <n> | --from <n> --to <n>]
+  chase write --project <dir> [--chapter <n>] [--steps <csv>]
+  chase status --project <dir> [--chapter <n>] [--focus <all|dashboard|foreshadow|arc|timeline|repeat>]
+  chase check --project <dir> [--chapter <n>]
+
+Legacy compatibility aliases:
   chase planning --project <dir> [--chapter <n> | --target-chapter <n>]
   chase context --project <dir> [--chapter <n>]
-  chase foreshadow --project <dir> [--chapter <n>]
+  chase gate --project <dir> [--chapter-no <n>]
+  chase draft --project <dir> [--chapter-no <n>]
+  chase audit --project <dir> [--chapter-no <n>]
+  chase batch --project <dir> [--from <n> --to <n>]
   chase dashboard --project <dir>
+  chase foreshadow --project <dir> [--chapter <n>]
   chase arc --project <dir>
   chase timeline --project <dir>
   chase repeat --project <dir>
-  chase volume --project <dir>
-  chase milestone --project <dir>
   chase memory --project <dir> [--chapter <n>]
-  chase memory-apply --project <dir> [--targets <csv> | --all]
-  chase gate --project <dir> [--chapter-no <n>]
-  chase draft --project <dir> [--chapter-no <n>]
-  chase batch --project <dir> [--from <n> --to <n>]
-  chase audit --project <dir> [--chapter-no <n>]
-  chase bootstrap --project <dir> [--force]
-  chase doctor --project <dir> [--json]
-  chase check --project <dir> [--chapter <n>]
   chase run --project <dir> [--chapter <n>] [--steps <csv>]
 
 Notes:
-  - planning reviews the next chapter by default; --chapter means current drafted chapter
-  - existing gate and audit scripts are passed through unchanged
-  - check is a dry-run health sweep: doctor + context + planning + foreshadow + arc + timeline + repeat + volume + milestone + dashboard
-  - check keeps planning blockers strict; a freshly bootstrapped but unplanned project is expected to fail
-  - default run steps: doctor,context,planning,draft,memory,foreshadow,arc,timeline,repeat,volume,milestone,dashboard
+  - open is the primary open-book / planning entry; without --chapter it runs launch readiness
+  - quality is the unified gate protocol: --check all|chapter|draft|language|batch
+  - status is the unified book-health protocol: --focus all|dashboard|foreshadow|arc|timeline|repeat
+  - legacy commands are still available, but now route into the new aggregated layers
+  - write and check prefer the aggregated layers internally
+  - check is a dry-run health sweep over doctor + open + status
+  - default run steps: doctor,open,memory,status
   - chase run --chapter expects an already drafted chapter number; do not pass the next unwritten chapter
   - project defaults to the current directory`);
 }

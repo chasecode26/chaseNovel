@@ -13,8 +13,7 @@
 
 - `references/historical-midgame-learning.md`
 - `references/historical-character-learning.md`
-- `templates/result-route-cheatsheet.md`
-- `templates/hook-route-cheatsheet.md`
+- `templates/launch/chapter-outcome-kit.md`
 
 ---
 

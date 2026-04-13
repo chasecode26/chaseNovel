@@ -197,10 +197,9 @@
 - 本文件：负责判断“重复发生在哪个维度，怎么换”
 - `references/craft-and-platform.md`：负责提醒不同题材的常见反馈路径
 - `references/writing-patterns.md`：提供具体换法与动作化改写方向
-- `templates/result-route-cheatsheet.md`：负责给结果类型换挡
-- `templates/midgame-fatigue-cheatsheet.md`：负责诊断中盘疲劳并给出变轨顺序
-- `templates/hook-route-cheatsheet.md`：负责给章尾钩子换路线
-- `templates/golden-three-route-cheatsheet.md`：负责给开篇前三章换递进路径
+- `templates/launch/chapter-outcome-kit.md`：负责给结果类型与章尾钩子换挡
+- `templates/review/midgame-diagnostics.md`：负责诊断中盘疲劳并给出变轨顺序
+- `templates/launch/opening-kit.md`：负责给开篇前三章换递进路径
 - `scripts/anti_repeat_scan.py`：自动化扫描入口，同时会检查开篇三章递进是否偏平
 
 ## 一句话判断标准

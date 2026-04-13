@@ -47,7 +47,7 @@
 - 哪些表达太虚，必须改成更直接的人话：
 
 ### 1.3A 题材专项骨架补全
-- 已对照 `templates/opening-setup-checklist.md`：是 / 否
+- 已对照 `templates/launch/opening-kit.md`：是 / 否
 - 当前题材必须先锁定的结构模块：
 - 当前已补齐：
 - 当前还缺但不补会导致后续写崩的项：
@@ -134,7 +134,7 @@
 ### 3.5 当前必须定义的世界规则
 - 开篇必须解释的术语：
 - 暂时不能解释过深的规则：
-- 是否需要新建 `worldbuilding-index.md`：是 / 否
+- 是否需要补充 `templates/launch/worldbuilding-kit.md` 或项目世界设定文件：是 / 否
 
 ## 4. Reviewer 结论
 - 卖点是否够清楚：
@@ -152,14 +152,14 @@
 #### 强制校验
 
 - 必须明确 `开篇路线`
-- 必须先对照 `templates/opening-setup-checklist.md`，补当前题材对应的骨架清单
+- 必须先对照 `templates/launch/opening-kit.md`，补当前题材对应的骨架清单
 - 书名或暂定名必须能看出题材、异常点、身份反差或主玩法中的至少一项
 - 书名 / 一句话卖点 / 作品简介必须和黄金三章形成同一承诺，不允许外面卖一套、正文起手另一套
 - 若用户没指定路线，必须显式给出“自动推荐结果 + 推荐依据”
 - 一句话卖点必须包含“主角当前局 + 推进手段 + 兑现方向”，不得只写抽象气质词
 - 第一章必须写清“最先立住什么”
 - 第一章必须有当前问题，不得只有背景介绍
-- 黄金三章若用户未指定节拍，必须先对照 `templates/golden-three-route-cheatsheet.md`
+- 黄金三章若用户未指定节拍，必须先对照 `templates/launch/opening-kit.md`
 - 黄金三章必须显式给出“自动推荐依据”
 - 第二章必须写清“主角开始行动”或“局面开始显形”的推进点
 - 第三章必须写清“长期承诺”与“第三章章尾钩子类型”
@@ -170,6 +170,6 @@
 - 若题材偏历史权谋、末世囤货、仙侠苟道，优先结合：
   - `references/opening-sample-specialties.md`
 - 若用户只说“帮我开书”，默认先参考：
-  - `templates/opening-route-cheatsheet.md`
-  - `templates/golden-three-route-cheatsheet.md`
-  - `templates/opening-setup-checklist.md`
+  - `templates/launch/opening-kit.md`
+  - `templates/launch/volume-blueprint.md`
+  - `templates/launch/worldbuilding-kit.md`

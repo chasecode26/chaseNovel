@@ -68,7 +68,7 @@ def build_payload(project_dir: Path) -> dict[str, object]:
             f"state.md 当前章节为第{current_chapter}章，但正文章节仅检测到 {chapters} 章，状态可能超前。"
         )
     if not (project_dir / "00_memory" / "retrieval" / "next_context.md").exists():
-        warnings.append("缺少 next_context.md；建议运行 context_compiler.py 或 chase context。")
+        warnings.append("缺少 next_context.md；建议优先运行 `chase open --project <dir> --chapter <n>` 生成章节上下文。")
     if not (project_dir / "00_memory" / "style_guardrails.md").exists():
         warnings.append("缺少 style_guardrails.md；建议补齐风格护栏，避免后续章节持续发虚或术语挡路。")
     if chapters >= 10 and not (project_dir / "00_memory" / "summaries" / "mid.md").exists():

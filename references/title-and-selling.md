@@ -213,8 +213,8 @@
 
 ## 八、与现有资产的搭配方式
 
-- 题材先看：`templates/opening-route-cheatsheet.md`
-- 三章递进：`templates/golden-three-route-cheatsheet.md`
+- 题材先看：`templates/launch/opening-kit.md`
+- 三章递进：`templates/launch/opening-kit.md`
 - 固定输出骨架：`references/contracts/01-launch.md`
 - 开篇样本对照：`references/opening-sample-library.md`
 

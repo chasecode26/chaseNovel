@@ -667,6 +667,19 @@ def merge_style_profiles(base: dict[str, object], override: dict[str, object]) -
     return merged
 
 
+def resolve_kb_root(repo_root: Path) -> Path:
+    asset_root = repo_root / "assets" / "technique-kb"
+    legacy_root = repo_root / "technique-kb"
+    asset_has_payload = (
+        (asset_root / "patterns").exists()
+        and (asset_root / "profiles").exists()
+        and (asset_root / "recipes").exists()
+    )
+    if asset_has_payload:
+        return asset_root
+    return legacy_root
+
+
 def load_kb_genre_profile(kb_root: Path, genre: str) -> dict[str, object]:
     empty_profile = {
         "name": "",
@@ -1854,7 +1867,8 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
     sentences = split_sentences(text)
     issues: list[dict[str, object]] = []
 
-    kb_root = Path(__file__).resolve().parent.parent / "technique-kb"
+    repo_root = Path(__file__).resolve().parent.parent
+    kb_root = resolve_kb_root(repo_root)
     kb_genre_profile = load_kb_genre_profile(kb_root, str(style_profile.get("genre", "")))
     kb_book_profile = load_kb_book_profile(kb_root, style_path or Path(""), str(style_profile.get("title", "")))
     effective_profile = merge_style_profiles(kb_genre_profile, kb_book_profile)
