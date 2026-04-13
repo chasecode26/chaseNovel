@@ -3,6 +3,15 @@
 ## 目标
 把“开书 / 写作 / 续写 / 修改 / 状态”几类任务的最低输出要求收在一处，避免命令一多就把契约拆散。
 
+## 契约索引
+- 开书：`references/contracts/01-launch.md`
+- 写作：`references/contracts/02-write.md`
+- 续写：`references/contracts/03-continue.md`
+- 修改：`references/contracts/04-modify.md`
+- 状态 / 节奏：`references/contracts/05-state-and-rhythm.md`
+- 承诺 / 防重复：`references/contracts/06-promises-and-repeat.md`
+- 研究材料：`references/contracts/07-research-material.md`
+
 ## 开书最小输出
 - 题材与主卖点
 - 主线目标与阶段目标
@@ -36,3 +45,16 @@
 - 写作：`docs/core/write-workflow.md`
 - 状态：`docs/core/status-workflow.md`
 - 改写与诊断：`docs/core/revise-diagnostics.md`
+
+## 跨任务共通裁决
+- 结论只用：`pass / revise / fail`
+- 若判退，必须补：`return_to / rewrite_scope / first_fix_priority / recheck_order`
+- reviewer 没有整章读完，不得直接放行
+- 语言、风格、连续性、因果四类问题，默认先修承载方式，再动主线结果
+- 凡是会影响 `state.md / timeline.md / foreshadowing.md / payoff_board.md / character_arcs.md` 的修改，必须显式说明是否回写
+
+## 成功标准
+- 读者能说清这一章发生了什么、为什么发生、结果变了什么
+- 章节功能、结果变化、章尾钩子三者一致
+- 关键风险已落到具体人物、动作、资源或后果，不停留在抽象判断
+- 需要复核的地方已经过 reviewer，而不是只靠作者自检

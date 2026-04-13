@@ -18,3 +18,10 @@
 2. 开书时补 `templates/launch/`
 3. 复核时补 `templates/review/`
 4. 题材 / 子风格按需去 `assets/genres/` 与 `assets/substyles/`
+
+根层仍保留的少量文件，大多只是兼容 shim：
+- `templates/style-defaults.md` -> `assets/common/style-defaults.md`
+- `templates/style_fingerprints.md` -> `assets/common/style-fingerprints.md`
+- `templates/chapter-planning-review.md` -> `templates/review/chapter-planning-review.md`
+- `templates/rewrite-handoff.md` -> `templates/review/rewrite-handoff.md`
+- `templates/volume_blueprint.md` -> `templates/launch/volume-blueprint.md`

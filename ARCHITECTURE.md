@@ -1,4 +1,4 @@
-﻿# chaseNovel Architecture
+# chaseNovel Architecture
 
 ## Goal
 
@@ -21,11 +21,11 @@
 
 ## Phase 1 Status
 
-当前架构处于重构过渡阶段：
+当前架构处于重构过渡阶段（Phase 1.5）：
 - 文档层与资产层已建立新分层
-- 旧 `references/`、部分根层模板与根层 `technique-kb/` shim 仍保留兼容
+- 旧 `references/`、少量根层模板与根层 `technique-kb/` shim 仍保留兼容
 - 旧 CLI 命令仍保留兼容
-- 脚本层尚未正式合并为新引擎模块
+- 聚合脚本层已建立，但旧单点脚本仍在兼容面上暴露
 
 ## Target Layers
 
@@ -121,6 +121,13 @@ repo/
 
 其中旧命令 `planning/context/gate/draft/audit/batch/foreshadow/arc/timeline/repeat/dashboard`
 已进入兼容别名阶段，不再是长期主入口。
+
+## Current Optimization Direction
+
+当前优化重点是：
+1. 继续把 `references/` 的导航职责上提到 `docs/core/*` 与 `docs/assets/*`
+2. 把根层模板尽量降为 shim，主内容只保留在分层后的真实位置
+3. 让脚本层优先消费聚合入口，减少用户对旧单点命令的心智负担
 
 ## Why This Shape
 

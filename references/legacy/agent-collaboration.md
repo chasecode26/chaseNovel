@@ -100,7 +100,7 @@
 
 默认 `rewrite_handoff` 可直接套：
 
-- `templates/rewrite-handoff.md`
+- `templates/review/rewrite-handoff.md`
 
 ## 6. 什么算阻断
 

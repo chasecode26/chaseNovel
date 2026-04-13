@@ -1,106 +1,80 @@
-# 剩余优化待办清单（最终版）
+# 剩余优化待办清单
 
 ## 使用说明
 
-这份清单面向重构后的 `chaseNovel` 仓库，目标不是继续大拆大改，而是给后续维护留下一份**按优先级排序**的精修待办。
+这份清单面向当前 Phase 1.5 的 `chaseNovel` 仓库。  
+目标不是再做一次大拆大改，而是继续把兼容层压薄、把默认入口做短。
 
 ---
 
 ## 高优先级
 
-### 1. 继续收 `references/` 重规则文档
-当前仍保留但已降级的文档：
-- `references/execution_workflow.md`
-- `references/agent-collaboration.md`
-- `references/revision-and-diagnostics.md`
-- `references/craft-and-platform.md`
+### 1. 继续压薄 `references/`
+优先对象：
+- `references/anti-repeat-rules.md`
+- `references/writing-patterns.md`
+- 题材路由类旧文档
 
-后续可做：
-- 进一步把常用内容上提到 `docs/core/*`
-- 对冷门长段落做归档或压缩
-- 最终判断是否还需要整份保留
+方向：
+- 把默认阅读路径继续迁到 `docs/core/*` 与 `docs/assets/*`
+- `references/*` 逐步只保留“旧资料归档”价值
 
-### 2. 决定根层核心模板 shim 是否长期保留
-当前根层大部分核心模板已是 shim，真实内容已在 `templates/core/`。
+### 2. 评估根层模板 shim 的最终去留
+当前根层已有多份 shim：
+- `templates/style-defaults.md`
+- `templates/style_fingerprints.md`
+- `templates/chapter-planning-review.md`
+- `templates/rewrite-handoff.md`
+- `templates/volume_blueprint.md`
 
-后续可做：
-- 继续保留 shim（稳定兼容）
-- 或在合适版本彻底移除 shim，只保留 `templates/core/`
+后续要判断：
+- 是继续保留一个兼容周期
+- 还是在后续版本彻底移除，只保留新位置
 
 ### 3. 决定根层 `technique-kb/` shim 是否最终移除
-当前：
-- 主内容已在 `assets/technique-kb/`
-- 根层 `technique-kb/` 仅剩 shim README
-- 脚本已优先读取资产层
-
-后续可做：
-- 保留 shim 一个周期
-- 确认无兼容风险后移除根层 shim
+当前主内容已全部在 `assets/technique-kb/`。
 
 ---
 
 ## 中优先级
 
-### 4. 压缩 README 与 SKILL 的兼容层描述
-当前主结构已经稳定，但 README / SKILL 里仍保留不少“兼容说明”。
+### 4. 继续压缩 README / SKILL 中的兼容叙述
+当前已经比 Phase 1 更收敛，但仍可继续把迁移信息往 `migration-notes.md` 集中。
 
-后续可做：
-- 面向新用户进一步简化
-- 把兼容层说明挪到单独迁移文档
-- 保持 README 更像产品入口而不是迁移日志
-
-### 5. 继续深化聚合脚本内部逻辑
-当前已完成：
-- 主入口收口
-- 聚合脚本建立
-- 聚合公共层抽取
-
-后续可做：
+### 5. 继续深化聚合脚本
+重点不是“再加命令”，而是：
 - 继续减少旧单点脚本的存在感
 - 让聚合脚本吸收更多共享业务逻辑
-- 视情况把旧单点脚本降为纯兼容壳
+- 视情况把旧脚本降为纯兼容壳
 
-### 6. 做一次 package / 分发面审查
-当前 `package.json` 已包含：
-- `docs`
-- `assets`
-- `templates`
-- `technique-kb`
-- `references`
-
-后续可做：
-- 确认哪些兼容层目录仍需要随包分发
-- 评估未来是否减少分发冗余
+### 6. 继续做 package / 分发面审查
+优先确认：
+- `references/` 是否需要全量随包分发
+- 根层 shim 是否需要继续随包存在
+- 兼容目录减少后是否可以进一步缩包
 
 ---
 
 ## 低优先级 / 可选项
 
-### 7. 为主入口补更产品化的命令文档
-可选新增：
-- `docs/core/cli-quickstart.md`
-- `docs/core/migration-notes.md`
-
-### 8. 给聚合入口补更多 smoke test / fixtures
+### 7. 给聚合入口补更多 smoke test / fixtures
 尤其是：
 - `open`
 - `quality`
 - `status`
 - `write`
 
-### 9. 清理 `.omx/` 中对旧路径的历史引用
+### 8. 清理 `.omx/` 中对旧路径的历史引用
 这不会影响主运行链，但若追求仓库整洁，可后续慢慢处理。
 
 ---
 
 ## 当前建议停点
 
-如果后续没有强需求继续重构，当前仓库已经可以作为**稳定使用版**停下：
+如果后续没有强需求继续重构，当前仓库已经可以作为**稳定使用版**继续维护：
 
 - 主入口已收口
 - 题材层已下沉
-- 重复模板与重复目录已大量清除
-- 兼容层边界已明确
-- 关键重构总结文档已生成
-
-也就是说，后续工作已经从“必须继续重构”变成“按需维护优化”。
+- 兼容 shim 已经变薄
+- 关键默认文档已建立
+- 后续工作已从“继续大重构”转成“按需压缩兼容层”

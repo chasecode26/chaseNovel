@@ -9,7 +9,7 @@
 配合文件：
 
 - `references/hook-result-learning.md`
-- `templates/volume_blueprint.md`
+- `templates/launch/volume-blueprint.md`
 - `assets/genres/04-moshi.md`
 
 ---

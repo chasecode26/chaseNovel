@@ -107,4 +107,4 @@
 
 - 找不到下一章方向 → 同时读 `00_memory/state.md` + `00_memory/payoff_board.md`
 - 角色怎么感受都不对 → 读 `00_memory/characters.md` + `references/writing-patterns.md`
-- 感觉这本书整体走偏了 → 读 `references/revision-and-diagnostics.md`
+- 感觉这本书整体走偏了 → 读 `docs/core/revise-diagnostics.md`

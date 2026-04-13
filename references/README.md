@@ -7,7 +7,7 @@
 - 允许渐进迁移
 - 为后续归档与清理留缓冲
 
-其中一部分导航型旧文档已经完成 shim 阶段并可删除，当前仓库已先移除：
+其中一部分导航型旧文档已经完成合并并已删除：
 - `advanced-template-map.md`
 - `genre-asset-index.md`
 - `output-contracts.md`
@@ -24,5 +24,10 @@
 - `templates/core/`
 - `templates/launch/`
 - `templates/review/`
+
+建议把 `references/` 理解为三类内容：
+- **shim**：只负责把人导向新入口
+- **legacy**：旧长文归档，不再默认阅读
+- **仍有业务价值的题材/技法资料**：后续继续按需下沉或合并
 
 除非需要查兼容旧资料，否则不要再默认从 `references/` 平铺下钻。

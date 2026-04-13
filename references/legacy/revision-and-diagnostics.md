@@ -102,13 +102,13 @@
 
 统一交接骨架见：
 
-- `templates/rewrite-handoff.md`
+- `templates/review/rewrite-handoff.md`
 
 ### 阶段复盘最短写法
 
 当问题已经不是单章，而是最近几章一起发水、重复或拖欠时，先别继续堆正文，直接套：
 
-- `templates/reviewer-stage-retro.md`
+- `templates/review/retro.md`
 
 只写 4 件事：
 

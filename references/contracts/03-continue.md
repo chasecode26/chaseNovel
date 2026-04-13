@@ -147,4 +147,4 @@
 - 若断点前存在强钩子，本章必须先接钩子，再开新场景
 - `HookEmotion` 先判断断点情绪和钩子是否续上，再交给 `Writer`
 - 若任一 reviewer `blocking=yes`，必须补齐回退四字段
-- 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `references/agent-collaboration.md`
+- 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `docs/core/write-workflow.md`

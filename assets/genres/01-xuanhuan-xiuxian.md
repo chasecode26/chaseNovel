@@ -6,7 +6,7 @@
 - 子风格选择：凡人流 → `01a-xuanhuan-fanrenliu.md` | 稳健流 → `01b-xuanhuan-wenjianliu.md` | 搞笑流 → `01c-xuanhuan-gaoxiaoliu.md` | 探案修仙 → `01d-xuanhuan-tananxiuxian.md` | 系统修仙 → `01e-xuanhuan-xitongxiuxian.md`
 - 通用技法：`../../references/writing-patterns.md`（配合本题材模板吸收修仙爽点引擎与战斗写法）
 - 开篇路线：`../../references/opening-sample-library.md`
-- 风格指纹：`../../templates/style_fingerprints.md`（利落现实档 / 群像悲壮档 / 苍凉高压档，按卷段需要择一）
+- 风格指纹：`../common/style-fingerprints.md`（利落现实档 / 群像悲壮档 / 苍凉高压档，按卷段需要择一）
 - 开书骨架：`../../templates/launch/opening-kit.md`（再结合当前题材包做细化）
 
 ---

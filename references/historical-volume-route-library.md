@@ -15,7 +15,7 @@
 
 配合文件：
 
-- `templates/volume_blueprint.md`
+- `templates/launch/volume-blueprint.md`
 - `references/historical-midgame-learning.md`
 - `references/historical-character-learning.md`
 - `references/historical-chapter-card-library.md`

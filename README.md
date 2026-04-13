@@ -1,4 +1,4 @@
-﻿# chaseNovel
+# chaseNovel
 
 `chaseNovel` 是一套面向中文网文长篇连载的写作引擎仓库。
 
@@ -36,12 +36,14 @@
 
 ## 核心文档
 - `SKILL.md`：技能主入口
+- `docs/core/cli-quickstart.md`：CLI 快速上手
 - `docs/core/open-book.md`：开书主链路
 - `docs/core/write-workflow.md`：写作主链路
 - `docs/core/revise-diagnostics.md`：改写与诊断
 - `docs/core/style-governance.md`：文风治理
 - `docs/core/status-workflow.md`：状态与书级健康
 - `docs/core/task-contracts.md`：任务输出契约
+- `docs/core/migration-notes.md`：兼容迁移说明
 - `docs/core/legacy-cleanup-candidates.md`：兼容层清理候选清单
 - `docs/core/refactor-summary.md`：本轮重构总结
 - `docs/core/final-optimization-todo.md`：剩余优化待办清单
@@ -62,10 +64,12 @@
 - 新的资产层入口已建立
 - 新的模板分层已建立
 - 新增了聚合别名：`chase open`、`chase quality`、`chase write`、`chase status`
+- 多份旧重规则文档已降级为 shim + legacy 归档
 
 当前尚未做的：
 - 旧命令仍然保留为兼容层
-- 旧 `references/` 路径仍保留，避免马上打断现有工作流
+- `references/` 仍保留部分旧资料，后续继续下沉/合并
+- 少量根层模板仍保留 shim，避免马上打断现有工作流
 
 ## 当前可用 CLI（兼容层）
 ```bash
@@ -102,11 +106,13 @@ chase run --project <dir> [--chapter <n>] [--steps <csv>]
 
 ## 推荐阅读顺序
 1. `SKILL.md`
-2. `docs/core/open-book.md` 或 `docs/core/write-workflow.md`
-3. `docs/core/status-workflow.md`
-4. `docs/core/revise-diagnostics.md`
-5. `docs/core/style-governance.md`
-6. `docs/assets/genre-index.md`
+2. `docs/core/cli-quickstart.md`
+3. `docs/core/open-book.md` 或 `docs/core/write-workflow.md`
+4. `docs/core/status-workflow.md`
+5. `docs/core/revise-diagnostics.md`
+6. `docs/core/style-governance.md`
+7. `docs/assets/genre-index.md`
+8. 需要兼容旧项目时再看 `docs/core/migration-notes.md`
 
 ## 仓库结构（Phase 1 后）
 ```text

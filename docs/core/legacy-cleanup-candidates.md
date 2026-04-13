@@ -22,8 +22,17 @@
 - templates/genres/
 - templates/substyles/
 
-## Merge targets (phase 1 shim completed; physical deletion deferred until compatibility references are reduced)
-
+## Merge targets (phase 1.5)
+- 根层模板 shim：
+  - `templates/style-defaults.md`
+  - `templates/style_fingerprints.md`
+  - `templates/chapter-planning-review.md`
+  - `templates/rewrite-handoff.md`
+  - `templates/volume_blueprint.md`
+- references 导航继续上提：
+  - `references/anti-repeat-rules.md` -> `docs/core/revise-diagnostics.md`
+  - `references/writing-patterns.md` -> `docs/core/write-workflow.md` / `docs/core/style-governance.md`
+  - 题材路由说明 -> `docs/assets/genre-index.md`
 
 ## Keep for now: script dependent
 
@@ -42,6 +51,7 @@
 - `templates/core/scene_preferences.md`
 - `templates/core/summaries_recent.md`
 - `templates/core/character-voice-diff.md`
+- `templates/summaries_mid.md`
 
 ## Keep for now: compatibility layer
 

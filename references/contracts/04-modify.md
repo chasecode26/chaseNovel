@@ -155,4 +155,4 @@
 - `HookEmotion` 先处理情绪跳、钩子弱、爽点失焦，再进入正文修订
 - 若修改会影响后续章节，必须显式写出影响面
 - 若任一 reviewer `blocking=yes`，必须补齐回退四字段
-- 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `references/agent-collaboration.md`
+- 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `docs/core/write-workflow.md`

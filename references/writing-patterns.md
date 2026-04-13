@@ -172,9 +172,9 @@
 
 ## 与仓库其他文件的关系
 
-- 结构问题先回 `references/execution_workflow.md`
-- 平台节奏、黄金三章、题材基线先回 `references/craft-and-platform.md`
-- 卡文、修章、漂移、重复先回 `references/revision-and-diagnostics.md`
+- 结构问题先回 `docs/core/write-workflow.md`
+- 平台节奏、黄金三章、题材基线先回 `docs/core/open-book.md` 与 `docs/assets/genre-index.md`
+- 卡文、修章、漂移、重复先回 `docs/core/revise-diagnostics.md`
 - 重复桥段专项先回 `references/anti-repeat-rules.md`
 - 具体模板、示例、题材文法在 `templates/`
 

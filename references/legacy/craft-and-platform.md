@@ -424,7 +424,7 @@
 
 风格默认模板已拆分到独立文件，作为 `/定风格`、`/校风格` 与初始化 `00_memory/style.md` 的参考库。
 
-- `/定风格`、`/校风格`、初始化 `00_memory/style.md`：详见 `templates/style-defaults.md`
+- `/定风格`、`/校风格`、初始化 `00_memory/style.md`：详见 `assets/common/style-defaults.md`
 - 长期风格校准：再结合 `templates/core/style.md` 做细化约束
 - 默认 1 个主风格；必要时最多再加 1 个辅风格，避免风格混杂
 

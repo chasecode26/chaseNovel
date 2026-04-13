@@ -193,9 +193,9 @@
 
 ## 与当前仓库的配合方式
 
-- `references/revision-and-diagnostics.md`：负责诊断“为什么重复”
+- `docs/core/revise-diagnostics.md`：负责诊断“为什么重复”
 - 本文件：负责判断“重复发生在哪个维度，怎么换”
-- `references/craft-and-platform.md`：负责提醒不同题材的常见反馈路径
+- `docs/core/open-book.md` + `docs/assets/genre-index.md`：负责提醒不同题材的常见反馈路径
 - `references/writing-patterns.md`：提供具体换法与动作化改写方向
 - `templates/launch/chapter-outcome-kit.md`：负责给结果类型与章尾钩子换挡
 - `templates/review/midgame-diagnostics.md`：负责诊断中盘疲劳并给出变轨顺序
