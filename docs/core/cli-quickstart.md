@@ -77,3 +77,9 @@ chase write --project my-book --chapter 12
 ```bash
 npm run smoke
 ```
+
+它当前会覆盖：
+- `chase --help`
+- Python 脚本语法编译
+- 临时项目 fixture：`bootstrap -> doctor -> open`
+- `npm pack --dry-run`

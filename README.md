@@ -112,6 +112,7 @@ npm run smoke
 它当前会做三件事：
 - 检查 `chase --help`
 - 编译全部 Python 脚本语法
+- 跑一轮临时项目 fixture：`bootstrap -> doctor -> open`
 - 执行 `npm pack --dry-run`
 
 ## 推荐阅读顺序
