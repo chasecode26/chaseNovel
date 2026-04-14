@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
+from aggregation_utils import safe_write_text, validate_project_root
+
 
 DIRS = [
+    "00_memory/schema",
     "00_memory",
     "00_memory/retrieval",
     "00_memory/summaries",
@@ -36,6 +40,21 @@ TEMPLATE_MAP = {
     "00_memory/summaries/recent.md": "core/summaries_recent.md",
 }
 
+SCHEMA_SEEDS = {
+    "state.json": {
+        "currentVolume": "",
+        "currentArc": "",
+        "chapterGoal": "",
+        "sceneAnchors": {"location": "", "time": ""},
+        "openThreads": [],
+        "forbiddenInventions": [],
+    },
+    "voice.json": {
+        "forbiddenCadence": [],
+        "mustKeep": [],
+    },
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -47,11 +66,11 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def copy_template(src: Path, dst: Path, force: bool) -> None:
+def copy_template(src: Path, dst: Path, force: bool, root_dir: Path) -> None:
     if dst.exists() and not force:
         return
     dst.parent.mkdir(parents=True, exist_ok=True)
-    dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    safe_write_text(dst, src.read_text(encoding="utf-8"), root_dir=root_dir)
 
 
 def resolve_template(templates_root: Path, template_name: str) -> Path:
@@ -64,17 +83,27 @@ def resolve_template(templates_root: Path, template_name: str) -> Path:
     raise FileNotFoundError(f"template not found: {template_name}")
 
 
+def write_schema_seed(project_dir: Path, file_name: str, payload: dict[str, object], force: bool) -> None:
+    path = project_dir / "00_memory" / "schema" / file_name
+    if path.exists() and not force:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    safe_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n", root_dir=project_dir)
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     args = parse_args()
-    project_dir = Path(args.project).resolve()
+    project_dir = validate_project_root(Path(args.project).resolve(), allow_bootstrap=True)
     templates_root = Path(args.templates_root).resolve() if args.templates_root else (Path(__file__).resolve().parent.parent / "templates")
     project_dir.mkdir(parents=True, exist_ok=True)
     for rel_dir in DIRS:
         (project_dir / rel_dir).mkdir(parents=True, exist_ok=True)
     for rel_path, template_name in TEMPLATE_MAP.items():
-        copy_template(resolve_template(templates_root, template_name), project_dir / rel_path, args.force)
+        copy_template(resolve_template(templates_root, template_name), project_dir / rel_path, args.force, project_dir)
+    for file_name, payload in SCHEMA_SEEDS.items():
+        write_schema_seed(project_dir, file_name, payload, args.force)
     print(f"project={project_dir.as_posix()}")
     print("status=bootstrapped")
     return 0

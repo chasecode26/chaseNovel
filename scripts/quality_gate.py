@@ -3,13 +3,40 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from evaluators.continuity import from_continuity_payload
+from evaluators.draft import from_draft_payload
+from evaluators.style import from_style_payload
 
 from aggregation_utils import (
     build_aggregate_payload,
     configure_utf8_stdio,
     run_step_specs,
+    validate_project_root,
+    write_aggregate_reports,
 )
+
+def build_quality_verdicts(steps: list[dict[str, object]]) -> list[dict[str, object]]:
+    verdicts: list[dict[str, object]] = []
+    for step in steps:
+        script_name = str(step.get("script", ""))
+        if script_name == "chapter_gate.py":
+            verdicts.append(from_continuity_payload(step))
+        elif script_name == "draft_gate.py":
+            verdicts.append(from_draft_payload(step))
+        elif script_name == "language_audit.py":
+            verdicts.append(from_style_payload({
+                "warnings": step.get("findings", []),
+                "blocking": step.get("blocking", "no"),
+            }))
+    return verdicts
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run draft / chapter / language gates as one quality step.")
@@ -61,11 +88,27 @@ def main() -> int:
     steps = run_step_specs(repo_root, step_specs)
 
     payload = build_aggregate_payload(project=args.project, steps=steps, extra_fields={"check": args.check})
+    payload["verdicts"] = build_quality_verdicts(steps)
+    payload["final_release"] = "revise" if any(item.get("blocking") for item in payload["verdicts"]) else "pass"
+    project_dir = validate_project_root(Path(args.project).resolve())
+    payload["report_paths"] = {
+        **payload.get("report_paths", {}),
+        **({} if args.dry_run else write_aggregate_reports(
+            project_dir,
+            payload,
+            base_name="quality_gate_report",
+            heading="质量闸门汇总报告",
+            mode_line=f"- 检查模式：`{args.check}`",
+        )),
+    }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         print(f"status={payload['status']}")
+        print(f"check={payload['check']}")
         print(f"warning_count={payload['warning_count']}")
+        if isinstance(payload.get("report_paths"), dict) and payload["report_paths"].get("markdown"):
+            print(f"report={payload['report_paths']['markdown']}")
     return 0 if payload["status"] != "fail" else 1
 
 

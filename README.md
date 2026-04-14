@@ -28,7 +28,7 @@
 
 ### 2. 写作
 - 入口：`docs/core/write-workflow.md`
-- 目标：锚定上下文 -> 起稿 -> 复核 -> 回写记忆 -> 书级健康检查
+- 目标：LeadWriter 编译上下文 -> 下发 brief -> WriterExecutor 执行 -> Evaluators 放行/阻断 -> 回写记忆 -> 书级健康检查
 
 ### 3. 状态 / 健康
 - 入口：`docs/core/status-workflow.md`
@@ -98,8 +98,8 @@ chase run --project <dir> [--chapter <n>] [--steps <csv>]
 其中：
 - `open` 是新的开书入口：默认做开书 readiness 扫描，传 `--chapter` 时兼容章节规划/上下文准备
 - `quality` 是新的质量闸门聚合入口，当前先聚合 gate + draft + language
-- `write` 是新的写作聚合入口，默认优先走 `doctor + open + memory + status`
-- `status` 是新的书级健康聚合别名，当前聚合 dashboard / foreshadow / arc / timeline / repeat
+- `write` 是新的写作聚合入口，默认优先走 `doctor + open + runtime + status`
+- `status` 是新的书级健康聚合别名，当前聚合 dashboard / foreshadow / arc / timeline / repeat，并返回 `runtime_signals`
 - 旧 `planning/context/gate/draft/audit/batch/foreshadow/arc/timeline/repeat/dashboard` 现在都属于兼容别名，内部会转到新聚合入口
 - `quality` 当前支持统一子检查协议：`--check all|chapter|draft|language|batch`
 - `check` 现在也优先走 `doctor + open + status`

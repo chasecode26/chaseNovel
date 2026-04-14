@@ -36,25 +36,26 @@
 - 状态/健康主链文档
 - 改写/诊断文档
 
-### Layer 2: Core Engine
+### Layer 2: Runtime Core
+- `LeadWriter`：唯一章节决策 owner
+- `MemoryCompiler`：把 schema memory + markdown mirror 编译成 context
+- `WriterExecutor`：唯一正文执行路径
+- `DecisionEngine`：根据 evaluator verdict 生成 pass / revise / fail 决策
+- `RuntimeMemorySync`：回写 runtime 摘要与记忆补丁
+
+### Layer 3: Aggregated Engines
 - bootstrap
 - doctor
 - open/planning-context engine
 - quality gate engine
-- memory sync
 - book health engine
 - run/check orchestration over aggregated layers
 
-### Layer 3: Project Memory
-- `plan.md`
-- `state.md`
-- `characters.md`
-- `timeline.md`
-- `foreshadowing.md`
-- `style.md`
-- `voice.md`
+### Layer 4: Project Memory
+- schema truth source：`00_memory/schema/*.json`
+- markdown mirror：`plan.md` / `state.md` / `characters.md` / `timeline.md` / `foreshadowing.md` / `style.md` / `voice.md`
 
-### Layer 4: Asset Packs
+### Layer 5: Asset Packs
 - genre packs
 - substyle packs
 - examples
@@ -137,4 +138,10 @@ repo/
 - 质量检查是否内聚
 - 题材资产是否按需加载
 - 文风治理是否持续生效
+
+## Runtime ownership rules
+- LeadWriter 负责章节策略与边界裁定。
+- WriterExecutor 只执行被允许的正文路径，不自行扩张世界设定。
+- Evaluators 只负责放行、预警、阻断与给出最小修法。
+- schema memory 是运行时真相源；markdown 模板负责人工可读、维护和回填镜像。
 

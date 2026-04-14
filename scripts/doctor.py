@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import subprocess
 import sys
 from pathlib import Path
 
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
-def main() -> int:
-    script_path = Path(__file__).with_name("project_doctor.py")
-    completed = subprocess.run([sys.executable, str(script_path), *sys.argv[1:]])
-    return completed.returncode
+from project_doctor import main
 
 
 if __name__ == "__main__":

@@ -13,6 +13,13 @@
 - 章节字数约束：{WORDS_MIN}~{WORDS_MAX}字/章
 - 终极结局：{ENDING}
 
+## Runtime Schema Mirror
+- title：{TITLE}
+- genre：{GENRE}
+- hook：{HOOK}
+- target_words：{TARGET_WORDS}
+- volumes：
+
 ## 主线大纲
 - [ ] 第一卷：{VOL1_NAME}（第1~{VOL1_END}章）
   - [ ] 第一幕：{ACT1}

@@ -18,6 +18,12 @@
   - 距关键布置落地：
   - 距上次大战/转折：
 
+### Runtime Schema Mirror
+- absoluteTime：
+- relativeTimeFromPrevChapter：
+- currentLocation：
+- recentEvents：
+
 ---
 
 ## 主线时间线

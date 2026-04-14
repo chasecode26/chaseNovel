@@ -10,7 +10,7 @@ const COMMAND_SPECS = {
   gate: { script: "quality_gate.py", injectArgs: ["--check", "chapter"] },
   draft: { script: "quality_gate.py", injectArgs: ["--check", "draft"] },
   planning: { script: "planning_context.py" },
-  write: { script: "engine_runner.py" },
+  write: { script: "workflow_runner.py" },
   status: { script: "book_health.py" },
   batch: { script: "quality_gate.py", injectArgs: ["--check", "batch"] },
   audit: { script: "quality_gate.py", injectArgs: ["--check", "language"] },
@@ -20,12 +20,12 @@ const COMMAND_SPECS = {
   arc: { script: "book_health.py", injectArgs: ["--focus", "arc"] },
   timeline: { script: "book_health.py", injectArgs: ["--focus", "timeline"] },
   repeat: { script: "book_health.py", injectArgs: ["--focus", "repeat"] },
-  bootstrap: { script: "bootstrap.py" },
-  memory: { script: "memory_sync.py" },
-  run: { script: "engine_runner.py" },
-  doctor: { script: "doctor.py" },
+  bootstrap: { script: "project_bootstrap.py" },
+  memory: { script: "memory_update.py" },
+  run: { script: "workflow_runner.py" },
+  doctor: { script: "project_doctor.py" },
   check: {
-    script: "engine_runner.py",
+    script: "workflow_runner.py",
     injectArgs: ["--dry-run", "--steps", "doctor,open,status"],
   },
 };
@@ -145,7 +145,7 @@ Notes:
   - legacy commands are still available, but now route into the new aggregated layers
   - write and check prefer the aggregated layers internally
   - check is a dry-run health sweep over doctor + open + status
-  - default run steps: doctor,open,memory,status
+  - default run steps: doctor,open,runtime,status
   - chase run --chapter expects an already drafted chapter number; do not pass the next unwritten chapter
   - project defaults to the current directory`);
 }

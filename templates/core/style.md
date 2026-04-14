@@ -66,3 +66,8 @@
 - 风格不能推翻章节功能，只能强化表现
 - 语言发滑时，先删判词和空泛情绪，再补动作、站位、结果
 - 默认写明白，不绕，不装深沉；只有悬疑关键点才允许少量留白
+
+## Runtime Schema Mirror
+- genreTone：
+- narrationRules：
+- prohibitedPhrases：

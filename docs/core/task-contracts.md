@@ -53,6 +53,14 @@
 - 语言、风格、连续性、因果四类问题，默认先修承载方式，再动主线结果
 - 凡是会影响 `state.md / timeline.md / foreshadowing.md / payoff_board.md / character_arcs.md` 的修改，必须显式说明是否回写
 
+## Runtime contract fields
+- `context`：由 LeadWriter runtime 编译出的章节上下文
+- `brief`：LeadWriter 下发给 WriterExecutor 的章级 brief
+- `verdicts`：统一 evaluator 输出
+- `final_release`：quality 聚合的最终放行结论
+- `runtime_signals`：status 聚合返回的观察信号
+- `decision`：runtime 的 pass / revise / fail 决策与 rewrite brief
+
 ## 成功标准
 - 读者能说清这一章发生了什么、为什么发生、结果变了什么
 - 章节功能、结果变化、章尾钩子三者一致

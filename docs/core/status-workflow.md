@@ -30,6 +30,12 @@
 
 默认是 `all`，会把整本书最关键的健康信号一次性汇总出来。
 
+当前 `status` 输出已面向 runtime：
+- `verdicts`：统一 evaluator verdict 列表
+- `runtime_signals.blocking_dimensions`：阻断维度
+- `runtime_signals.attention_queue`：下一章前应优先处理的关注项
+- `runtime_signals.focus`：本次观察视角
+
 ## 什么时候用 status
 
 ### 写前

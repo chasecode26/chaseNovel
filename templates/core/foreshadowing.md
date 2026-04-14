@@ -47,3 +47,6 @@
 ID格式：FL{章节号}-{序号}  例：FL012-1
 状态：待回收 / 已激活 / 已回收 / 已延后 / 已废弃
 ```
+
+## Runtime Schema Mirror
+- threads：

@@ -3,13 +3,23 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from evaluators.continuity import from_continuity_payload
+from evaluators.repeat import from_repeat_payload
 
 from aggregation_utils import (
     build_aggregate_payload,
     configure_utf8_stdio,
     run_step_specs,
+    validate_project_root,
+    write_aggregate_reports,
 )
 
 
@@ -20,6 +30,17 @@ SCRIPT_BY_FOCUS = {
     "timeline": "timeline_check.py",
     "repeat": "anti_repeat_scan.py",
 }
+
+
+def build_status_verdicts(steps: list[dict[str, object]]) -> list[dict[str, object]]:
+    verdicts: list[dict[str, object]] = []
+    for step in steps:
+        script_name = str(step.get("script", ""))
+        if script_name == "timeline_check.py":
+            verdicts.append(from_continuity_payload(step))
+        elif script_name == "anti_repeat_scan.py":
+            verdicts.append(from_repeat_payload(step))
+    return verdicts
 
 
 def parse_args() -> argparse.Namespace:
@@ -52,12 +73,31 @@ def main() -> int:
     steps = run_step_specs(repo_root, step_specs)
 
     payload = build_aggregate_payload(project=args.project, steps=steps, extra_fields={"focus": args.focus})
+    payload["verdicts"] = build_status_verdicts(steps)
+    payload["runtime_signals"] = {
+        "blocking_dimensions": [item["dimension"] for item in payload["verdicts"] if item.get("blocking")],
+        "attention_queue": payload.get("warnings", []),
+        "focus": args.focus,
+    }
+    project_dir = validate_project_root(Path(args.project).resolve())
+    payload["report_paths"] = {
+        **payload.get("report_paths", {}),
+        **({} if args.dry_run else write_aggregate_reports(
+            project_dir,
+            payload,
+            base_name="book_health_report",
+            heading="书级健康汇总报告",
+            mode_line=f"- 聚焦范围：`{args.focus}`",
+        )),
+    }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         print(f"status={payload['status']}")
         print(f"focus={payload['focus']}")
         print(f"warning_count={payload['warning_count']}")
+        if isinstance(payload.get("report_paths"), dict) and payload["report_paths"].get("markdown"):
+            print(f"report={payload['report_paths']['markdown']}")
     return 0 if payload["status"] != "fail" else 1
 
 

@@ -19,6 +19,18 @@
 - 当前昼夜 / 节令：
 - 最近一次跳时：
 
+## Runtime Schema Mirror
+- currentChapter：
+- currentVolume：
+- currentArc：
+- chapterGoal：
+- openThreads：
+- forbiddenInventions：
+- pendingPayoffs：
+- sceneAnchors.absoluteTime：
+- sceneAnchors.relativeTime：
+- sceneAnchors.location：
+
 ## 当前阶段
 - 当前弧：
 - 当前阶段：

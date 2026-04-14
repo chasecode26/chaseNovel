@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from aggregation_utils import safe_write_text, validate_project_root
 from novel_utils import read_text
 
 
@@ -83,14 +84,24 @@ def parse_confirm_file(path: Path | None) -> set[str]:
     return approved
 
 
-def apply_patch_target(target: str, item: dict[str, str], dry_run: bool) -> dict[str, object]:
-    file_path = Path(str(item.get("path", "")))
-    current = read_text(file_path)
+def apply_patch_target(target: str, item: dict[str, str], dry_run: bool, project_dir: Path) -> dict[str, object]:
+    raw_path = str(item.get("path", "")).strip()
     before_sha = str(item.get("before_sha256", ""))
     after_content = str(item.get("after_content", ""))
 
-    if not file_path:
+    if not raw_path:
         return {"target": target, "status": "skip", "reason": "缺少目标文件路径"}
+
+    file_path = Path(raw_path)
+    try:
+        resolved_root = validate_project_root(project_dir)
+        candidate_path = file_path.resolve(strict=False) if file_path.is_absolute() else (resolved_root / file_path).resolve(strict=False)
+        if candidate_path != resolved_root and resolved_root not in candidate_path.parents:
+            return {"target": target, "status": "skip", "reason": "目标文件超出项目根目录", "path": raw_path}
+    except ValueError as exc:
+        return {"target": target, "status": "skip", "reason": str(exc), "path": raw_path}
+
+    current = read_text(candidate_path)
     if not after_content:
         return {"target": target, "status": "skip", "reason": "缺少 after_content 内容"}
     if before_sha and sha256_text(current) != before_sha:
@@ -98,14 +109,13 @@ def apply_patch_target(target: str, item: dict[str, str], dry_run: bool) -> dict
             "target": target,
             "status": "conflict",
             "reason": "patch 生成后文件已变化，请重新生成后再落表",
-            "path": file_path.as_posix(),
+            "path": candidate_path.as_posix(),
         }
     if dry_run:
-        return {"target": target, "status": "ready", "reason": "仅完成校验，尚未写入", "path": file_path.as_posix()}
+        return {"target": target, "status": "ready", "reason": "仅完成校验，尚未写入", "path": candidate_path.as_posix()}
 
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    file_path.write_text(after_content, encoding="utf-8")
-    return {"target": target, "status": "applied", "path": file_path.as_posix()}
+    safe_write_text(candidate_path, after_content, root_dir=resolved_root)
+    return {"target": target, "status": "applied", "path": candidate_path.as_posix()}
 
 
 def confirm_target(target: str, item: dict[str, str], interactive: bool, approved_targets: set[str]) -> bool:
@@ -158,7 +168,7 @@ def build_payload(
         if not confirm_target(target, item, interactive, approved_targets):
             results.append({"target": target, "status": "skip", "reason": "未获确认，已跳过"})
             continue
-        results.append(apply_patch_target(target, item, dry_run))
+        results.append(apply_patch_target(target, item, dry_run, project_dir))
 
     applied_count = sum(1 for item in results if item.get("status") == "applied")
     conflict_count = sum(1 for item in results if item.get("status") == "conflict")

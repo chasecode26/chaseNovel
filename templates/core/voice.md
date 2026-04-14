@@ -51,6 +51,11 @@
 - 最适合本书的强项：
 - 每章应留下的读感：
 
+## Runtime Schema Mirror
+- bookVoiceDNA：
+- sentenceRhythm：
+- forbiddenCadence：
+
 ## 风格样本
 <!-- 粘贴 3-5 段最能代表本书声音的正文样本 -->
 

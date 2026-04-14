@@ -10,6 +10,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from aggregation_utils import safe_write_text, validate_project_root
 from novel_utils import (
     count_total_chapter_chars,
     detect_existing_chapter_file,
@@ -43,9 +44,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+def write_text(path: Path, content: str, *, root_dir: Path) -> None:
+    safe_write_text(path, content, root_dir=root_dir)
 
 
 def replace_or_append_line(text: str, label: str, value: str) -> str:
@@ -436,7 +436,7 @@ def build_timeline_patch(
     )
     return {
         "target": "timeline.md",
-        "path": path.as_posix(),
+        "path": path.relative_to(memory_dir.parent).as_posix(),
         "confidence": "high",
         "summary": f"追加 {chapter_label(chapter_no)} 的主线时间线事件",
         "before_sha256": sha256_text(before),
@@ -479,7 +479,7 @@ def build_foreshadow_patch(
     )
     return {
         "target": "foreshadowing.md",
-        "path": path.as_posix(),
+        "path": path.relative_to(memory_dir.parent).as_posix(),
         "confidence": "medium",
         "summary": f"补入 {len(rows)} 条待确认伏笔候选",
         "before_sha256": sha256_text(before),
@@ -521,7 +521,7 @@ def build_payoff_patch(
     )
     return {
         "target": "payoff_board.md",
-        "path": path.as_posix(),
+        "path": path.relative_to(memory_dir.parent).as_posix(),
         "confidence": "medium",
         "summary": f"补入 {len(rows)} 条承诺/兑现候选",
         "before_sha256": sha256_text(before),
@@ -559,7 +559,7 @@ def build_character_arc_patch(
     )
     return {
         "target": "character_arcs.md",
-        "path": path.as_posix(),
+        "path": path.relative_to(memory_dir.parent).as_posix(),
         "confidence": "medium",
         "summary": f"追加 {len(rows)} 条角色弧确认记录",
         "before_sha256": sha256_text(before),
@@ -681,7 +681,7 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8")
 
     args = parse_args()
-    project_dir = Path(args.project).resolve()
+    project_dir = validate_project_root(Path(args.project))
     latest_chapter_no, _ = detect_latest_chapter_file(project_dir)
     target_chapter = args.chapter or latest_chapter_no
 
@@ -738,7 +738,7 @@ def main() -> int:
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "status": "pass",
-        "updated": True,
+        "updated": not args.dry_run,
         "chapter": target_chapter,
         "title": title,
         "state_path": state_path.as_posix(),
@@ -781,13 +781,13 @@ def main() -> int:
         payload["status"] = "warn"
 
     if not args.dry_run:
-        write_text(state_path, state_text)
-        write_text(recent_path, recent_text)
-        write_text(mid_path, mid_text)
-        write_text(queue_md_path, render_sync_queue(target_chapter, sync_queue, sync_patches))
-        write_text(queue_json_path, json.dumps(payload["sync_queue"], ensure_ascii=False, indent=2))
-        write_text(patch_md_path, render_sync_patches_markdown(target_chapter, sync_patches))
-        write_text(patch_json_path, json.dumps(sync_patches, ensure_ascii=False, indent=2))
+        write_text(state_path, state_text, root_dir=project_dir)
+        write_text(recent_path, recent_text, root_dir=project_dir)
+        write_text(mid_path, mid_text, root_dir=project_dir)
+        write_text(queue_md_path, render_sync_queue(target_chapter, sync_queue, sync_patches), root_dir=project_dir)
+        write_text(queue_json_path, json.dumps(payload["sync_queue"], ensure_ascii=False, indent=2), root_dir=project_dir)
+        write_text(patch_md_path, render_sync_patches_markdown(target_chapter, sync_patches), root_dir=project_dir)
+        write_text(patch_json_path, json.dumps(sync_patches, ensure_ascii=False, indent=2), root_dir=project_dir)
         write_text(
             report_path,
             build_memory_report(
@@ -798,6 +798,7 @@ def main() -> int:
                 patch_md_path,
                 len(sync_patches),
             ),
+            root_dir=project_dir,
         )
 
     if args.json:
@@ -805,7 +806,7 @@ def main() -> int:
     else:
         print(f"status={payload['status']}")
         print(f"warning_count={payload['warning_count']}")
-        print("updated=true")
+        print(f"updated={str(payload['updated']).lower()}")
         print(f"chapter={target_chapter}")
         print(f"report={payload['report_paths']['memory_report']}")
     return 0

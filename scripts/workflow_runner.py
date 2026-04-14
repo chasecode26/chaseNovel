@@ -7,19 +7,26 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from aggregation_utils import configure_utf8_stdio, run_script_json
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from aggregation_utils import configure_utf8_stdio, run_script_json, safe_write_text, validate_project_root
+from runtime.novel_utils import detect_latest_chapter_file
+from runtime.runtime_orchestrator import LeadWriterRuntime
 
 STEP_MAP = {
-    "doctor": "doctor.py",
-    "open": "planning_context.py",
+    "doctor": "project_doctor.py",
+    "open": "open_book.py",
     "planning": "planning_context.py",
     "context": "planning_context.py",
+    "runtime": None,
     "quality": "quality_gate.py",
     "draft": "quality_gate.py",
     "gate": "quality_gate.py",
     "audit": "quality_gate.py",
     "batch": "quality_gate.py",
-    "memory": "memory_sync.py",
+    "memory": "memory_update.py",
     "status": "book_health.py",
     "foreshadow": "book_health.py",
     "arc": "book_health.py",
@@ -41,7 +48,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--steps",
-        default="doctor,open,memory,status",
+        default="doctor,open,runtime,status",
         help="Comma-separated workflow steps",
     )
     parser.add_argument("--json", action="store_true", help="Print JSON result")
@@ -50,9 +57,35 @@ def parse_args() -> argparse.Namespace:
 
 
 def run_step(repo_root: Path, step: str, project: Path, chapter: int | None, dry_run: bool) -> dict[str, object]:
+    if step == "runtime":
+        runtime_chapter = chapter
+        if runtime_chapter is None:
+            runtime_chapter, _ = detect_latest_chapter_file(project)
+        if not runtime_chapter:
+            return {
+                "step": "runtime",
+                "returncode": 1,
+                "stderr": "runtime step requires an existing drafted chapter",
+                "status": "fail",
+                "warning_count": 0,
+                "warnings": [],
+                "report_paths": {},
+                "summary": {},
+            }
+        runtime_payload = LeadWriterRuntime().run(project, runtime_chapter)
+        return {
+            "step": "runtime",
+            "returncode": 0,
+            "stderr": "",
+            "status": runtime_payload.get("status", "pass"),
+            "warning_count": len(runtime_payload.get("context", {}).get("warnings", [])),
+            "warnings": runtime_payload.get("context", {}).get("warnings", []),
+            "report_paths": runtime_payload.get("report_paths", {}),
+            "summary": runtime_payload,
+        }
     script_name = STEP_MAP[step]
     command = ["--project", project.as_posix()]
-    if chapter is not None and step in {"open", "planning", "context", "memory", "status", "foreshadow"}:
+    if chapter is not None and step in {"planning", "context", "memory", "status", "foreshadow"}:
         command.extend(["--chapter", str(chapter)])
     if step in {"quality", "gate", "draft", "audit"} and chapter is not None:
         command.extend(["--chapter-no", str(chapter)])
@@ -140,7 +173,7 @@ def main() -> int:
     configure_utf8_stdio()
     args = parse_args()
     repo_root = Path(__file__).resolve().parent.parent
-    project_dir = Path(args.project).resolve()
+    project_dir = validate_project_root(Path(args.project).resolve())
     steps = [item.strip() for item in args.steps.split(",") if item.strip()]
     invalid_steps = [item for item in steps if item not in STEP_MAP]
     if invalid_steps:
@@ -177,8 +210,8 @@ def main() -> int:
     payload["warning_count"] = len(payload["warnings"])
     if not args.dry_run:
         report_dir.mkdir(parents=True, exist_ok=True)
-        (report_dir / "pipeline_report.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        (report_dir / "pipeline_report.md").write_text(render_markdown(payload), encoding="utf-8")
+        safe_write_text(report_dir / "pipeline_report.json", json.dumps(payload, ensure_ascii=False, indent=2), root_dir=project_dir)
+        safe_write_text(report_dir / "pipeline_report.md", render_markdown(payload), root_dir=project_dir)
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:

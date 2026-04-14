@@ -10,6 +10,12 @@
 - 再回写记忆
 - 再看书级健康
 
+## Runtime ownership
+- LeadWriter 是唯一的章节决策 owner。
+- WriterExecutor 是唯一的正文执行路径。
+- Evaluators 只负责阻断或放行，不直接接管最终正文。
+- Schema memory 是 runtime 真相源，markdown 是可读镜像与人工维护层。
+
 ## 写前五步
 1. 读取 `plan.md` 与 `state.md`
 2. 锚定时间、地点、在场人物、知情边界、资源状态
