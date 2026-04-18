@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LeadWriter Runtime Plan",
+  "type": "object",
+  "properties": {
+    "title": { "type": "string" },
+    "genre": { "type": "string" },
+    "hook": { "type": "string" },
+    "targetWords": { "type": "integer", "minimum": 0 },
+    "volumes": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "additionalProperties": true
+}

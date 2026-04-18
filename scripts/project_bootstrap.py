@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 
 DIRS = [
     "00_memory",
+    "00_memory/schema",
     "00_memory/retrieval",
     "00_memory/summaries",
     "01_outline",
@@ -17,6 +19,52 @@ DIRS = [
     "05_reports",
     "06_exports",
 ]
+
+SCHEMA_SEEDS = {
+    "00_memory/schema/plan.json": {
+        "title": "",
+        "genre": "",
+        "hook": "",
+        "targetWords": 0,
+        "volumes": [],
+    },
+    "00_memory/schema/state.json": {
+        "currentChapter": 0,
+        "currentVolume": "",
+        "currentArc": "",
+        "chapterGoal": "",
+        "activeConflict": "",
+        "nextPressure": "",
+        "sceneAnchors": {
+            "absoluteTime": "",
+            "relativeTime": "",
+            "location": "",
+        },
+        "openThreads": [],
+        "forbiddenInventions": [],
+        "pendingPayoffs": [],
+    },
+    "00_memory/schema/timeline.json": {
+        "absoluteTime": "",
+        "relativeTimeFromPrevChapter": "",
+        "currentLocation": "",
+        "recentEvents": [],
+    },
+    "00_memory/schema/characters.json": {"characters": []},
+    "00_memory/schema/character_arcs.json": {"arcs": []},
+    "00_memory/schema/foreshadowing.json": {"threads": []},
+    "00_memory/schema/payoff_board.json": {"promises": []},
+    "00_memory/schema/style.json": {
+        "genreTone": "",
+        "narrationRules": [],
+        "prohibitedPhrases": [],
+    },
+    "00_memory/schema/voice.json": {
+        "bookVoiceDNA": "",
+        "sentenceRhythm": "",
+        "forbiddenCadence": [],
+    },
+}
 
 TEMPLATE_MAP = {
     "00_memory/plan.md": "core/plan.md",
@@ -64,6 +112,13 @@ def resolve_template(templates_root: Path, template_name: str) -> Path:
     raise FileNotFoundError(f"template not found: {template_name}")
 
 
+def write_schema_seed(dst: Path, payload: dict[str, object], force: bool) -> None:
+    if dst.exists() and not force:
+        return
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -75,6 +130,8 @@ def main() -> int:
         (project_dir / rel_dir).mkdir(parents=True, exist_ok=True)
     for rel_path, template_name in TEMPLATE_MAP.items():
         copy_template(resolve_template(templates_root, template_name), project_dir / rel_path, args.force)
+    for rel_path, payload in SCHEMA_SEEDS.items():
+        write_schema_seed(project_dir / rel_path, payload, args.force)
     print(f"project={project_dir.as_posix()}")
     print("status=bootstrapped")
     return 0

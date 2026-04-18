@@ -5,6 +5,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 
@@ -88,6 +89,7 @@ def build_aggregate_payload(
     warnings = collect_step_warnings(steps)
     payload: dict[str, object] = {
         "project": project,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
         "status": summarize_statuses([str(step.get("status", "pass")) for step in steps]),
         "warning_count": len(warnings),
         "warnings": warnings,
@@ -97,3 +99,46 @@ def build_aggregate_payload(
     if extra_fields:
         payload.update(extra_fields)
     return payload
+
+
+def render_aggregate_markdown(payload: dict[str, object], heading: str, mode_line: str | None = None) -> str:
+    lines = [
+        f"# {heading}",
+        "",
+        f"- 项目：`{payload['project']}`",
+        f"- 生成时间：`{payload['generated_at']}`",
+        f"- 状态：`{str(payload['status']).upper()}`",
+        f"- 预警数：`{payload['warning_count']}`",
+    ]
+    if mode_line:
+        lines.append(mode_line)
+    lines.extend(["", "## 步骤结果"])
+    for step in payload.get("steps", []):
+        script = step.get("script") or step.get("step") or "unknown"
+        lines.append(
+            f"- `{script}` -> rc={step.get('returncode', 0)} / status={step.get('status', 'pass')}"
+        )
+    lines.extend(["", "## 预警"])
+    warnings = payload.get("warnings", [])
+    if warnings:
+        lines.extend([f"- {warning}" for warning in warnings])
+    else:
+        lines.append("- 无")
+    return "\n".join(lines) + "\n"
+
+
+def write_aggregate_reports(
+    project_dir: Path,
+    payload: dict[str, object],
+    *,
+    base_name: str,
+    heading: str,
+    mode_line: str | None = None,
+) -> dict[str, str]:
+    report_dir = project_dir / "05_reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    markdown_path = report_dir / f"{base_name}.md"
+    json_path = report_dir / f"{base_name}.json"
+    markdown_path.write_text(render_aggregate_markdown(payload, heading, mode_line=mode_line), encoding="utf-8")
+    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"markdown": markdown_path.as_posix(), "json": json_path.as_posix()}

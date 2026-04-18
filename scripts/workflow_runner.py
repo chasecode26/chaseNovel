@@ -7,19 +7,25 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from aggregation_utils import configure_utf8_stdio, run_script_json
+from runtime.runtime_orchestrator import LeadWriterRuntime
 
 STEP_MAP = {
-    "doctor": "doctor.py",
+    "doctor": "project_doctor.py",
     "open": "planning_context.py",
     "planning": "planning_context.py",
     "context": "planning_context.py",
+    "runtime": None,
     "quality": "quality_gate.py",
     "draft": "quality_gate.py",
     "gate": "quality_gate.py",
     "audit": "quality_gate.py",
     "batch": "quality_gate.py",
-    "memory": "memory_sync.py",
+    "memory": "memory_update.py",
     "status": "book_health.py",
     "foreshadow": "book_health.py",
     "arc": "book_health.py",
@@ -41,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--steps",
-        default="doctor,open,memory,status",
+        default="doctor,open,runtime,status",
         help="Comma-separated workflow steps",
     )
     parser.add_argument("--json", action="store_true", help="Print JSON result")
@@ -50,6 +56,18 @@ def parse_args() -> argparse.Namespace:
 
 
 def run_step(repo_root: Path, step: str, project: Path, chapter: int | None, dry_run: bool) -> dict[str, object]:
+    if step == "runtime":
+        runtime_payload = LeadWriterRuntime().run(project, chapter or 0, dry_run=dry_run)
+        return {
+            "step": "runtime",
+            "returncode": 0,
+            "stderr": "",
+            "status": runtime_payload.get("status", "pass"),
+            "warning_count": len(runtime_payload.get("context", {}).get("warnings", [])),
+            "warnings": runtime_payload.get("context", {}).get("warnings", []),
+            "report_paths": runtime_payload.get("report_paths", {}),
+            "summary": runtime_payload,
+        }
     script_name = STEP_MAP[step]
     command = ["--project", project.as_posix()]
     if chapter is not None and step in {"open", "planning", "context", "memory", "status", "foreshadow"}:

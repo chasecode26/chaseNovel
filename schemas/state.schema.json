@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LeadWriter Runtime State",
+  "type": "object",
+  "required": [
+    "currentChapter",
+    "currentVolume",
+    "currentArc",
+    "chapterGoal",
+    "openThreads",
+    "forbiddenInventions"
+  ],
+  "properties": {
+    "currentChapter": { "type": "integer", "minimum": 0 },
+    "currentVolume": { "type": "string" },
+    "currentArc": { "type": "string" },
+    "chapterGoal": { "type": "string" },
+    "activeConflict": { "type": "string" },
+    "nextPressure": { "type": "string" },
+    "sceneAnchors": {
+      "type": "object",
+      "properties": {
+        "absoluteTime": { "type": "string" },
+        "relativeTime": { "type": "string" },
+        "location": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "openThreads": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "forbiddenInventions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "pendingPayoffs": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

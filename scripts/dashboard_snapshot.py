@@ -39,18 +39,72 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_json(path: Path) -> dict[str, object]:
+def load_json(path: Path) -> object:
     if not path.exists():
         return {}
     try:
         payload = json.loads(read_text(path))
     except json.JSONDecodeError:
         return {}
-    return payload if isinstance(payload, dict) else {}
+    return payload
 
 
 def count_list_items(value: object) -> int:
     return len(value) if isinstance(value, list) else 0
+
+
+def load_runtime_state(schema_dir: Path) -> dict[str, object]:
+    state_json = load_json(schema_dir / "state.json")
+    if not isinstance(state_json, dict):
+        return {"decision": "unknown", "blocking_dimensions": [], "advisory_dimensions": []}
+    blocking_dimensions = state_json.get("runtimeBlockingDimensions", [])
+    advisory_dimensions = state_json.get("runtimeAdvisoryDimensions", [])
+    return {
+        "decision": str(state_json.get("runtimeDecision", "unknown") or "unknown"),
+        "blocking_dimensions": [
+            str(item) for item in blocking_dimensions if str(item).strip()
+        ] if isinstance(blocking_dimensions, list) else [],
+        "advisory_dimensions": [
+            str(item) for item in advisory_dimensions if str(item).strip()
+        ] if isinstance(advisory_dimensions, list) else [],
+    }
+
+
+def load_character_verdict(retrieval_dir: Path) -> dict[str, object]:
+    payload = load_json(retrieval_dir / "leadwriter_character_verdict.json")
+    if not isinstance(payload, dict):
+        return {"status": "unknown", "evidence": []}
+    evidence = payload.get("evidence", [])
+    return {
+        "status": str(payload.get("status", "unknown") or "unknown"),
+        "evidence": [str(item) for item in evidence if str(item).strip()] if isinstance(evidence, list) else [],
+    }
+
+
+def summarize_apply_results(payload: object) -> dict[str, object]:
+    if not isinstance(payload, list):
+        return {"applied_targets": [], "ready_targets": [], "skipped_targets": []}
+    applied_targets: list[str] = []
+    ready_targets: list[str] = []
+    skipped_targets: list[str] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        target = Path(str(item.get("schema_file", ""))).name
+        if not target:
+            continue
+        status = str(item.get("status", "unknown"))
+        if status == "applied":
+            applied_targets.append(target)
+        elif status == "ready":
+            ready_targets.append(target)
+        elif status == "skipped":
+            skipped_targets.append(target)
+    return {
+        "applied_targets": applied_targets,
+        "ready_targets": ready_targets,
+        "skipped_targets": skipped_targets,
+    }
 
 
 def summarize_dynamic_changes(step: str, payload: dict[str, object]) -> list[str]:
@@ -104,13 +158,19 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     memory_dir = project_dir / "00_memory"
     reports_dir = project_dir / "05_reports"
     retrieval_dir = memory_dir / "retrieval"
+    schema_dir = memory_dir / "schema"
     state_text = read_text(memory_dir / "state.md")
     foreshadow_json = load_json(reports_dir / "foreshadow_heatmap.json")
     volume_json = load_json(reports_dir / "volume_audit.json")
     milestone_json = load_json(reports_dir / "milestone_audit.json")
     pipeline_json = load_json(reports_dir / "pipeline_report.json")
+    plan_json = load_json(schema_dir / "plan.json")
     memory_sync_json = load_json(retrieval_dir / "memory_sync_queue.json")
-    memory_patch_json = load_json(retrieval_dir / "memory_sync_patches.json")
+    memory_patch_json = load_json(retrieval_dir / "leadwriter_memory_patches.json")
+    memory_apply_json = load_json(retrieval_dir / "leadwriter_memory_apply.json")
+    runtime_state = load_runtime_state(schema_dir)
+    character_verdict = load_character_verdict(retrieval_dir)
+    apply_summary = summarize_apply_results(memory_apply_json)
 
     active_volume = extract_state_value(state_text, "当前卷")
     active_arc = extract_state_value(state_text, "当前弧")
@@ -137,8 +197,24 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     status = "warn" if warnings else "pass"
     health_digest = build_health_digest(pipeline_json, volume_json, milestone_json, warnings)
     memory_sync_targets = list(memory_sync_json.keys()) if isinstance(memory_sync_json, dict) else []
-    memory_patch_targets = list(memory_patch_json.keys()) if isinstance(memory_patch_json, dict) else []
-    apply_ready_targets = [target for target in KNOWN_PATCH_TARGETS if target in memory_patch_targets]
+    if isinstance(memory_patch_json, list):
+        memory_patch_targets = [
+            Path(str(item.get("schema_file", ""))).name
+            for item in memory_patch_json
+            if isinstance(item, dict) and str(item.get("schema_file", "")).strip()
+        ]
+    elif isinstance(memory_patch_json, dict):
+        memory_patch_targets = list(memory_patch_json.keys())
+    else:
+        memory_patch_targets = []
+    if isinstance(memory_apply_json, list):
+        apply_ready_targets = [
+            Path(str(item.get("schema_file", ""))).name
+            for item in memory_apply_json
+            if isinstance(item, dict) and str(item.get("status")) in {"ready", "applied"}
+        ]
+    else:
+        apply_ready_targets = [target for target in KNOWN_PATCH_TARGETS if target in memory_patch_targets]
 
     return {
         "project": project_dir.as_posix(),
@@ -157,12 +233,26 @@ def build_payload(project_dir: Path) -> dict[str, object]:
         "memory_patch_targets": memory_patch_targets,
         "memory_patch_count": len(memory_patch_targets),
         "apply_ready_targets": apply_ready_targets,
+        "runtime_signals": {
+            "decision": runtime_state["decision"],
+            "blocking_dimensions": runtime_state["blocking_dimensions"],
+            "advisory_dimensions": runtime_state["advisory_dimensions"],
+            "character_alignment_status": character_verdict["status"],
+            "character_alignment_evidence": character_verdict["evidence"],
+            "plan_status": "pass" if str(plan_json.get("hook", "")).strip() and int(plan_json.get("targetWords", 0) or 0) > 0 else "warn",
+            "foreshadow_overdue_count": overdue_count,
+            "arc_stalled_count": int(load_json(reports_dir / "arc_health.json").get("stalled_arc_count", 0) or 0),
+            "applied_targets": apply_summary["applied_targets"],
+            "ready_targets": apply_summary["ready_targets"],
+            "skipped_targets": apply_summary["skipped_targets"],
+        },
         "warnings": warnings,
         "warning_count": len(warnings),
         "report_paths": {
             "next_context": (retrieval_dir / "next_context.md").as_posix(),
             "memory_sync_queue": (retrieval_dir / "memory_sync_queue.md").as_posix(),
-            "memory_sync_patches": (retrieval_dir / "memory_sync_patches.md").as_posix(),
+            "memory_sync_patches": (retrieval_dir / "leadwriter_memory_patches.md").as_posix(),
+            "memory_sync_apply": (retrieval_dir / "leadwriter_memory_apply.md").as_posix(),
             "markdown": (reports_dir / "dashboard.md").as_posix(),
             "json": (reports_dir / "dashboard.json").as_posix(),
         },
@@ -208,6 +298,7 @@ def render_markdown(payload: dict[str, object]) -> str:
             f"- next_context：`{payload['report_paths']['next_context']}`",
             f"- memory_sync_queue：`{payload['report_paths']['memory_sync_queue']}`",
             f"- memory_sync_patches：`{payload['report_paths']['memory_sync_patches']}`",
+            f"- memory_sync_apply：`{payload['report_paths']['memory_sync_apply']}`",
             f"- dashboard.json：`{payload['report_paths']['json']}`",
         ]
     )
