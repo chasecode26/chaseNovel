@@ -26,8 +26,8 @@
 
 ## Design Baseline
 
-- Target architecture reference: `docs/superpowers/specs/2026-04-14-leadwriter-runtime-design.md`
-- Historical implementation plan: `docs/superpowers/plans/2026-04-14-leadwriter-runtime.md`
+- Target architecture reference: `docs/archive/superpowers/specs/2026-04-14-leadwriter-runtime-design.md`
+- Historical implementation plan: `docs/archive/superpowers/plans/2026-04-14-leadwriter-runtime.md`
 - Current shipped alignment note: `docs/core/runtime-design-baseline.md`
 
 ## Design Principles

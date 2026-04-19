@@ -5,8 +5,8 @@
 This note reconnects the shipped repository to the recovered LeadWriter runtime design baseline.
 
 Primary references:
-- [Recovered design spec](D:\git\chaseNovel\docs\superpowers\specs\2026-04-14-leadwriter-runtime-design.md)
-- [Recovered implementation plan](D:\git\chaseNovel\docs\superpowers\plans\2026-04-14-leadwriter-runtime.md)
+- [Archived design spec](D:\git\chaseNovel\docs\archive\superpowers\specs\2026-04-14-leadwriter-runtime-design.md)
+- [Archived implementation plan](D:\git\chaseNovel\docs\archive\superpowers\plans\2026-04-14-leadwriter-runtime.md)
 
 ## Current Alignment
 
@@ -33,9 +33,9 @@ Primary references:
 
 ## Recovered Baseline Decision
 
-The design baseline was not relocated. The files below had been deleted from the working tree and are now restored as the repository baseline:
-- [2026-04-14-leadwriter-runtime-design.md](D:\git\chaseNovel\docs\superpowers\specs\2026-04-14-leadwriter-runtime-design.md)
-- [2026-04-14-leadwriter-runtime.md](D:\git\chaseNovel\docs\superpowers\plans\2026-04-14-leadwriter-runtime.md)
+The design baseline is now archived under `docs/archive/superpowers/` rather than kept in the main documentation path:
+- [2026-04-14-leadwriter-runtime-design.md](D:\git\chaseNovel\docs\archive\superpowers\specs\2026-04-14-leadwriter-runtime-design.md)
+- [2026-04-14-leadwriter-runtime.md](D:\git\chaseNovel\docs\archive\superpowers\plans\2026-04-14-leadwriter-runtime.md)
 
 ## Remaining Gaps
 

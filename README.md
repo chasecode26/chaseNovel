@@ -61,8 +61,8 @@ chase check --project <dir> [--chapter <n> | --target-chapter <n>]
 
 ## Design Baseline
 
-- Recovered design spec: `docs/superpowers/specs/2026-04-14-leadwriter-runtime-design.md`
-- Recovered implementation plan: `docs/superpowers/plans/2026-04-14-leadwriter-runtime.md`
+- Archived design spec: `docs/archive/superpowers/specs/2026-04-14-leadwriter-runtime-design.md`
+- Archived implementation plan: `docs/archive/superpowers/plans/2026-04-14-leadwriter-runtime.md`
 - Runtime alignment note: `docs/core/runtime-design-baseline.md`
 
 ## 仓库校验

@@ -72,6 +72,25 @@ def collect_step_report_paths(steps: list[dict[str, object]], key_field: str = "
     return report_paths
 
 
+def get_step_by_script(steps: list[dict[str, object]], script_name: str) -> dict[str, object]:
+    for step in steps:
+        if str(step.get("script", "")).strip() == script_name:
+            return step
+    return {}
+
+
+def merge_report_paths(
+    payload: dict[str, object],
+    extra_report_paths: dict[str, object] | None = None,
+) -> dict[str, object]:
+    merged = {}
+    if isinstance(payload.get("report_paths"), dict):
+        merged.update(payload["report_paths"])
+    if isinstance(extra_report_paths, dict):
+        merged.update(extra_report_paths)
+    return merged
+
+
 def run_step_specs(
     repo_root: Path,
     step_specs: list[tuple[str, list[str]]],
@@ -108,7 +127,7 @@ def _format_runtime_items(value: object) -> str:
     return ", ".join(items) if items else "none"
 
 
-def _render_aggregate_markdown_legacy(payload: dict[str, object], heading: str, mode_line: str | None = None) -> str:
+def render_aggregate_markdown_v2(payload: dict[str, object], heading: str, mode_line: str | None = None) -> str:
     lines = [
         f"# {heading}",
         "",
@@ -120,50 +139,6 @@ def _render_aggregate_markdown_legacy(payload: dict[str, object], heading: str, 
     if mode_line:
         lines.append(mode_line)
     lines.extend(["", "## 步骤结果"])
-    for step in payload.get("steps", []):
-        script = step.get("script") or step.get("step") or "unknown"
-        lines.append(
-            f"- `{script}` -> rc={step.get('returncode', 0)} / status={step.get('status', 'pass')}"
-        )
-    runtime_signals = payload.get("runtime_signals", {})
-    if isinstance(runtime_signals, dict) and runtime_signals:
-        lines.extend(
-            [
-                "",
-                "## Runtime Signals",
-                f"- decision: `{runtime_signals.get('decision', 'unknown')}`",
-                f"- blocking_dimensions: `{_format_runtime_items(runtime_signals.get('blocking_dimensions', []))}`",
-                f"- advisory_dimensions: `{_format_runtime_items(runtime_signals.get('advisory_dimensions', []))}`",
-                f"- first_fix_priority: `{runtime_signals.get('first_fix_priority', '') or 'none'}`",
-                f"- rewrite_scope: `{runtime_signals.get('rewrite_scope', '') or 'none'}`",
-                f"- cycle_count: `{runtime_signals.get('cycle_count', 0)}`",
-                f"- last_cycle_decision: `{runtime_signals.get('last_cycle_decision', 'unknown')}`",
-                f"- blocking_digest: `{_format_runtime_items(runtime_signals.get('blocking_digest', []))}`",
-                f"- advisory_digest: `{_format_runtime_items(runtime_signals.get('advisory_digest', []))}`",
-                f"- must_change: `{_format_runtime_items(runtime_signals.get('must_change', []))}`",
-            ]
-        )
-    lines.extend(["", "## 预警"])
-    warnings = payload.get("warnings", [])
-    if warnings:
-        lines.extend([f"- {warning}" for warning in warnings])
-    else:
-        lines.append("- 无")
-    return "\n".join(lines) + "\n"
-
-
-def render_aggregate_markdown_v2(payload: dict[str, object], heading: str, mode_line: str | None = None) -> str:
-    lines = [
-        f"# {heading}",
-        "",
-        f"- 椤圭洰锛歚{payload['project']}`",
-        f"- 鐢熸垚鏃堕棿锛歚{payload['generated_at']}`",
-        f"- 鐘舵€侊細`{str(payload['status']).upper()}`",
-        f"- 棰勮鏁帮細`{payload['warning_count']}`",
-    ]
-    if mode_line:
-        lines.append(mode_line)
-    lines.extend(["", "## 姝ラ缁撴灉"])
     for step in payload.get("steps", []):
         script = step.get("script") or step.get("step") or "unknown"
         lines.append(f"- `{script}` -> rc={step.get('returncode', 0)} / status={step.get('status', 'pass')}")
@@ -211,12 +186,12 @@ def render_aggregate_markdown_v2(payload: dict[str, object], heading: str, mode_
             ]
         )
 
-    lines.extend(["", "## 棰勮"])
+    lines.extend(["", "## 预警"])
     warnings = payload.get("warnings", [])
     if warnings:
         lines.extend([f"- {warning}" for warning in warnings])
     else:
-        lines.append("- 鏃?")
+        lines.append("- 无")
     return "\n".join(lines) + "\n"
 
 
@@ -236,5 +211,21 @@ def write_aggregate_reports(
     markdown_path = report_dir / f"{base_name}.md"
     json_path = report_dir / f"{base_name}.json"
     markdown_path.write_text(render_aggregate_markdown(payload, heading, mode_line=mode_line), encoding="utf-8")
+    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"markdown": markdown_path.as_posix(), "json": json_path.as_posix()}
+
+
+def write_markdown_json_reports(
+    project_dir: Path,
+    payload: dict[str, object],
+    *,
+    base_name: str,
+    markdown_renderer,
+) -> dict[str, str]:
+    report_dir = project_dir / "05_reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    markdown_path = report_dir / f"{base_name}.md"
+    json_path = report_dir / f"{base_name}.json"
+    markdown_path.write_text(markdown_renderer(payload), encoding="utf-8")
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return {"markdown": markdown_path.as_posix(), "json": json_path.as_posix()}

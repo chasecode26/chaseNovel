@@ -8,15 +8,9 @@ from pathlib import Path
 from aggregation_utils import (
     build_aggregate_payload,
     configure_utf8_stdio,
+    get_step_by_script,
     run_step_specs,
 )
-
-
-def find_step(steps: list[dict[str, object]], script_name: str) -> dict[str, object]:
-    for step in steps:
-        if str(step.get("script", "")).strip() == script_name:
-            return step
-    return {}
 
 
 def enrich_planning_payload(payload: dict[str, object]) -> dict[str, object]:
@@ -24,8 +18,8 @@ def enrich_planning_payload(payload: dict[str, object]) -> dict[str, object]:
     if not isinstance(steps, list):
         return payload
 
-    planning_step = find_step(steps, "chapter_planning_review.py")
-    context_step = find_step(steps, "context_compiler.py")
+    planning_step = get_step_by_script(steps, "chapter_planning_review.py")
+    context_step = get_step_by_script(steps, "context_compiler.py")
     target_chapter = int(planning_step.get("target_chapter") or context_step.get("chapter") or 0)
     planning_status = str(planning_step.get("status", "missing")).strip()
     planning_verdict = str(planning_step.get("planning_verdict", "missing")).strip()

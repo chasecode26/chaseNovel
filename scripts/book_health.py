@@ -9,6 +9,8 @@ from pathlib import Path
 from aggregation_utils import (
     build_aggregate_payload,
     configure_utf8_stdio,
+    get_step_by_script,
+    merge_report_paths,
     run_step_specs,
     write_aggregate_reports,
 )
@@ -24,7 +26,7 @@ SCRIPT_BY_FOCUS = {
 
 
 def build_runtime_signals(steps: list[dict[str, object]], focus: str) -> dict[str, object]:
-    dashboard_step = next((item for item in steps if item.get("script") == "dashboard_snapshot.py"), None)
+    dashboard_step = get_step_by_script(steps, "dashboard_snapshot.py")
     dashboard_runtime = dashboard_step.get("runtime_signals", {}) if isinstance(dashboard_step, dict) else {}
     blocking_dimensions = dashboard_runtime.get("blocking_dimensions", [])
     advisory_dimensions = dashboard_runtime.get("advisory_dimensions", [])
@@ -137,16 +139,16 @@ def main() -> int:
     payload = build_aggregate_payload(project=args.project, steps=steps, extra_fields={"focus": args.focus})
     payload["runtime_signals"] = build_runtime_signals(steps, args.focus)
     project_dir = Path(args.project).resolve()
-    payload["report_paths"] = {
-        **payload.get("report_paths", {}),
-        **({} if args.dry_run else write_aggregate_reports(
+    payload["report_paths"] = merge_report_paths(
+        payload,
+        {} if args.dry_run else write_aggregate_reports(
             project_dir,
             payload,
             base_name="book_health_report",
             heading="书级健康汇总报告",
             mode_line=f"- 聚焦范围：`{args.focus}`",
-        )),
-    }
+        ),
+    )
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:

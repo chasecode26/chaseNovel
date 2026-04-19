@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 
+from aggregation_utils import configure_utf8_stdio, write_markdown_json_reports
 from novel_utils import count_chapter_files, detect_current_chapter, extract_state_value, read_text
 
 
@@ -128,24 +128,23 @@ def render_markdown(payload: dict[str, object]) -> str:
 
 
 def main() -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
-
+    configure_utf8_stdio()
     args = parse_args()
     project_dir = Path(args.project).resolve()
     payload = build_payload(project_dir)
-    reports_dir = project_dir / "05_reports"
-    md_path = reports_dir / "doctor.md"
-    json_path = reports_dir / "doctor.json"
-    payload["report_paths"] = {
-        "markdown": md_path.as_posix(),
-        "json": json_path.as_posix(),
-    }
-
     if not args.dry_run:
-        reports_dir.mkdir(parents=True, exist_ok=True)
-        md_path.write_text(render_markdown(payload), encoding="utf-8")
-        json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        payload["report_paths"] = write_markdown_json_reports(
+            project_dir,
+            payload,
+            base_name="doctor",
+            markdown_renderer=render_markdown,
+        )
+    else:
+        report_dir = project_dir / "05_reports"
+        payload["report_paths"] = {
+            "markdown": (report_dir / "doctor.md").as_posix(),
+            "json": (report_dir / "doctor.json").as_posix(),
+        }
 
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
