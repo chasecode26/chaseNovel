@@ -28,6 +28,11 @@ def build_runtime_signals(steps: list[dict[str, object]], focus: str) -> dict[st
     dashboard_runtime = dashboard_step.get("runtime_signals", {}) if isinstance(dashboard_step, dict) else {}
     blocking_dimensions = dashboard_runtime.get("blocking_dimensions", [])
     advisory_dimensions = dashboard_runtime.get("advisory_dimensions", [])
+    blocking_digest = dashboard_runtime.get("blocking_digest", [])
+    advisory_digest = dashboard_runtime.get("advisory_digest", [])
+    blocking_reasons = dashboard_runtime.get("blocking_reasons", [])
+    must_change = dashboard_runtime.get("must_change", [])
+    recheck_order = dashboard_runtime.get("recheck_order", [])
     character_alignment_status = str(dashboard_runtime.get("character_alignment_status", "unknown"))
     character_alignment_evidence = dashboard_runtime.get("character_alignment_evidence", [])
     plan_status = str(dashboard_runtime.get("plan_status", "unknown"))
@@ -37,10 +42,20 @@ def build_runtime_signals(steps: list[dict[str, object]], focus: str) -> dict[st
     ready_targets = dashboard_runtime.get("ready_targets", [])
     skipped_targets = dashboard_runtime.get("skipped_targets", [])
     attention_queue: list[str] = []
-    if isinstance(blocking_dimensions, list):
+    if isinstance(blocking_digest, list) and blocking_digest:
+        attention_queue.extend(f"runtime blocking: {item}" for item in blocking_digest if str(item).strip())
+    elif isinstance(blocking_dimensions, list):
         attention_queue.extend(f"runtime blocking: {item}" for item in blocking_dimensions if str(item).strip())
-    if isinstance(advisory_dimensions, list):
+    if isinstance(advisory_digest, list) and advisory_digest:
+        attention_queue.extend(f"runtime advisory: {item}" for item in advisory_digest if str(item).strip())
+    elif isinstance(advisory_dimensions, list):
         attention_queue.extend(f"runtime advisory: {item}" for item in advisory_dimensions if str(item).strip())
+    if str(dashboard_runtime.get("first_fix_priority", "")).strip():
+        attention_queue.append(f"runtime first fix: {dashboard_runtime['first_fix_priority']}")
+    if str(dashboard_runtime.get("rewrite_scope", "")).strip():
+        attention_queue.append(f"runtime rewrite scope: {dashboard_runtime['rewrite_scope']}")
+    if isinstance(must_change, list):
+        attention_queue.extend(f"runtime must change: {item}" for item in must_change[:2] if str(item).strip())
     if character_alignment_status != "pass":
         if isinstance(character_alignment_evidence, list) and character_alignment_evidence:
             attention_queue.extend(f"character alignment: {item}" for item in character_alignment_evidence if str(item).strip())
@@ -67,6 +82,16 @@ def build_runtime_signals(steps: list[dict[str, object]], focus: str) -> dict[st
         "decision": str(dashboard_runtime.get("decision", "unknown")),
         "blocking_dimensions": [str(item) for item in blocking_dimensions] if isinstance(blocking_dimensions, list) else [],
         "advisory_dimensions": [str(item) for item in advisory_dimensions] if isinstance(advisory_dimensions, list) else [],
+        "first_fix_priority": str(dashboard_runtime.get("first_fix_priority", "")).strip(),
+        "rewrite_scope": str(dashboard_runtime.get("rewrite_scope", "")).strip(),
+        "return_to": str(dashboard_runtime.get("return_to", "")).strip(),
+        "blocking_reasons": [str(item) for item in blocking_reasons] if isinstance(blocking_reasons, list) else [],
+        "must_change": [str(item) for item in must_change] if isinstance(must_change, list) else [],
+        "recheck_order": [str(item) for item in recheck_order] if isinstance(recheck_order, list) else [],
+        "blocking_digest": [str(item) for item in blocking_digest] if isinstance(blocking_digest, list) else [],
+        "advisory_digest": [str(item) for item in advisory_digest] if isinstance(advisory_digest, list) else [],
+        "cycle_count": int(dashboard_runtime.get("cycle_count", 0) or 0),
+        "last_cycle_decision": str(dashboard_runtime.get("last_cycle_decision", "unknown")),
         "character_alignment_status": character_alignment_status,
         "character_alignment_evidence": [str(item) for item in character_alignment_evidence] if isinstance(character_alignment_evidence, list) else [],
         "plan_status": plan_status,

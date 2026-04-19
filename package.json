@@ -54,6 +54,7 @@
     "references/zhongtian-volume-route-library.md",
     "schemas",
     "scripts/*.py",
+    "scripts/*.js",
     "templates",
     "skill.json",
     "SKILL.md",
@@ -69,6 +70,7 @@
     "doctor:project": "node ./bin/chase.js doctor --project .",
     "doctor": "node ./bin/chase.js doctor --project .",
     "check": "node ./bin/chase.js check --project .",
+    "verify:change": "node ./scripts/change_analyzer.js",
     "smoke": "python ./scripts/smoke_check.py",
     "pack:dry-run": "npm pack --dry-run"
   },

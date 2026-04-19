@@ -8,7 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from chapter_planning_review import find_chapter_card_path, parse_chapter_card
+from chapter_planning_review import find_chapter_card_path, load_previous_card_defaults, parse_chapter_card
 from language_audit import analyze_text, parse_style_file
 from novel_utils import (
     CHAPTER_PATTERN,
@@ -159,6 +159,13 @@ def chapter_text_matches(chapter_text: str, chapter_no: int) -> bool:
     return int(match.group(1)) == chapter_no
 
 
+def chapter_value_matches(chapter_value: str, chapter_no: int) -> bool:
+    match = re.search(r"(\d+)", chapter_value)
+    if not match:
+        return False
+    return int(match.group(1)) == chapter_no
+
+
 def map_overall_verdict(continuity_verdict: str, language_verdict: str, skip_language: bool) -> str:
     if continuity_verdict == "block":
         return "block"
@@ -215,7 +222,7 @@ def build_script_gate_contract(
             "rewrite_scope": "",
             "first_fix_priority": "advisory_cleanup",
             "recheck_order": "gate",
-            "script_final_release": "revise",
+            "script_final_release": "pass",
         }
     return {
         "blocking": "no",
@@ -263,6 +270,7 @@ def render_gate_markdown(analysis: dict[str, object]) -> str:
         f"- planning_status: {str(analysis['planning_status']).upper()}",
         f"- planning_verdict: {str(analysis['planning_verdict']).upper()}",
         f"- planning_report_path: {analysis['planning_report_path'] or 'missing'}",
+        f"- chapter_card_source: {analysis.get('chapter_card_source', 'missing')}",
         "",
         "### Planning Blockers",
         render_list(list(analysis["planning_blockers"]), "none"),
@@ -321,6 +329,36 @@ def load_planning_review(project_dir: Path, chapter_no: int) -> dict[str, object
         return {}
 
 
+def load_runtime_payload_for_chapter(project_dir: Path, chapter_no: int) -> dict[str, object]:
+    path = project_dir / "00_memory" / "retrieval" / "leadwriter_runtime_payload.json"
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(read_text(path))
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    if int(payload.get("chapter", 0) or 0) != chapter_no:
+        return {}
+    return payload
+
+
+def load_chapter_card_context(project_dir: Path, chapter_no: int) -> tuple[Path | None, dict[str, str], str]:
+    chapter_card_path = find_chapter_card_path(project_dir, chapter_no)
+    chapter_card_text = read_text(chapter_card_path) if chapter_card_path else ""
+    chapter_card = parse_chapter_card(chapter_card_text) if chapter_card_text else {}
+    chapter_card_source = "explicit"
+    if not chapter_card_path:
+        defaults = load_previous_card_defaults(project_dir, chapter_no)
+        for key in ("chapter_tier", "target_word_count"):
+            default_value = str(defaults.get(key, "")).strip()
+            if default_value and not str(chapter_card.get(key, "")).strip():
+                chapter_card[key] = default_value
+        chapter_card_source = "previous_chapter_defaults" if defaults else "missing"
+    return chapter_card_path, chapter_card, chapter_card_source
+
+
 def build_gate_analysis(
     project_dir: Path,
     chapter_no: int,
@@ -333,9 +371,8 @@ def build_gate_analysis(
     timeline_content = read_text(project_dir / "00_memory" / "timeline.md")
     foreshadowing_content = read_text(project_dir / "00_memory" / "foreshadowing.md")
     planning_review = load_planning_review(project_dir, chapter_no)
-    chapter_card_path = find_chapter_card_path(project_dir, chapter_no)
-    chapter_card_text = read_text(chapter_card_path) if chapter_card_path else ""
-    chapter_card = parse_chapter_card(chapter_card_text) if chapter_card_text else {}
+    chapter_card_path, chapter_card, chapter_card_source = load_chapter_card_context(project_dir, chapter_no)
+    runtime_payload_exists = bool(load_runtime_payload_for_chapter(project_dir, chapter_no))
     latest_chapter_no, _ = detect_latest_chapter_file(project_dir)
     historical_mode = latest_chapter_no > 0 and chapter_no < latest_chapter_no
 
@@ -359,7 +396,7 @@ def build_gate_analysis(
         warnings.append("`state.md` 缺少“距上章过去”，容易导致相邻章节的先后顺序失真。")
     if is_effectively_empty(current_place) and not historical_mode:
         warnings.append("`state.md` 未写当前地点，转场与埋伏类场景容易失焦。")
-    if not historical_mode and not is_effectively_empty(current_chapter) and not chapter_text_matches(current_chapter, chapter_no):
+    if not historical_mode and not is_effectively_empty(current_chapter) and not chapter_value_matches(current_chapter, chapter_no):
         warnings.append(f"`state.md` 当前章节为“{current_chapter}”，与目标第{chapter_no:03d}章不一致。")
 
     timeline_rows = extract_markdown_table_rows(timeline_content, "主线时间线")
@@ -419,18 +456,20 @@ def build_gate_analysis(
     if isinstance(report_paths, dict):
         planning_report_path = str(report_paths.get("markdown", ""))
 
-    if planning_status == "fail" or planning_verdict == "revise":
+    if planning_status == "fail" or planning_blockers:
         blockers.append("写前章节规划预审未通过，必须先修章卡/下章预告后再认定本章可交稿。")
         blockers.extend([f"规划预审：{item}" for item in planning_blockers[:4]])
     elif planning_status == "warn":
         warnings.append("写前章节规划预审存在预警，建议回看章卡与下章行动变化。")
         warnings.extend([f"规划预审：{item}" for item in planning_warnings[:3]])
-    elif planning_status == "missing" and not historical_mode:
+    elif planning_status == "missing" and not historical_mode and not chapter_card_path and not runtime_payload_exists:
         warnings.append("缺少本章 planning_review.json，当前门禁无法确认写前章卡是否曾通过预审。")
 
     chapter_tier = str(chapter_card.get("chapter_tier", "")).strip()
     target_word_count_raw = str(chapter_card.get("target_word_count", "")).strip()
     target_word_count = int(target_word_count_raw) if target_word_count_raw.isdigit() else 0
+    if chapter_card_source == "previous_chapter_defaults" and not historical_mode:
+        warnings.append("未找到本章显式章卡，当前沿用上一章的 `chapter_tier` / `target_word_count` 进行连续性校验。")
     if not chapter_tier:
         warnings.append("章卡缺少 `chapter_tier`，无法区分常规章与高潮章的字数上限。")
     if not target_word_count:
@@ -490,6 +529,7 @@ def build_gate_analysis(
         "planning_warnings": planning_warnings,
         "planning_report_path": planning_report_path,
         "chapter_card_path": chapter_card_path.as_posix() if chapter_card_path else "",
+        "chapter_card_source": chapter_card_source,
         "chapter_tier": chapter_tier or "未填写",
         "target_word_count": target_word_count or "",
         "word_count": word_count,

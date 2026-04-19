@@ -1,48 +1,71 @@
 # references
 
-`references/` 当前处于**兼容层**定位。
+`references/` 当前定位为兼容层与资料层，不再是默认主入口。
 
-这里仍保留旧版规则文档、题材资料、拆散的执行说明，目的是：
-- 不立刻打断旧项目
-- 允许渐进迁移
-- 为后续归档与清理留缓冲
+这里保留两类内容：
 
-其中一部分导航型旧文档已经完成合并并已删除：
-- `advanced-template-map.md`
-- `genre-asset-index.md`
-- `output-contracts.md`
+- `shim`：把旧路径读者导向新的默认入口
+- 仍有业务价值、但尚未完全下沉的题材与技法资料
 
-另外一部分已进一步处理为“根层 shim + 源码仓库归档”的结构，例如：
-- `execution_workflow.md`
-- `agent-collaboration.md`
-- `revision-and-diagnostics.md`
-- `craft-and-platform.md`
+另有一层历史兼容隔离区：
 
-新的默认入口已经迁到：
+- `references/legacy/`：只保留旧路径，不再承载任何默认流程说明
+
+## 当前默认入口
+
+默认阅读与使用入口已经迁到：
+
 - `docs/core/`
 - `docs/assets/`
 - `templates/core/`
 - `templates/launch/`
 - `templates/review/`
 
-建议把 `references/` 理解为三类内容：
-- **shim**：只负责把人导向新入口
-- **legacy**：旧长文归档，不再默认阅读
-- **仍有业务价值的题材/技法资料**：后续继续按需下沉或合并
+对外主命令面已经收口为：
 
-当前对 `references/legacy/*` 的定位已经基本稳定：
-- 可以继续保留为归档
-- 但不再承担默认阅读职责
-- npm 分发默认不再携带这层归档
-- 未来除非出现新的高频使用证据，否则不再继续拆散成更多平级入口
+- `chase open`
+- `chase quality`
+- `chase write`
+- `chase status`
+- `chase check`
 
-另外，一些当前未被主入口或资产层默认引用的深层参考文档，会继续保留在源码仓库中，但默认不随 npm 包分发。
+其中：
 
-当前默认不随 npm 包分发的零引用旧参考文档包括：
-- `break_writers_block.md`
-- `language-audit.md`
-- `narration-and-atmosphere.md`
-- `style-profile.md`
-- `style-runtime-core.md`
+- `write / run` 默认链路是 `doctor,open,runtime,quality,status`
+- `check` 默认链路是 `doctor,open,quality,status`
+- `check` 保持 dry-run，不进入 `runtime`
 
-除非需要查兼容旧资料，否则不要再默认从 `references/` 平铺下钻。
+## 当前保留策略
+
+### shim
+
+用于把旧路径读者导向新的默认入口，例如：
+
+- `execution_workflow.md`
+- `agent-collaboration.md`
+- `revision-and-diagnostics.md`
+- `craft-and-platform.md`
+- `legacy/*`
+
+### domain references
+
+仍保留部分题材、样本、写法与负面模式资料，供资产层迁移与兼容期使用。
+
+## 已经完成的迁移方向
+
+- 历史流程入口已迁到 `docs/core/*`
+- 题材索引已迁到 `docs/assets/genre-index.md`
+- 模板主入口已迁到 `templates/core/*`、`templates/launch/*`、`templates/review/*`
+- `technique-kb/` 主内容已迁到 `assets/technique-kb/`
+
+## 使用建议
+
+除非需要兼容旧项目、追溯历史资料或做存量对照，否则不要再从 `references/` 平铺下钻。
+
+优先阅读：
+
+1. `docs/core/open-book.md`
+2. `docs/core/write-workflow.md`
+3. `docs/core/status-workflow.md`
+4. `docs/core/task-contracts.md`
+5. `docs/core/cli-quickstart.md`

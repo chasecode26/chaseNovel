@@ -3,6 +3,7 @@
 **触发条件**：只有在规划或写作「种田文/基建流」题材时，才加载此规则。
 
 **补读导航**：
+- 默认资料入口：`../../docs/assets/farming-reference-map.md`
 - 专项库：`../../references/zhongtian-chapter-card-library.md` | `../../references/zhongtian-character-learning.md` | `../../references/zhongtian-volume-route-library.md` | `../../references/zhongtian-negative-patterns.md`
 - 通用技法：`../../references/writing-patterns.md`（资源账本、节奏与对话节拍可迁移）
 - 开书骨架：`../../templates/launch/opening-kit.md`（再结合当前题材包做细化）

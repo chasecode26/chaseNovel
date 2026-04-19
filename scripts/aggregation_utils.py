@@ -101,7 +101,14 @@ def build_aggregate_payload(
     return payload
 
 
-def render_aggregate_markdown(payload: dict[str, object], heading: str, mode_line: str | None = None) -> str:
+def _format_runtime_items(value: object) -> str:
+    if not isinstance(value, list):
+        return "none"
+    items = [str(item).strip() for item in value if str(item).strip()]
+    return ", ".join(items) if items else "none"
+
+
+def _render_aggregate_markdown_legacy(payload: dict[str, object], heading: str, mode_line: str | None = None) -> str:
     lines = [
         f"# {heading}",
         "",
@@ -118,6 +125,24 @@ def render_aggregate_markdown(payload: dict[str, object], heading: str, mode_lin
         lines.append(
             f"- `{script}` -> rc={step.get('returncode', 0)} / status={step.get('status', 'pass')}"
         )
+    runtime_signals = payload.get("runtime_signals", {})
+    if isinstance(runtime_signals, dict) and runtime_signals:
+        lines.extend(
+            [
+                "",
+                "## Runtime Signals",
+                f"- decision: `{runtime_signals.get('decision', 'unknown')}`",
+                f"- blocking_dimensions: `{_format_runtime_items(runtime_signals.get('blocking_dimensions', []))}`",
+                f"- advisory_dimensions: `{_format_runtime_items(runtime_signals.get('advisory_dimensions', []))}`",
+                f"- first_fix_priority: `{runtime_signals.get('first_fix_priority', '') or 'none'}`",
+                f"- rewrite_scope: `{runtime_signals.get('rewrite_scope', '') or 'none'}`",
+                f"- cycle_count: `{runtime_signals.get('cycle_count', 0)}`",
+                f"- last_cycle_decision: `{runtime_signals.get('last_cycle_decision', 'unknown')}`",
+                f"- blocking_digest: `{_format_runtime_items(runtime_signals.get('blocking_digest', []))}`",
+                f"- advisory_digest: `{_format_runtime_items(runtime_signals.get('advisory_digest', []))}`",
+                f"- must_change: `{_format_runtime_items(runtime_signals.get('must_change', []))}`",
+            ]
+        )
     lines.extend(["", "## 预警"])
     warnings = payload.get("warnings", [])
     if warnings:
@@ -125,6 +150,77 @@ def render_aggregate_markdown(payload: dict[str, object], heading: str, mode_lin
     else:
         lines.append("- 无")
     return "\n".join(lines) + "\n"
+
+
+def render_aggregate_markdown_v2(payload: dict[str, object], heading: str, mode_line: str | None = None) -> str:
+    lines = [
+        f"# {heading}",
+        "",
+        f"- 椤圭洰锛歚{payload['project']}`",
+        f"- 鐢熸垚鏃堕棿锛歚{payload['generated_at']}`",
+        f"- 鐘舵€侊細`{str(payload['status']).upper()}`",
+        f"- 棰勮鏁帮細`{payload['warning_count']}`",
+    ]
+    if mode_line:
+        lines.append(mode_line)
+    lines.extend(["", "## 姝ラ缁撴灉"])
+    for step in payload.get("steps", []):
+        script = step.get("script") or step.get("step") or "unknown"
+        lines.append(f"- `{script}` -> rc={step.get('returncode', 0)} / status={step.get('status', 'pass')}")
+
+    runtime_signals = payload.get("runtime_signals", {})
+    if isinstance(runtime_signals, dict) and runtime_signals:
+        lines.extend(
+            [
+                "",
+                "## Runtime Signals",
+                f"- decision: `{runtime_signals.get('decision', 'unknown')}`",
+                f"- blocking_dimensions: `{_format_runtime_items(runtime_signals.get('blocking_dimensions', []))}`",
+                f"- advisory_dimensions: `{_format_runtime_items(runtime_signals.get('advisory_dimensions', []))}`",
+                f"- first_fix_priority: `{runtime_signals.get('first_fix_priority', '') or 'none'}`",
+                f"- rewrite_scope: `{runtime_signals.get('rewrite_scope', '') or 'none'}`",
+                f"- cycle_count: `{runtime_signals.get('cycle_count', 0)}`",
+                f"- last_cycle_decision: `{runtime_signals.get('last_cycle_decision', 'unknown')}`",
+                f"- blocking_digest: `{_format_runtime_items(runtime_signals.get('blocking_digest', []))}`",
+                f"- advisory_digest: `{_format_runtime_items(runtime_signals.get('advisory_digest', []))}`",
+                f"- must_change: `{_format_runtime_items(runtime_signals.get('must_change', []))}`",
+            ]
+        )
+
+    runtime_verdict_source = str(payload.get("runtime_verdict_source", "")).strip()
+    runtime_only_dimensions = payload.get("runtime_only_dimensions", [])
+    loaded_runtime_dimensions = payload.get("loaded_runtime_dimensions", [])
+    fallback_runtime_dimensions = payload.get("fallback_runtime_dimensions", [])
+    missing_runtime_dimensions = payload.get("missing_runtime_dimensions", [])
+    if (
+        runtime_verdict_source
+        or isinstance(runtime_only_dimensions, list)
+        or isinstance(loaded_runtime_dimensions, list)
+        or isinstance(fallback_runtime_dimensions, list)
+        or isinstance(missing_runtime_dimensions, list)
+    ):
+        lines.extend(
+            [
+                "",
+                "## Runtime Verdict Coverage",
+                f"- runtime_verdict_source: `{runtime_verdict_source or 'unknown'}`",
+                f"- runtime_only_dimensions: `{_format_runtime_items(runtime_only_dimensions)}`",
+                f"- loaded_runtime_dimensions: `{_format_runtime_items(loaded_runtime_dimensions)}`",
+                f"- fallback_runtime_dimensions: `{_format_runtime_items(fallback_runtime_dimensions)}`",
+                f"- missing_runtime_dimensions: `{_format_runtime_items(missing_runtime_dimensions)}`",
+            ]
+        )
+
+    lines.extend(["", "## 棰勮"])
+    warnings = payload.get("warnings", [])
+    if warnings:
+        lines.extend([f"- {warning}" for warning in warnings])
+    else:
+        lines.append("- 鏃?")
+    return "\n".join(lines) + "\n"
+
+
+render_aggregate_markdown = render_aggregate_markdown_v2
 
 
 def write_aggregate_reports(

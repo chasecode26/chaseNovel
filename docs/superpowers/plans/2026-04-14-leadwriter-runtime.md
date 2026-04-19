@@ -4,7 +4,7 @@
 
 **Goal:** Rebuild chaseNovel around a strong-control LeadWriter runtime with structured memory, a single writer path, and blocking evaluator orchestration while keeping the public CLI surface stable.
 
-**Architecture:** Add a new runtime core that compiles chapter context from structured schema memory, drives the write flow through a LeadWriter-owned orchestration path, and normalizes quality/status outputs around shared contracts. Keep `chase open|write|quality|status` stable, but demote old wrappers into thin façades or remove them when the runtime fully replaces them.
+**Architecture:** Add a new runtime core that compiles chapter context from structured schema memory, drives the write flow through a LeadWriter-owned orchestration path, and normalizes quality/status outputs around shared contracts. Keep `chase open|write|quality|status` stable, but demote old wrappers into thin façades or remove them when the runtime fully replaces them. Historical note: the shipped repo later kept `scripts/engine_runner.py` as a compatibility / rename placeholder rather than deleting it outright.
 
 **Tech Stack:** Python 3 scripts, Node CLI wrapper, JSON schema files, Markdown templates, npm smoke validation
 
@@ -44,7 +44,7 @@
 - Modify: `scripts/project_bootstrap.py`
 - Modify: `scripts/open_book.py`
 - Modify: `scripts/workflow_runner.py`
-- Modify: `scripts/engine_runner.py`
+- Historical option: keep `scripts/engine_runner.py` as a compatibility shim / rename placeholder
 - Modify: `scripts/quality_gate.py`
 - Modify: `scripts/book_health.py`
 - Modify: `scripts/memory_update.py`
@@ -72,7 +72,7 @@
 - Delete: `scripts/bootstrap.py`
 - Delete: `scripts/doctor.py`
 - Delete: `scripts/memory_sync.py`
-- Delete: `scripts/engine_runner.py`
+- Demote only: `scripts/engine_runner.py` may remain as a compatibility shim / rename placeholder
 
 ---
 
@@ -374,7 +374,7 @@ git commit -m "feat: add leadwriter runtime shell"
 **Files:**
 - Modify: `scripts/workflow_runner.py`
 - Modify: `bin/chase.js`
-- Delete: `scripts/engine_runner.py`
+- Optional demotion only: `scripts/engine_runner.py`
 - Delete: `scripts/bootstrap.py`
 - Delete: `scripts/doctor.py`
 - Delete: `scripts/memory_sync.py`
@@ -432,15 +432,20 @@ check: {
 },
 ```
 
-- [ ] **Step 3: Delete obsolete one-line wrappers**
+- [ ] **Step 3: Delete obsolete one-line wrappers and demote rename placeholders**
 
 Delete files:
 
 ```text
-scripts/engine_runner.py
 scripts/bootstrap.py
 scripts/doctor.py
 scripts/memory_sync.py
+```
+
+Keep as compatibility shim if still present:
+
+```text
+scripts/engine_runner.py
 ```
 
 - [ ] **Step 4: Run CLI checks for write path and smoke suite**

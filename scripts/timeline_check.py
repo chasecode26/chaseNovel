@@ -8,7 +8,17 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from novel_utils import extract_pipe_table_rows, read_text
+from novel_utils import detect_current_chapter, extract_pipe_table_rows, read_text
+
+
+RELATIVE_TIME_MARKERS = ("后", "前", "同时", "随后", "之前", "之后", "期间", "当晚", "次日", "翌日")
+
+
+def looks_relative_time(text: str) -> bool:
+    normalized = text.strip()
+    if not normalized:
+        return False
+    return any(marker in normalized for marker in RELATIVE_TIME_MARKERS)
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,23 +33,75 @@ def parse_args() -> argparse.Namespace:
 
 def parse_timeline_rows(text: str) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    for cells in extract_pipe_table_rows(text)[1:]:
-        if len(cells) < 6 or cells[0] in {"时间点", "角色"}:
+    table_rows = extract_pipe_table_rows(text)
+    if not table_rows:
+        return rows
+    header_size = len(table_rows[0]) if table_rows else 0
+    for cells in table_rows[1:]:
+        if header_size >= 6:
+            if len(cells) < 6 or cells[0] in {"时间点", "角色"}:
+                continue
+            rows.append(
+                {
+                    "time_point": cells[0],
+                    "relative_time": cells[1],
+                    "event": cells[2],
+                    "characters": cells[3],
+                    "chapter": cells[4],
+                    "note": cells[5],
+                }
+            )
             continue
-        rows.append(
-            {
-                "time_point": cells[0],
-                "relative_time": cells[1],
-                "event": cells[2],
-                "characters": cells[3],
-                "chapter": cells[4],
-                "note": cells[5],
-            }
-        )
+        if header_size >= 3:
+            if len(cells) < 3 or cells[0] in {"时间", "时间点"}:
+                continue
+            first_cell = cells[0]
+            rows.append(
+                {
+                    "time_point": "" if looks_relative_time(first_cell) else first_cell,
+                    "relative_time": first_cell if looks_relative_time(first_cell) else "",
+                    "event": cells[1],
+                    "characters": "",
+                    "chapter": "",
+                    "note": cells[2],
+                }
+            )
+            continue
     return rows
 
 
-def detect_warnings(rows: list[dict[str, str]]) -> list[str]:
+def load_schema_rows(project_dir: Path) -> list[dict[str, str]]:
+    schema_path = project_dir / "00_memory" / "schema" / "timeline.json"
+    if not schema_path.exists():
+        return []
+    try:
+        payload = json.loads(read_text(schema_path))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(payload, dict):
+        return []
+    rows: list[dict[str, str]] = []
+    recent_events = payload.get("recentEvents", [])
+    if isinstance(recent_events, list):
+        for event in recent_events:
+            text = str(event).strip()
+            if not text:
+                continue
+            chapter_match = re.search(r"chapter-(\d+)", text, re.IGNORECASE)
+            rows.append(
+                {
+                    "time_point": str(payload.get("absoluteTime", "")).strip(),
+                    "relative_time": str(payload.get("relativeTimeFromPrevChapter", "")).strip(),
+                    "event": text,
+                    "characters": "",
+                    "chapter": chapter_match.group(1) if chapter_match else "",
+                    "note": str(payload.get("currentLocation", "")).strip(),
+                }
+            )
+    return rows
+
+
+def detect_warnings(rows: list[dict[str, str]], current_chapter: int) -> list[str]:
     warnings: list[str] = []
     chapter_numbers: list[int] = []
     for row in rows:
@@ -54,19 +116,25 @@ def detect_warnings(rows: list[dict[str, str]]) -> list[str]:
     if rows and relative_count < max(1, len(rows) // 2):
         warnings.append("时间线相对时间锚点不足，后续容易发生跳时错位。")
 
-    if len(rows) < 3:
+    expected_min_events = min(3, max(current_chapter, 0))
+    if current_chapter >= 1 and len(rows) < expected_min_events:
         warnings.append("时间线事件过少，长篇推进时缺乏足够锚点。")
     return warnings
 
 
 def build_payload(project_dir: Path) -> dict[str, object]:
     timeline_path = project_dir / "00_memory" / "timeline.md"
+    state_path = project_dir / "00_memory" / "state.md"
+    current_chapter = detect_current_chapter(read_text(state_path))
     rows = parse_timeline_rows(read_text(timeline_path))
-    warnings = detect_warnings(rows)
+    if not rows:
+        rows = load_schema_rows(project_dir)
+    warnings = detect_warnings(rows, current_chapter)
     return {
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "status": "warn" if warnings else "pass",
+        "current_chapter": current_chapter,
         "event_count": len(rows),
         "warnings": warnings,
         "warning_count": len(warnings),

@@ -58,6 +58,72 @@ def extract_line(text: str, label: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def parse_int_from_text(text: str) -> int:
+    digits = "".join(char for char in normalize_input_text(text) if char.isdigit())
+    return int(digits) if digits else 0
+
+
+def parse_chapter_word_range(plan_text: str) -> tuple[int, int]:
+    text = normalize_input_text(plan_text)
+    match = re.search(
+        r"章节字数约束[:：]\s*(\d+)\s*[~～\-]\s*(\d+)\s*字\s*/\s*章",
+        text,
+    )
+    if not match:
+        return 0, 0
+    minimum = int(match.group(1))
+    maximum = int(match.group(2))
+    if minimum <= 0 or maximum <= 0:
+        return 0, 0
+    return (minimum, maximum) if minimum <= maximum else (maximum, minimum)
+
+
+def parse_plan_volumes(plan_text: str) -> list[dict[str, object]]:
+    text = normalize_input_text(plan_text)
+    pattern = re.compile(
+        r"^\s*-\s*\[[ xX]?\]\s*第([一二三四五六七八九十百零两\d]+)卷[:：]\s*"
+        r"(.+?)\s*[（(]\s*第\s*(\d+)\s*[~～\-]\s*(\d+)\s*章\s*[）)]",
+        re.MULTILINE,
+    )
+    volumes: list[dict[str, object]] = []
+    for match in pattern.finditer(text):
+        start = int(match.group(3))
+        end = int(match.group(4))
+        if start <= 0 or end <= 0:
+            continue
+        if end < start:
+            start, end = end, start
+        volumes.append(
+            {
+                "index": len(volumes) + 1,
+                "label": f"第{match.group(1)}卷",
+                "name": match.group(2).strip(),
+                "chapterStart": start,
+                "chapterEnd": end,
+            }
+        )
+    return volumes
+
+
+def derive_plan_target_words(plan_text: str) -> int:
+    explicit = parse_int_from_text(extract_line(plan_text, "- 预计总字数") or extract_line(plan_text, "预计总字数"))
+    if explicit > 0:
+        return explicit
+
+    minimum, maximum = parse_chapter_word_range(plan_text)
+    volumes = parse_plan_volumes(plan_text)
+    if minimum <= 0 or maximum <= 0 or not volumes:
+        return 0
+
+    average_words = (minimum + maximum) // 2
+    chapter_count = sum(
+        int(volume.get("chapterEnd", 0) or 0) - int(volume.get("chapterStart", 0) or 0) + 1
+        for volume in volumes
+        if int(volume.get("chapterEnd", 0) or 0) >= int(volume.get("chapterStart", 0) or 0) > 0
+    )
+    return average_words * chapter_count if chapter_count > 0 else 0
+
+
 def extract_state_value(state_text: str, label: str) -> str:
     return extract_line(state_text, f"- {label}") or extract_line(state_text, label)
 

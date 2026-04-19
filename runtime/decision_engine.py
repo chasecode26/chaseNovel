@@ -2,17 +2,21 @@ from __future__ import annotations
 
 from runtime.contracts import EvaluatorVerdict, RewriteBrief, RuntimeDecision
 
-PRIORITY = [
+CORE_PRIORITY = [
     "continuity",
-    "character",
-    "foreshadow",
-    "arc",
     "causality",
     "promise_payoff",
     "repeat",
     "pacing",
     "style",
     "dialogue",
+]
+
+EXTENDED_PRIORITY = [
+    *CORE_PRIORITY,
+    "character",
+    "foreshadow",
+    "arc",
 ]
 
 
@@ -28,7 +32,11 @@ class DecisionEngine:
                 advisory_dimensions=[item.dimension for item in advisory],
             )
 
-        blocking.sort(key=lambda item: PRIORITY.index(item.dimension) if item.dimension in PRIORITY else len(PRIORITY))
+        blocking.sort(
+            key=lambda item: (
+                EXTENDED_PRIORITY.index(item.dimension) if item.dimension in EXTENDED_PRIORITY else len(EXTENDED_PRIORITY)
+            )
+        )
         primary = blocking[0]
         rewrite_brief = RewriteBrief(
             return_to="LeadWriter + WriterExecutor",

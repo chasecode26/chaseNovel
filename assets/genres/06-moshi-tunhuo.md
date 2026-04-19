@@ -3,6 +3,8 @@
 **触发条件**：只有在规划或写作「末世囤货/安全屋」题材时，才加载此规则。
 
 **补读导航**：
+- 默认资料入口：`../../docs/assets/apocalypse-reference-map.md`
+- 题材资产包：`apocalypse/pack.md`
 - 末世通用：`04-moshi.md`
 - 专项库：`../../references/moshi-chapter-card-library.md` | `../../references/moshi-volume-route-library.md` | `../../references/moshi-bastion-and-order-library.md`
 - 本地语料：`../../references/local-corpus-learning.md`（末世囤货部分）| `../../references/local-corpus-priority-map.md`

@@ -3,6 +3,7 @@
 **触发条件**：只有在规划或写作「都市/系统流」题材时，才加载此规则。
 
 **补读导航**：
+- 默认资料入口：`../../docs/assets/dushi-system-reference-map.md`
 - 专项库：`../../references/dushi-chapter-card-library.md` | `../../references/dushi-character-learning.md` | `../../references/dushi-volume-route-library.md` | `../../references/dushi-negative-patterns.md`
 - 通用技法：`../../references/writing-patterns.md`（配合本题材模板吸收都市系统循环与对话节拍）
 - 可选快反馈覆盖：`../../assets/substyles/fanqie-kuai-fankui-shuangdian.md`（仅平台或项目明确要求时启用）

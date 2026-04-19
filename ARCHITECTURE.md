@@ -2,98 +2,118 @@
 
 ## Goal
 
-`chaseNovel` 的目标，是为中文网文长篇连载提供一个**质量优先**的本地写作引擎。
+`chaseNovel` 的目标，是为中文网文长篇连载提供一套质量优先的本地写作引擎。
 
 它优先保证：
 - 长线连载稳定性
-- 项目记忆持续可用
-- 章节功能与结果变化清楚
+- 项目记忆可持续使用
+- 章节功能与结果变化清晰
 - 伏笔、时间线、角色推进、文风治理可持续追踪
-- 多 reviewer / 多 agent 协作真正改善稿件，而不是制造流程负担
+- 工具链真的改善稿件，而不是制造流程负担
+
+## Current Runtime Facts
+
+- `SKILL.md` 仍是主交互入口
+- 当前 shipped 聚合编排入口是 `scripts/workflow_runner.py`
+- `write / run / check` 都通过聚合层驱动
+- `write / run` 默认链路是 `doctor -> open -> runtime -> quality -> status`
+- `check` 默认链路是 `doctor -> open -> quality -> status`
+- `check` 保持 dry-run，只做预审、quality 与状态回看，不进入 runtime 正文生成
+- `open / planning / context` 负责下一章 planning/context 准备
+- `quality / runtime / memory / status` 负责当前 `reference_chapter` 的检查、生成、回写与观察
+- `workflow_runner.py` 会同时输出 `pipeline_summary` 与顶层 `final_release`
+- `engine_runner` 没有成为当前运行时入口，只保留为未来可选重命名方向
+
+## Design Baseline
+
+- Target architecture reference: `docs/superpowers/specs/2026-04-14-leadwriter-runtime-design.md`
+- Historical implementation plan: `docs/superpowers/plans/2026-04-14-leadwriter-runtime.md`
+- Current shipped alignment note: `docs/core/runtime-design-baseline.md`
 
 ## Design Principles
 
-1. `SKILL.md` 仍然是主交互入口。
-2. 核心主链只保：**开书**、**写作**。
-3. 题材资料、样本、风格库、技法库都应下沉为资产层。
-4. 脚本只保留对稿件有明确价值的重复检查。
-5. 任何不能直接改善稿件质量的层，都不应该挡在主路径上。
+1. 主链优先，兼容层靠后
+2. 章节语义必须明确，不能混用“当前章”和“目标章”
+3. 聚合入口优先消费统一协议，而不是暴露越来越多的单点命令
+4. 脚本只保留对稿件质量有明确价值的重复检查
+5. 资产层、模板层、兼容资料层必须与主链分层
 
-## Phase 1 Status
+## Chapter Semantics
 
-当前架构处于重构过渡阶段（Phase 1.5）：
-- 文档层与资产层已建立新分层
-- 旧 `references/`、少量根层模板与根层 `technique-kb/` shim 仍保留兼容
-- 旧 CLI 命令仍保留兼容
-- 聚合脚本层已建立，但旧单点脚本仍在兼容面上暴露
+### Reference chapter
+- `--chapter <n>` 表示已经写完、已经存在的章节号
+- 聚合层把它视为 `reference_chapter`
 
-## Target Layers
+### Target chapter
+- `open / planning / context` 会基于 `reference_chapter` 默认推导 `target_chapter = n + 1`
+- 如需直接指定规划目标，使用 `--target-chapter <m>`
+
+### Routing
+- `doctor`：不消费章节号
+- `open / planning / context`：消费 `reference_chapter`，产出 `target_chapter`
+- `runtime / quality / memory / status`：消费 `reference_chapter`
+
+## Aggregate Output Contract
+
+- `write / run / check` 聚合输出至少应稳定包含：
+- `reference_chapter`
+- `target_chapter`
+- `status`
+- `warning_count`
+- `steps`
+- `report_paths`
+- `pipeline_summary`
+- `final_release`
+
+其中：
+- `pipeline_summary` 汇总 `open`、`runtime`、`quality`、`status` 的关键字段
+- `pipeline_summary.final_release` 是流水线聚合后的发布决策
+- 顶层 `final_release` 是给 CLI、烟测和上层编排方直接消费的稳定出口
+
+## Layer Model
 
 ### Layer 1: Interaction
 - `SKILL.md`
-- 开书主链文档
-- 写作主链文档
-- 状态/健康主链文档
-- 改写/诊断文档
+- `docs/core/open-book.md`
+- `docs/core/write-workflow.md`
+- `docs/core/status-workflow.md`
+- `docs/core/revise-diagnostics.md`
 
-### Layer 2: Core Engine
-- bootstrap
-- doctor
-- open/planning-context engine
-- quality gate engine
-- memory sync
-- book health engine
-- run/check orchestration over aggregated layers
+### Layer 2: Aggregated Engines
+- `project_bootstrap.py`
+- `project_doctor.py`
+- `planning_context.py`
+- `quality_gate.py`
+- `book_health.py`
+- `workflow_runner.py`
 
-### Layer 3: Project Memory
-- `plan.md`
-- `state.md`
-- `characters.md`
-- `timeline.md`
-- `foreshadowing.md`
-- `style.md`
-- `voice.md`
+### Layer 3: Runtime Core
+- `runtime/`
+- `evaluators/`
+- `schemas/`
 
-### Layer 4: Asset Packs
-- genre packs
-- substyle packs
-- examples
-- common reusable style assets
-- technique-kb
+### Layer 4: Project Memory
+- `00_memory/*.md`
+- `00_memory/schema/*.json`
 
-## Repository Layout (Phase 1)
+### Layer 5: Assets And References
+- `docs/assets/`（默认先看 `genre-index` 与各题材 `*-reference-map.md`）
+- `assets/`
+- `templates/`
+- `references/`
 
-```text
-repo/
-├─ SKILL.md
-├─ README.md
-├─ ARCHITECTURE.md
-├─ bin/
-├─ docs/
-│  ├─ core/
-│  └─ assets/
-├─ assets/
-│  ├─ genres/
-│  ├─ substyles/
-│  ├─ common/
-│  ├─ examples/
-│  └─ technique-kb/
-├─ references/      # legacy compatibility layer
-├─ templates/       # current template layer: core / launch / review
-├─ technique-kb/    # legacy shim path
-├─ scripts/
-└─ schemas/
-```
+## Command Surface
 
-## Current Command Surface
-
-当前仍保留兼容命令：
+### Primary commands
 - `bootstrap`
 - `doctor`
 - `open`
 - `quality`
 - `write`
 - `status`
+- `check`
+
+### Compatibility commands
 - `planning`
 - `context`
 - `foreshadow`
@@ -106,35 +126,35 @@ repo/
 - `draft`
 - `batch`
 - `audit`
-- `check`
 - `run`
 
-## Target Command Surface
+兼容命令可以继续存在，但不再是默认产品心智入口。
 
-后续阶段会收口到：
-- `bootstrap`
-- `doctor`
-- `open`
-- `quality`
-- `write`
-- `status`
+## Repository Layout
 
-其中旧命令 `planning/context/gate/draft/audit/batch/foreshadow/arc/timeline/repeat/dashboard`
-已进入兼容别名阶段，不再是长期主入口。
-
-## Current Optimization Direction
-
-当前优化重点是：
-1. 继续把 `references/` 的导航职责上提到 `docs/core/*` 与 `docs/assets/*`
-2. 把根层模板尽量降为 shim，主内容只保留在分层后的真实位置
-3. 让脚本层优先消费聚合入口，减少用户对旧单点命令的心智负担
+```text
+repo/
+├── SKILL.md
+├── README.md
+├── ARCHITECTURE.md
+├── bin/
+├── docs/
+│   ├── core/
+│   └── assets/
+├── assets/
+├── references/
+├── templates/
+├── scripts/
+├── runtime/
+├── evaluators/
+└── schemas/
+```
 
 ## Why This Shape
 
 因为真正决定长篇连载质量的，不是仓库里有多少散装命令，而是：
-- 主链路是否短
-- 记忆是否稳
-- 质量检查是否内聚
-- 题材资产是否按需加载
-- 文风治理是否持续生效
-
+- 主链是否清晰
+- 章节语义是否稳定
+- 记忆是否可回写、可验证、可追踪
+- 质量检查是否内联
+- 状态观察是否能直接反哺下一轮 planning

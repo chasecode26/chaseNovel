@@ -72,6 +72,9 @@ ACTION_KEYWORDS = (
 )
 HOOK_KEYWORDS = (
     "危机",
+    "压力",
+    "代价",
+    "牵引",
     "真相",
     "身份",
     "暴露",
@@ -225,6 +228,65 @@ def extract_next_goal(state_text: str) -> str:
     )
 
 
+def load_runtime_context(project_dir: Path, target_chapter: int) -> dict[str, object]:
+    previous_chapter = max(target_chapter - 1, 0)
+    context_parts: list[str] = []
+    excerpt_lines: list[str] = []
+    next_goal = ""
+
+    if previous_chapter <= 0:
+        return {"text": "", "excerpt": [], "next_goal": "", "source": ""}
+
+    retrieval_dir = project_dir / "00_memory" / "retrieval"
+    runtime_payload = load_json(retrieval_dir / "leadwriter_runtime_payload.json")
+    if int(runtime_payload.get("chapter", 0) or 0) == previous_chapter:
+        draft = runtime_payload.get("draft", {})
+        brief = runtime_payload.get("brief", {})
+        if isinstance(draft, dict):
+            outcome_signature = draft.get("outcome_signature", {})
+            if isinstance(outcome_signature, dict):
+                next_goal = str(outcome_signature.get("next_pull", "")).strip()
+                chapter_result = str(outcome_signature.get("chapter_result", "")).strip()
+                if chapter_result:
+                    excerpt_lines.append(f"chapter_result: {chapter_result}")
+                if next_goal:
+                    excerpt_lines.append(f"next_pull: {next_goal}")
+            character_constraints = draft.get("character_constraints", {})
+            if isinstance(character_constraints, dict):
+                protagonist_goal = str(character_constraints.get("protagonist_goal", "")).strip()
+                counterpart_goal = str(character_constraints.get("counterpart_goal", "")).strip()
+                if protagonist_goal:
+                    excerpt_lines.append(f"protagonist_goal: {protagonist_goal}")
+                if counterpart_goal:
+                    excerpt_lines.append(f"counterpart_goal: {counterpart_goal}")
+        if isinstance(brief, dict):
+            scene_plan = brief.get("scene_plan", [])
+            success_criteria = brief.get("success_criteria", [])
+            if isinstance(scene_plan, list):
+                excerpt_lines.extend(str(item).strip() for item in scene_plan[:3] if str(item).strip())
+            if isinstance(success_criteria, list):
+                excerpt_lines.extend(str(item).strip() for item in success_criteria[:2] if str(item).strip())
+        if excerpt_lines:
+            context_parts.append("\n".join(excerpt_lines))
+
+    gate_dir = project_dir / "04_gate" / f"ch{previous_chapter:03d}"
+    blueprint_text = read_text(gate_dir / "chapter_blueprint.md")
+    runtime_draft_text = read_text(gate_dir / "runtime_draft.md")
+    if blueprint_text:
+        context_parts.append("\n".join(useful_lines(blueprint_text, 8)))
+    if runtime_draft_text:
+        context_parts.append("\n".join(useful_lines(runtime_draft_text, 8)))
+
+    combined = "\n".join(part for part in context_parts if part.strip())
+    excerpt = useful_lines(combined, 8)
+    return {
+        "text": combined,
+        "excerpt": excerpt,
+        "next_goal": next_goal,
+        "source": "runtime" if combined else "",
+    }
+
+
 def parse_chapter_number(text: str) -> int | None:
     match = re.search(r"(\d+)", text)
     return int(match.group(1)) if match else None
@@ -315,6 +377,22 @@ def parse_chapter_card(card_text: str) -> dict[str, str]:
     }
 
 
+def load_previous_card_defaults(project_dir: Path, target_chapter: int) -> dict[str, str]:
+    if target_chapter <= 1:
+        return {}
+    previous_path = find_chapter_card_path(project_dir, target_chapter - 1)
+    if not previous_path:
+        return {}
+    previous_text = read_text(previous_path)
+    if not previous_text.strip():
+        return {}
+    previous_card = parse_chapter_card(previous_text)
+    return {
+        "chapter_tier": previous_card.get("chapter_tier", ""),
+        "target_word_count": previous_card.get("target_word_count", ""),
+    }
+
+
 def parse_plan_milestones(plan_text: str) -> list[dict[str, object]]:
     rows = extract_markdown_table_rows(plan_text, "关键节点锚点表（写前硬校验，违反则阻断）")
     if len(rows) <= 1:
@@ -343,6 +421,10 @@ def parse_plan_milestones(plan_text: str) -> list[dict[str, object]]:
 
 def detect_keyword_hits(text: str, keywords: tuple[str, ...]) -> list[str]:
     return [keyword for keyword in keywords if keyword in text]
+
+
+def resolve_planning_verdict(blockers: list[str]) -> str:
+    return "revise" if blockers else "pass"
 
 
 def is_done_status(text: str) -> bool:
@@ -384,7 +466,7 @@ def build_planning_contract(
 ) -> dict[str, object]:
     blocking = "yes" if blockers else "no"
     hook_line = chapter_card.get("hook_text", "") or chapter_card.get("ending_focus", "")
-    rewrite_scope = "chapter_card" if chapter_card else "state.md + next_context.md"
+    rewrite_scope = "chapter_card" if chapter_card else "state.md + planning_context"
     priority_label = priority_debt.get("label", "")
     priority_action = priority_debt.get("action", "")
     priority_source = priority_debt.get("source", "")
@@ -414,7 +496,7 @@ def build_planning_contract(
             "priority_debt": priority_label,
             "priority_debt_hint": priority_action,
             "priority_debt_source": priority_source,
-            "planning_verdict": "pass" if not blockers else "revise",
+            "planning_verdict": resolve_planning_verdict(blockers),
         },
         "hook_emotion_contract": {
             "entry_pressure": chapter_card.get("opening_focus", "") or next_goal,
@@ -439,15 +521,22 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
     style_text = read_text(memory_dir / "style.md")
     recent_text = read_text(memory_dir / "summaries" / "recent.md")
     next_context_text = read_text(memory_dir / "retrieval" / "next_context.md")
+    runtime_context = load_runtime_context(project_dir, target_chapter)
     chapter_card_path = find_chapter_card_path(project_dir, target_chapter)
     chapter_card_text = read_text(chapter_card_path) if chapter_card_path else ""
     chapter_card = parse_chapter_card(chapter_card_text) if chapter_card_text else {}
+    if not chapter_card_path:
+        chapter_card_defaults = load_previous_card_defaults(project_dir, target_chapter)
+        for key in ("chapter_tier", "target_word_count"):
+            if not chapter_card.get(key, "") and chapter_card_defaults.get(key, ""):
+                chapter_card[key] = chapter_card_defaults[key]
 
     active_volume = extract_present_line(state_text, "- 当前卷") or extract_state_value(state_text, "当前卷")
     active_arc = extract_present_line(state_text, "- 当前弧") or extract_state_value(state_text, "当前弧")
     absolute_time = extract_present_line(state_text, "- 当前绝对时间") or extract_state_value(state_text, "当前绝对时间")
     current_place = extract_present_line(state_text, "- 当前地点") or extract_state_value(state_text, "当前地点")
-    next_goal = extract_next_goal(state_text)
+    next_goal = extract_next_goal(state_text) or str(runtime_context.get("next_goal", "")).strip()
+    context_text = next_context_text or str(runtime_context.get("text", "")).strip()
     due_foreshadow_ids = load_due_foreshadow_ids(project_dir, target_chapter)
     milestones = parse_plan_milestones(plan_text)
     health_digest = load_health_digest(project_dir)
@@ -469,9 +558,9 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
         and not is_done_status(str(item["status"]))
     ]
 
-    narrative_anchor = chapter_card.get("chapter_function", "") or next_goal or "\n".join(useful_lines(next_context_text, 4))
+    narrative_anchor = chapter_card.get("chapter_function", "") or next_goal or "\n".join(useful_lines(context_text, 4))
     combined_planning_text = "\n".join(
-        part for part in (chapter_card_text, next_goal, next_context_text, recent_text) if part.strip()
+        part for part in (chapter_card_text, next_goal, context_text, recent_text) if part.strip()
     )
     upgrade_hits = detect_keyword_hits(combined_planning_text, UPGRADE_KEYWORDS)
     action_hits = detect_keyword_hits(combined_planning_text, ACTION_KEYWORDS)
@@ -505,10 +594,10 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
         warnings.append("`state.md` 未识别到“当前卷”，卷级节奏容易失焦。")
     if not useful_lines(recent_text, 3):
         warnings.append("缺少 recent 摘要，近章重复风险会升高。")
-    if not next_context_text:
+    if not context_text:
         warnings.append("尚未生成 `00_memory/retrieval/next_context.md`，建议先跑 context 再定稿本章规划。")
     if not chapter_card_path:
-        warnings.append("未找到显式章卡，当前预审主要基于 `state.md` / `next_context.md` 推断。")
+        warnings.append("未找到显式章卡，当前预审主要基于 `state.md` / planning context 推断。")
     if not upgrade_hits:
         warnings.append("未识别到明确结果升级词，本章可能只是延长旧冲突而没有产生新结果。")
     if not action_hits:
@@ -549,7 +638,7 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
     return {
         "target_chapter": target_chapter,
         "status": status,
-        "planning_verdict": "pass" if status == "pass" else "revise",
+        "planning_verdict": resolve_planning_verdict(blockers),
         "active_volume": active_volume or "未设定",
         "active_arc": active_arc or "未设定",
         "absolute_time": absolute_time or "未设定",
@@ -586,7 +675,7 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
         "recheck_order": contract["recheck_order"],
         "planner_contract": contract["planner_contract"],
         "hook_emotion_contract": contract["hook_emotion_contract"],
-        "context_excerpt": useful_lines(next_context_text, 8),
+        "context_excerpt": useful_lines(context_text, 8),
         "voice_excerpt": useful_lines(voice_text or style_text, 8),
         "plan_excerpt": useful_lines(plan_text, 8),
         "chapter_card_excerpt": useful_lines(chapter_card_text, 12),
@@ -645,7 +734,7 @@ def render_markdown(project_dir: Path, analysis: dict[str, object]) -> str:
         render_list(list(analysis["chapter_card_excerpt"]), "无显式章卡摘录"),
         "",
         "### 上下文摘录",
-        render_list(list(analysis["context_excerpt"]), "无可用 next_context 摘录"),
+        render_list(list(analysis["context_excerpt"]), "无可用 planning context 摘录"),
         "",
         "### 书级声音摘录",
         render_list(list(analysis["voice_excerpt"]), "无可用声音摘录"),

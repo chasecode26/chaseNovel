@@ -10,6 +10,16 @@ from pathlib import Path
 from novel_utils import clean_value, detect_current_chapter, extract_pipe_table_rows, extract_state_value, read_text
 
 
+def load_json(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate a lightweight arc tracking report for a chaseNovel project."
@@ -21,6 +31,31 @@ def parse_args() -> argparse.Namespace:
 
 
 def parse_character_arcs(memory_dir: Path) -> list[dict[str, str]]:
+    schema_payload = load_json(memory_dir / "schema" / "character_arcs.json")
+    schema_arcs = schema_payload.get("arcs", [])
+    if isinstance(schema_arcs, list) and schema_arcs:
+        results: list[dict[str, str]] = []
+        for item in schema_arcs:
+            if not isinstance(item, dict):
+                continue
+            character = str(item.get("character", "")).strip()
+            if not character:
+                continue
+            results.append(
+                {
+                    "character": character,
+                    "arc_type": str(item.get("arcType", "")).strip(),
+                    "stage": str(item.get("stage", "")).strip(),
+                    "goal": str(item.get("goal", "")).strip(),
+                    "blocker": str(item.get("blocker", "")).strip(),
+                    "latest_shift": str(item.get("recentChange", "")).strip(),
+                    "next_window": str(item.get("nextWindow", "")).strip(),
+                    "risk": str(item.get("risk", "")).strip(),
+                }
+            )
+        if results:
+            return results
+
     rows = extract_pipe_table_rows(read_text(memory_dir / "character_arcs.md"))
     results: list[dict[str, str]] = []
     for row in rows[1:]:

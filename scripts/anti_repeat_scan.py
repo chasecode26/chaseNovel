@@ -26,7 +26,7 @@ CONFLICT_PATTERNS = {
     "confrontation": ("对峙", "交手", "围杀", "镇压", "逼迫", "追杀", "出手"),
     "misunderstanding": ("误会", "误判", "嘴硬", "错认", "曲解"),
     "escape": ("逃", "潜入", "撤离", "脱身", "追捕"),
-    "negotiation": ("谈判", "交易", "交换", "讲条件", "试探口风"),
+    "negotiation": ("谈判", "交易", "交换", "讲条件", "试探口风", "试探"),
     "investigation": ("查", "线索", "盘问", "摸底", "追线"),
 }
 
@@ -58,6 +58,24 @@ SCENE_PATTERNS = {
     "收集信息": ("线索", "情报", "摸底", "盘问"),
     "谈情试探": ("试探", "靠近", "嘴硬", "拉扯"),
     "直接冲突": ("交手", "围杀", "对峙", "出手"),
+}
+
+RUNTIME_HOOK_MAP = {
+    "pressure_kept": "危机压顶型",
+    "cost_upgrade": "选择逼近型",
+    "reveal": "信息反转型",
+    "result_pending": "结果未揭晓型",
+    "relationship_shift": "关系突变型",
+}
+
+RUNTIME_RESULT_MAP = {
+    "partial_win": "small_win",
+    "partial_win_with_pressure_kept": "small_win",
+    "pressure_stabilized": "small_win",
+    "turnaround": "turnaround",
+    "interrupted": "interrupted",
+    "loss": "loss",
+    "gain": "gain",
 }
 
 
@@ -114,6 +132,72 @@ def normalize_tag(text: str) -> str:
     return normalized
 
 
+def extract_md_value(text: str, label: str) -> str:
+    match = re.search(rf"(?mi)^\s*-\s*{re.escape(label)}\s*[:：]\s*(.+)$", text)
+    if not match:
+        return ""
+    value = match.group(1).strip()
+    return "" if has_placeholder(value) else value
+
+
+def extract_md_values(text: str, labels: tuple[str, ...]) -> list[str]:
+    values: list[str] = []
+    for label in labels:
+        values.extend(
+            match.group(1).strip()
+            for match in re.finditer(rf"(?mi)^\s*-\s*{re.escape(label)}\s*[:：]\s*(.+)$", text)
+            if match.group(1).strip() and not has_placeholder(match.group(1).strip())
+        )
+    return values
+
+
+def load_runtime_dimension_map(project_dir: Path) -> dict[str, dict[str, str]]:
+    dimensions_by_chapter: dict[str, dict[str, str]] = {}
+    for gate_dir in sorted((project_dir / "04_gate").glob("ch*")):
+        if not gate_dir.is_dir():
+            continue
+        chapter_match = re.search(r"ch(\d+)", gate_dir.name, re.IGNORECASE)
+        if not chapter_match:
+            continue
+        chapter_key = chapter_match.group(1)
+        blueprint_text = read_text(gate_dir / "chapter_blueprint.md")
+        runtime_draft_text = read_text(gate_dir / "runtime_draft.md")
+        editorial_text = read_text(gate_dir / "editorial_summary.md")
+        combined_text = "\n".join(part for part in (blueprint_text, runtime_draft_text, editorial_text) if part.strip())
+        if not combined_text:
+            continue
+
+        runtime_hook = extract_md_value(blueprint_text, "hook_type")
+        runtime_result = extract_md_value(blueprint_text, "result_type")
+        chapter_result = extract_md_value(blueprint_text, "chapter_result")
+        main_pair = ""
+        protagonist = extract_md_value(editorial_text, "protagonist")
+        counterpart = extract_md_value(editorial_text, "counterpart")
+        if protagonist and counterpart:
+            main_pair = f"{protagonist} / {counterpart}"
+
+        dimensions_by_chapter[chapter_key] = {
+            "hook": RUNTIME_HOOK_MAP.get(runtime_hook, classify_hook(combined_text)),
+            "conflict": classify_dimension(combined_text, CONFLICT_PATTERNS),
+            "result": RUNTIME_RESULT_MAP.get(runtime_result, classify_dimension(f"{chapter_result} {combined_text}", RESULT_PATTERNS)),
+            "payoff": classify_dimension(combined_text, PAYOFF_PATTERNS),
+            "relationship": classify_dimension(combined_text, RELATION_PATTERNS),
+            "scene": classify_dimension(" ".join(extract_md_values(blueprint_text, ("summary", "scene_plan_focus"))), SCENE_PATTERNS),
+            "main_pair": normalize_tag(main_pair),
+        }
+    return dimensions_by_chapter
+
+
+def merge_dimensions(base: dict[str, str], runtime_meta: dict[str, str]) -> dict[str, str]:
+    merged = dict(base)
+    for key in ("hook", "conflict", "result", "payoff", "relationship", "scene"):
+        if merged.get(key, "unknown") == "unknown" and runtime_meta.get(key, "unknown") != "unknown":
+            merged[key] = runtime_meta[key]
+    if not merged.get("main_pair") and runtime_meta.get("main_pair"):
+        merged["main_pair"] = runtime_meta["main_pair"]
+    return merged
+
+
 def analyze_entry_dimensions(entry: dict[str, str]) -> dict[str, str]:
     body = entry["body"]
     title = entry["title"]
@@ -133,8 +217,12 @@ def analyze_entry_dimensions(entry: dict[str, str]) -> dict[str, str]:
     }
 
 
-def analyze_golden_three(entries: list[dict[str, str]]) -> dict[str, object]:
+def analyze_golden_three(
+    entries: list[dict[str, str]],
+    runtime_dimensions: dict[str, dict[str, str]] | None = None,
+) -> dict[str, object]:
     relevant = []
+    runtime_dimensions = runtime_dimensions or {}
     for entry in entries:
         try:
             chapter_no = int(entry["chapter"])
@@ -161,7 +249,10 @@ def analyze_golden_three(entries: list[dict[str, str]]) -> dict[str, object]:
                 "core_event": core_event,
                 "carry_out": carry_out,
                 "character_change": character_change,
-                "hook": classify_hook(" ".join((carry_out, entry["body"]))),
+                "hook": merge_dimensions(
+                    {"hook": classify_hook(" ".join((carry_out, entry["body"])))},
+                    runtime_dimensions.get(str(chapter_no).zfill(3), {}),
+                ).get("hook", "unknown"),
             }
         )
 
@@ -178,7 +269,10 @@ def analyze_golden_three(entries: list[dict[str, str]]) -> dict[str, object]:
     if 3 in chapter_map:
         third_event = extract_summary_field(chapter_map[3]["body"], "核心事件")
         third_carry = extract_summary_field(chapter_map[3]["body"], "启下")
-        third_hook = classify_hook(" ".join((third_carry, chapter_map[3]["body"])))
+        third_hook = merge_dimensions(
+            {"hook": classify_hook(" ".join((third_carry, chapter_map[3]["body"])))},
+            runtime_dimensions.get("003", {}),
+        ).get("hook", "unknown")
         if not third_carry:
             warnings.append("第3章摘要缺少“启下”，无法确认长期承诺是否挂到第4章。")
         if third_hook == "unknown":
@@ -247,7 +341,7 @@ def analyze_midgame_fatigue(chapter_dimensions: list[dict[str, str]]) -> dict[st
     return {"summary": summary, "warnings": warnings}
 
 
-def detect_repeat_risks(entries: list[dict[str, str]]) -> dict[str, object]:
+def detect_repeat_risks(entries: list[dict[str, str]], runtime_dimensions: dict[str, dict[str, str]] | None = None) -> dict[str, object]:
     hook_counter: Counter[str] = Counter()
     conflict_counter: Counter[str] = Counter()
     result_counter: Counter[str] = Counter()
@@ -257,9 +351,11 @@ def detect_repeat_risks(entries: list[dict[str, str]]) -> dict[str, object]:
     pair_counter: Counter[str] = Counter()
     opener_counter: Counter[str] = Counter()
     chapter_dimensions: list[dict[str, str]] = []
+    runtime_dimensions = runtime_dimensions or {}
 
     for entry in entries:
         dimensions = analyze_entry_dimensions(entry)
+        dimensions = merge_dimensions(dimensions, runtime_dimensions.get(str(entry["chapter"]).zfill(3), {}))
         chapter_dimensions.append({"chapter": entry["chapter"], **dimensions})
         hook_counter[dimensions["hook"]] += 1
         conflict_counter[dimensions["conflict"]] += 1
@@ -381,9 +477,10 @@ def suggest_actions(payload: dict[str, object]) -> list[str]:
 
 def build_payload(project_dir: Path) -> dict[str, object]:
     entries = split_summary_entries(read_text(project_dir / "00_memory" / "summaries" / "recent.md"))
-    analysis = detect_repeat_risks(entries)
+    runtime_dimensions = load_runtime_dimension_map(project_dir)
+    analysis = detect_repeat_risks(entries, runtime_dimensions)
     body_analysis = detect_body_patterns(project_dir)
-    golden_three = analyze_golden_three(entries)
+    golden_three = analyze_golden_three(entries, runtime_dimensions)
     midgame_fatigue = analyze_midgame_fatigue(analysis["chapter_dimensions"])
     warnings = (
         analysis["warnings"]

@@ -3,6 +3,7 @@
 **触发条件**：只有在规划或写作「末世/废土生存」题材时，才加载此规则。
 
 **补读导航**：
+- 默认资料入口：`../../docs/assets/apocalypse-reference-map.md`
 - 专项库：`../../references/moshi-chapter-card-library.md` | `../../references/moshi-character-learning.md` | `../../references/moshi-volume-route-library.md` | `../../references/moshi-negative-patterns.md`
 - 据点升级：`../../references/moshi-bastion-and-order-library.md` | `../../references/moshi-bastion-governance-chapter-cards.md`
 - 钩子/结果路线：`../../references/hook-result-learning.md`

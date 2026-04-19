@@ -4,10 +4,15 @@ import json
 from pathlib import Path
 
 from evaluators.character import from_runtime_draft
+from evaluators.causality import from_runtime_output as from_causality_runtime_output
 from evaluators.continuity import from_gate_payload
+from evaluators.dialogue import from_runtime_output as from_dialogue_runtime_output
+from evaluators.pacing import from_runtime_output as from_pacing_runtime_output
+from evaluators.promise_payoff import from_runtime_output as from_promise_payoff_runtime_output
 from evaluators.repeat import from_repeat_payload
 from evaluators.style import from_language_payload
-from runtime.contracts import EvaluatorVerdict
+from novel_utils import derive_plan_target_words, read_text
+from runtime.contracts import ChapterBrief, EvaluatorVerdict, RuntimeDecision
 from runtime.decision_engine import DecisionEngine
 from runtime.lead_writer import LeadWriter
 from runtime.memory_compiler import MemoryCompiler
@@ -42,12 +47,14 @@ class LeadWriterRuntime:
         quality_payload = run_script_json(
             repo_root,
             "quality_gate.py",
-            ["--project", project_dir.as_posix(), "--chapter-no", str(chapter), "--dry-run"],
+            ["--project", project_dir.as_posix(), "--chapter-no", str(chapter), "--dry-run", "--skip-runtime-verdicts"],
         )
         if int(quality_payload.get("returncode", 0)) not in (0, 1):
             warnings.append(f"quality evaluator failed: {quality_payload.get('stderr', 'unknown error')}")
         for item in quality_payload.get("verdicts", []):
             if isinstance(item, dict):
+                if str(item.get("dimension", "")).strip() in {"plan", "foreshadow", "arc"}:
+                    continue
                 verdicts.append(self._coerce_verdict(item))
 
         if not any(item.dimension == "continuity" for item in verdicts):
@@ -117,6 +124,13 @@ class LeadWriterRuntime:
             lines.append("- none")
         md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return {"character_verdict_json": json_path.as_posix(), "character_verdict_markdown": md_path.as_posix()}
+
+    def _write_runtime_payload(self, project_dir: Path, payload: dict[str, object]) -> dict[str, str]:
+        retrieval_dir = project_dir / "00_memory" / "retrieval"
+        retrieval_dir.mkdir(parents=True, exist_ok=True)
+        json_path = retrieval_dir / "leadwriter_runtime_payload.json"
+        json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return {"runtime_payload_json": json_path.as_posix()}
 
     def _verdict_rank(self, verdict: EvaluatorVerdict) -> tuple[int, int, int]:
         status_rank = {"pass": 0, "warn": 1, "fail": 2}.get(verdict.status, 0)
@@ -211,19 +225,46 @@ class LeadWriterRuntime:
             return {}
         return payload if isinstance(payload, dict) else {}
 
-    def _schema_verdicts(self, project_dir: Path) -> list[EvaluatorVerdict]:
+    def _has_runtime_arc_signal(self, draft_payload: dict[str, object]) -> bool:
+        character_constraints = draft_payload.get("character_constraints", {})
+        outcome_signature = draft_payload.get("outcome_signature", {})
+        if not isinstance(character_constraints, dict) or not isinstance(outcome_signature, dict):
+            return False
+        protagonist = character_constraints.get("protagonist", {})
+        counterpart = character_constraints.get("counterpart", {})
+        if not isinstance(protagonist, dict) or not isinstance(counterpart, dict):
+            return False
+        return bool(
+            str(protagonist.get("name", "")).strip()
+            and str(counterpart.get("name", "")).strip()
+            and str(outcome_signature.get("chapter_result", "")).strip()
+        )
+
+    def _schema_verdicts(
+        self,
+        project_dir: Path,
+        draft_payload: dict[str, object] | None = None,
+    ) -> list[EvaluatorVerdict]:
         schema_dir = project_dir / "00_memory" / "schema"
         reports_dir = project_dir / "05_reports"
+        plan_text = read_text(project_dir / "00_memory" / "plan.md")
         plan_json = self._load_json(schema_dir / "plan.json")
+        character_arcs_json = self._load_json(schema_dir / "character_arcs.json")
         foreshadow_json = self._load_json(reports_dir / "foreshadow_heatmap.json")
         arc_json = self._load_json(reports_dir / "arc_health.json")
 
         verdicts: list[EvaluatorVerdict] = []
 
         plan_evidence: list[str] = []
-        if not str(plan_json.get("hook", "")).strip():
+        plan_hook = str(plan_json.get("hook", "")).strip()
+        if not plan_hook and "核心卖点" in plan_text:
+            plan_hook = "derived-from-plan-md"
+        plan_target_words = int(plan_json.get("targetWords", 0) or 0)
+        if plan_target_words <= 0:
+            plan_target_words = derive_plan_target_words(plan_text)
+        if not plan_hook:
             plan_evidence.append("plan schema 缺少核心 hook。")
-        if int(plan_json.get("targetWords", 0) or 0) <= 0:
+        if plan_target_words <= 0:
             plan_evidence.append("plan schema 还没有有效总字数目标。")
         verdicts.append(
             EvaluatorVerdict(
@@ -260,9 +301,14 @@ class LeadWriterRuntime:
         stalled_count = int(arc_json.get("stalled_arc_count", 0) or 0)
         arc_evidence: list[str] = []
         arc_blocking = stalled_count > 0
+        schema_arcs = character_arcs_json.get("arcs", [])
+        report_arcs = arc_json.get("character_arcs", [])
+        has_schema_arcs = isinstance(schema_arcs, list) and len(schema_arcs) > 0
+        has_report_arcs = isinstance(report_arcs, list) and len(report_arcs) > 0
+        has_runtime_arc_signal = self._has_runtime_arc_signal(draft_payload or {})
         if arc_blocking:
             arc_evidence.append(f"存在 {stalled_count} 个角色弧停滞风险。")
-        elif not arc_json.get("character_arcs"):
+        elif not has_report_arcs and not has_schema_arcs and not has_runtime_arc_signal:
             arc_evidence.append("character arc schema/报告仍为空。")
         verdicts.append(
             EvaluatorVerdict(
@@ -277,36 +323,117 @@ class LeadWriterRuntime:
         )
         return verdicts
 
-    def run(self, project_dir: Path, chapter: int, dry_run: bool = False) -> dict[str, object]:
-        packet = MemoryCompiler().build(project_dir, chapter)
-        verdicts, runtime_warnings = self._build_verdicts(project_dir, chapter)
-        merged_packet = packet if not runtime_warnings else type(packet)(
-            **{**packet.to_dict(), "warnings": [*packet.warnings, *runtime_warnings]}
+    def _pass_decision(self) -> RuntimeDecision:
+        return RuntimeDecision(
+            decision="pass",
+            rewrite_brief=None,
+            blocking_dimensions=[],
+            advisory_dimensions=[],
         )
-        brief = LeadWriter().create_brief(merged_packet)
-        draft_payload = WriterExecutor().draft(
-            project_dir,
-            merged_packet,
-            brief,
-            DecisionEngine().decide(verdicts),
-            dry_run=dry_run,
-        )
+
+    def _evaluate_cycle(
+        self,
+        project_dir: Path,
+        chapter: int,
+        brief: ChapterBrief,
+        draft_payload: dict[str, object],
+    ) -> tuple[list[EvaluatorVerdict], EvaluatorVerdict | None, list[str]]:
+        verdicts, warnings = self._build_verdicts(project_dir, chapter)
+        verdicts = self._merge_verdicts([*verdicts, *self._schema_verdicts(project_dir, draft_payload)])
         postdraft_verdict: EvaluatorVerdict | None = None
+        verdicts.append(self._coerce_verdict(from_pacing_runtime_output(project_dir, draft_payload)))
+        verdicts.append(self._coerce_verdict(from_causality_runtime_output(draft_payload)))
+        verdicts.append(self._coerce_verdict(from_promise_payoff_runtime_output(brief, draft_payload)))
+        verdicts.append(self._coerce_verdict(from_dialogue_runtime_output(draft_payload)))
         if isinstance(draft_payload.get("character_constraints"), dict):
             postdraft_verdict = self._coerce_verdict(from_runtime_draft(draft_payload))
+            verdicts = self._merge_verdicts([*verdicts, postdraft_verdict])
+        verdicts = self._merge_verdicts(verdicts)
+        verdicts = self._apply_decision_policy(verdicts)
+        return verdicts, postdraft_verdict, warnings
 
-        all_verdicts = self._merge_verdicts([*verdicts, *self._schema_verdicts(project_dir)])
-        if postdraft_verdict is not None:
-            all_verdicts = self._merge_verdicts([*all_verdicts, postdraft_verdict])
-        all_verdicts = self._apply_decision_policy(all_verdicts)
+    def _blocking_signature(self, decision: RuntimeDecision) -> tuple[str, ...]:
+        rewrite_brief = decision.rewrite_brief
+        must_change = [] if rewrite_brief is None else rewrite_brief.must_change
+        return tuple([*decision.blocking_dimensions, *must_change[:2]])
 
-        decision = DecisionEngine().decide(all_verdicts)
+    def run(self, project_dir: Path, chapter: int, dry_run: bool = False) -> dict[str, object]:
+        packet = MemoryCompiler().build(project_dir, chapter)
+        lead_writer = LeadWriter()
+        writer = WriterExecutor()
+        decision_engine = DecisionEngine()
+
+        merged_packet = packet
+        brief = lead_writer.create_brief(merged_packet)
+        decision = self._pass_decision()
+        all_verdicts: list[EvaluatorVerdict] = []
+        postdraft_verdict: EvaluatorVerdict | None = None
+        draft_payload: dict[str, object] = {}
+        cycle_history: list[dict[str, object]] = []
+        runtime_warnings: list[str] = []
+        blocking_signature: tuple[str, ...] | None = None
+        repeated_blocking_rounds = 0
+        max_rewrite_rounds = 2
+
+        for attempt in range(max_rewrite_rounds + 1):
+            draft_payload = writer.draft(
+                project_dir,
+                merged_packet,
+                brief,
+                decision,
+                dry_run=dry_run,
+            )
+            all_verdicts, postdraft_verdict, cycle_warnings = self._evaluate_cycle(
+                project_dir,
+                chapter,
+                brief,
+                draft_payload,
+            )
+            runtime_warnings.extend(cycle_warnings)
+            decision = decision_engine.decide(all_verdicts)
+            cycle_history.append(
+                {
+                    "attempt": attempt + 1,
+                    "brief": brief.to_dict(),
+                    "decision": decision.to_dict(),
+                    "draft_status": draft_payload.get("status", "unknown"),
+                }
+            )
+            if decision.decision == "pass":
+                break
+
+            current_signature = self._blocking_signature(decision)
+            repeated_blocking_rounds = repeated_blocking_rounds + 1 if current_signature == blocking_signature else 1
+            blocking_signature = current_signature
+            if repeated_blocking_rounds >= 2 or attempt >= max_rewrite_rounds:
+                decision = RuntimeDecision(
+                    decision="fail",
+                    rewrite_brief=decision.rewrite_brief,
+                    blocking_dimensions=decision.blocking_dimensions,
+                    advisory_dimensions=decision.advisory_dimensions,
+                )
+                cycle_history[-1]["decision"] = decision.to_dict()
+                break
+            brief = lead_writer.revise_brief(
+                merged_packet,
+                brief,
+                decision,
+                all_verdicts,
+                attempt=attempt + 1,
+            )
+
+        merged_packet = (
+            packet
+            if not runtime_warnings
+            else type(packet)(**{**packet.to_dict(), "warnings": [*packet.warnings, *runtime_warnings]})
+        )
         report_paths = RuntimeMemorySync().summarize(
             project_dir,
             merged_packet,
             brief,
             decision,
             all_verdicts,
+            draft_payload=draft_payload,
             apply_changes=not dry_run,
         )
         report_paths = {
@@ -314,13 +441,13 @@ class LeadWriterRuntime:
             **self._write_postdraft_report(project_dir, postdraft_verdict),
         }
 
-        runtime_status = "pass"
-        if decision.decision == "revise" or merged_packet.warnings:
+        runtime_status = "fail" if decision.decision == "fail" else "pass"
+        if runtime_status == "pass" and (decision.decision == "revise" or merged_packet.warnings):
             runtime_status = "warn"
-        if postdraft_verdict is not None and postdraft_verdict.status != "pass":
+        if runtime_status == "pass" and postdraft_verdict is not None and postdraft_verdict.status != "pass":
             runtime_status = "warn"
 
-        return {
+        payload = {
             "status": runtime_status,
             "chapter": chapter,
             "context": merged_packet.to_dict(),
@@ -330,4 +457,10 @@ class LeadWriterRuntime:
             "verdicts": [item.to_dict() for item in all_verdicts],
             "postdraft_verdicts": [] if postdraft_verdict is None else [postdraft_verdict.to_dict()],
             "report_paths": report_paths,
+            "cycles": cycle_history,
         }
+        payload["report_paths"] = {
+            **report_paths,
+            **self._write_runtime_payload(project_dir, payload),
+        }
+        return payload

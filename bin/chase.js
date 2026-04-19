@@ -26,7 +26,7 @@ const COMMAND_SPECS = {
   doctor: { script: "project_doctor.py" },
   check: {
     script: "workflow_runner.py",
-    injectArgs: ["--dry-run", "--steps", "doctor,open,status"],
+    injectArgs: ["--dry-run", "--steps", "doctor,open,quality,status"],
   },
 };
 
@@ -117,15 +117,15 @@ function printHelp(errorMessage) {
   console.log(`Primary commands:
   chase bootstrap --project <dir> [--force]
   chase doctor --project <dir> [--json]
-  chase open --project <dir> [--chapter <n>]
+  chase open --project <dir> [--chapter <n> | --target-chapter <n>]
   chase quality --project <dir> [--chapter-no <n> | --from <n> --to <n>]
-  chase write --project <dir> [--chapter <n>] [--steps <csv>]
+  chase write --project <dir> [--chapter <n> | --target-chapter <n>] [--steps <csv>]
   chase status --project <dir> [--chapter <n>] [--focus <all|dashboard|foreshadow|arc|timeline|repeat>]
-  chase check --project <dir> [--chapter <n>]
+  chase check --project <dir> [--chapter <n> | --target-chapter <n>]
 
 Legacy compatibility aliases:
   chase planning --project <dir> [--chapter <n> | --target-chapter <n>]
-  chase context --project <dir> [--chapter <n>]
+  chase context --project <dir> [--chapter <n> | --target-chapter <n>]
   chase gate --project <dir> [--chapter-no <n>]
   chase draft --project <dir> [--chapter-no <n>]
   chase audit --project <dir> [--chapter-no <n>]
@@ -136,17 +136,19 @@ Legacy compatibility aliases:
   chase timeline --project <dir>
   chase repeat --project <dir>
   chase memory --project <dir> [--chapter <n>]
-  chase run --project <dir> [--chapter <n>] [--steps <csv>]
+  chase run --project <dir> [--chapter <n> | --target-chapter <n>] [--steps <csv>]
 
 Notes:
-  - open is the primary open-book / planning entry; without --chapter it runs launch readiness
+  - open is the primary open-book / planning entry; without chapter args it runs launch readiness
+  - open/context/planning use --chapter as the current drafted chapter and default to preparing the next chapter; use --target-chapter to override
   - quality is the unified gate protocol: --check all|chapter|draft|language|batch
   - status is the unified book-health protocol: --focus all|dashboard|foreshadow|arc|timeline|repeat
   - legacy commands are still available, but now route into the new aggregated layers
-  - write and check prefer the aggregated layers internally
-  - check is a dry-run health sweep over doctor + open + status
-  - default run steps: doctor,open,runtime,status
-  - chase run --chapter expects an already drafted chapter number; do not pass the next unwritten chapter
+  - write/run/check now expose both reference chapter and target chapter semantics
+  - check is a dry-run health sweep over doctor + open + quality + status
+  - default run steps: doctor,open,runtime,quality,status
+  - run/write/check use --chapter as the current drafted reference chapter; open/planning/context default target to the next chapter
+  - use --target-chapter when the planning target is not simply reference + 1
   - project defaults to the current directory`);
 }
 

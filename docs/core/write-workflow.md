@@ -1,144 +1,128 @@
 # 写作主链路
 
-> 这是重构后的核心写作入口文档。它把原先分散在执行工作流、协作协议、部分写前模板里的内容收成一条主链。
+> `write` 是重构后统一的写作流水线入口。它不再只是“跑几个脚本”，而是把开写前检查、规划、runtime、状态回看收束成一条主链。
 
 ## 核心目标
-写作不是“先写完再说”，而是：
-- 先锚定
-- 再起稿
-- 再复核
-- 再回写记忆
-- 再看书级健康
+- 开写前先确认本章是否值得写。
+- 把 planning/context 与 runtime 连接成连续流水线。
+- 让章节、状态、质量、记忆回写使用同一套章节语义。
 
-## 写前五步
-1. 读取 `plan.md` 与 `state.md`
-2. 锚定时间、地点、在场人物、知情边界、资源状态
-3. 明确本章功能、结果变化、章尾钩子
-4. 检查近 3-5 章是否重复推进
-5. 明确本章不能擅自新增什么设定
+## Runtime Ownership
+- `LeadWriter` 是唯一章节决策者，负责 brief、裁决、rewrite brief。
+- `WriterExecutor` 是唯一正文执行路径，负责 draft 与 rewrite。
+- evaluator 只能 `pass / warn / fail`，并给出 `minimal_fix`，不能直接改正文。
+- schema memory 是运行时真相源；Markdown memory 是阅读层与补充输入层。
+- 任一 blocking verdict 都必须先回到 `LeadWriter -> RewriteBrief -> WriterExecutor`，不能绕开主链直接修文。
 
-## 落地手法优先级
-真正起稿时，默认按这个顺序考虑：
+## 主入口
+- `chase write --project <dir>`
+- `chase write --project <dir> --chapter <n>`
+- `chase write --project <dir> --chapter <n> --target-chapter <m>`
+- `chase write --project <dir> --steps doctor,open,runtime,quality,status`
+- `chase check --project <dir> --chapter <n>`
+- `chase run --project <dir> --chapter <n>`
 
-1. 读者想不想继续看
-2. 这一段有没有推进当前问题
-3. 结果、风险、关系变化是否可见
-4. 文字是否顺滑
+## 默认流水线
 
-对应写法：
-- 开头尽快给出异常点、冲突点、选择压力或结果压力
-- 能先给动作和结果，就不要先给解释
-- 能让读者从处境里感到压迫，就不要让旁白替读者喊“很危险”
-- 每段尽量只承载一个核心信息点
+### `write` / `run`
+默认 steps：
+- `doctor`
+- `open`
+- `runtime`
+- `quality`
+- `status`
 
-## 起稿时的四条落地规则
+### `check`
+默认 steps：
+- `doctor`
+- `open`
+- `quality`
+- `status`
 
-### 1. 视角先锁住
-- 单场景默认锁一个焦点人物
-- 优先写他当下看到什么、听到什么、误判了什么、来不及做到什么
-- 同一波冲突里不要来回切脑内
+`check` 默认是 dry-run 健康扫链，会补做 quality 关卡确认，但仍不进入 runtime 正文生成。
 
-### 2. 对话必须带功能
-- 每轮对话至少承担一项功能：推进决策、交换信息、拉扯关系、暴露立场、制造后果
-- 纯对白容易发空，默认补站位、停顿、打断、手上动作
-- 如果对白删掉后局面没变化，那段通常该压缩或重写
+## 章节编号语义
 
-### 3. 动作用来替代空泛判断
-少写“他很愤怒 / 局势很危险 / 气氛很压抑”。
+### reference chapter
+- `--chapter <n>` 表示当前已经写完、已经存在的章节号。
+- 它是聚合流水线里的 reference chapter。
 
-多写：
-- 手指怎么用力
-- 呼吸、视线、动作有没有受阻
-- 物件有没有变形、破损、失衡
-- 周围人有没有出现具体反应
+### target chapter
+- `open` / `planning` / `context` 会把 `--chapter <n>` 当作“当前已写章节”。
+- 如果没有额外指定，它们默认准备 `target_chapter = n + 1`。
+- 如需跳章、补章、回头重做指定章，显式传 `--target-chapter <m>`。
 
-### 4. 爽点要有结果回声
-有效反馈最好至少落到两项：
-- 对手吃亏
-- 局面变化
-- 资源到手
-- 身份翻转
-- 关系刷新
-- 风评逆转
+### 分流规则
+- `doctor`: 不消费章节号
+- `open/planning/context`: 消费 `reference_chapter`，产出 `target_chapter`
+- `runtime/status/memory/quality`: 消费 `reference_chapter`
 
-## 不同章节类型的写法重心
+## 写前最小检查
+- `doctor` 确认项目骨架、章节、基础目录是否完整。
+- `open` 汇总 planning review 与 next context，判断下一章是否 `write_ready`。
+- 若 `open` 仍有 `blocking = yes`，不应直接推进正文链。
 
-### 战斗章
-- 重受力、重判断、重资源代价
-- 每一轮交手最好都带来信息或局面变化
+## Runtime 位置
+- `runtime` 是写作中段，不是开书入口。
+- 它基于当前 reference chapter 的 runtime 状态、brief、角色约束与 pressure/payoff 信号生成中间产物。
+- 产物通常落在 `04_gate/chNNN/` 与 `00_memory/retrieval/`。
 
-### 布局章
-- 重试探、条件交换、站位变化
-- 压迫感来自“谁更有牌”，不是谁嗓门更大
+## Rewrite Contract
+- `runtime` 内部若出现 blocking verdict，当前稿件不得直接放行。
+- `DecisionEngine` 必须输出唯一统一的 `RewriteBrief`，不能把多个 evaluator 原话直接拼给 writer。
+- `WriterExecutor` 重写时必须保留 `must_preserve`，只修 `must_change` 与 `rewrite_scope` 指定范围。
+- 连续多轮 blocking 原因不变时，应升级为 `fail`，回退到 brief 或 memory 校准，而不是无穷磨稿。
 
-### 过渡章
-- 重余波、重后果、重新目标
-- 不能写成流水账
+## Quality Boundary
+- `quality` 是统一质量门，但不是完整 runtime writer loop 的替身。
+- `continuity / style / draft/schema` 可独立运行；`character / causality / promise_payoff / pacing / dialogue` 当前默认优先来自 runtime 已产出的 verdict。
+- 若 runtime payload 不存在，`quality` 会对 `character / causality / promise_payoff / pacing / dialogue` 中可轻量推断的部分维度做 fallback，并显式回报 `fallback_runtime_dimensions`。
+- 因此 `quality` 输出里若出现 `missing_runtime_dimensions`，语义是“本轮未拿到对应 runtime verdict”，不是“对应维度无问题”。
 
-### 回收章
-- 优先回应旧伏笔、旧承诺
-- 回收完最好顺手打开一个更大的新问题
+## Status 位置
+- `status` 是写后回看，不负责下一章规划。
+- 它聚合：
+  - `dashboard`
+  - `foreshadow`
+  - `arc`
+  - `timeline`
+  - `repeat`
+- 它回答的是“当前书级健康如何”，不是“下一章要怎么写”。
 
-## 默认执行链
-`Planner -> Writer -> Reviewers -> Writer 修正 -> Reviewer`
+## 最小执行顺序
+推荐顺序：
+1. `doctor`
+2. `open`
+3. `runtime`
+4. `quality` 或 reviewer
+5. `memory`
+6. `status`
 
-### Reviewers 最少集
-- 连续性
-- 因果
-- 语言 / AI 味
-- 风格 / 对白差分
+若只想确认是否可开写：
+1. `check`
 
-## 最小协作协议
+## 什么时候该停下
+出现以下任一情况，应先修再跑全链：
+- `open` 返回 `blocking = yes`
+- `planning_verdict = fail`
+- `quality` 出现 blocking verdict
+- `status` 暴露 overdue foreshadow / stalled arc / timeline break，但正文仍试图继续硬推
 
-### 可单人完成
-- 开书前的轻量 brainstorming
-- 极短润色
-- 只改标题、简介、单段措辞
-- 用户明确只要草稿，不要复核
+## 聚合输出约定
+`write/run/check` 的聚合 JSON 应至少稳定包含：
+- `reference_chapter`
+- `target_chapter`
+- `status`
+- `warning_count`
+- `steps`
+- `report_paths`
 
-### 默认要加复核
-- `/写`
-- `/续写`
-- `/修改`
-- 开篇前 `1-10` 章
-- 牵涉伏笔、时间线、承诺兑现、资源状态的章节
-- 已经出现 AI 味、重复推进、断点没接住、人物口吻漂移的稿子
+其中：
+- `open` step 应显式回传 `target_chapter`
+- `runtime/status/memory/quality` step 应显式回传 `reference_chapter`
 
-一句话判断：  
-**只要这次产出会直接影响连载连续性，就不要只靠 Writer 一把过。**
-
-## 阻断项最小集
-出现以下任一项，默认不能放行：
-- 断点没接住，却硬开新戏
-- 本章没有结果变化
-- 时间线、设定、知情边界冲突
-- 关键转折没有前提，像作者硬推
-- 对白故作含混，读者判不明真实作用
-- 叙述只给抽象判断，不落到具体事和具体后果
-- 与近 `3-5` 章重复同一种推进或钩子
-- 只是补解释、补背景，删掉也不影响后文
-
-## 冲突裁决顺序
-当 reviewer 意见打架时，按这个顺序裁决：
-1. 连续性 / 因果
-2. `Reviewer`
-3. 情绪与钩子
-4. 风格 / 语言
-
-原则：
-- 连续性和因果没过，不进入纯语言收尾
-- 语言建议不能破坏既有设定、时间线和因果
-
-## 什么时候必须加复核
-- 正式 `/写`
-- `/续写`
-- `/修改`
-- 开篇前 1-10 章
-- 牵涉伏笔、时间线、承诺兑现、资源状态的章节
-- 已经出现 AI 味、重复推进、声口漂移的稿子
-
-## 当前兼容执行面
-当前阶段，旧命令仍可用：
+## 兼容命令
+以下旧命令仍可用，但已不再是产品层主入口：
 - `chase planning`
 - `chase context`
 - `chase gate`
@@ -147,24 +131,22 @@
 - `chase memory`
 - `chase run`
 
-但它们在产品层面都属于同一条“写作主链”。后续会收口到 `chase write`。
+建议对外统一记忆为：
+- 开写前：`chase open`
+- 跑主链：`chase write`
+- 做健康扫链：`chase check`
+- 看书级状态：`chase status`
 
-当前已经可用的新入口：
-- `chase quality --project <dir> [--chapter-no <n> | --from <n> --to <n>]`
-- `chase write --project <dir> [--chapter <n>] [--steps <csv>]`
+## 相关文档
+- `docs/core/open-book.md`
+- `docs/core/status-workflow.md`
+- `docs/core/task-contracts.md`
+- `docs/core/revise-diagnostics.md`
 
-其中：
-- `quality` 聚合 `gate + draft + language`
-- `quality` 支持统一子检查协议：`--check all|chapter|draft|language|batch`
-- `write` 仍然作为整条写作流水线入口
-- `write` 默认优先执行：`doctor -> open -> memory -> status`
-- `check` 默认优先执行：`doctor -> open -> status`
-
-## 相关旧资料
-- 章节规划复核：`templates/review/chapter-planning-review.md`
-- 章节质量复核：`templates/review/chapter-quality-review.md`
-- 修章诊断：`docs/core/revise-diagnostics.md`
-- 文风治理：`docs/core/style-governance.md`
-- 输出要求：`docs/core/task-contracts.md`
-- 章节结果/钩子：`templates/launch/chapter-outcome-kit.md`
-- 历史技法旧资料：`references/writing-patterns.md`（兼容层，不再是默认主入口）
+## Runtime Fallback Notes
+- `quality` fallback 只负责兜底暴露明显缺口，不会复刻 `LeadWriter -> RewriteBrief -> WriterExecutor` 的完整 runtime 决策链。
+- `character / causality / promise_payoff / pacing / dialogue` 这些 runtime-first 维度一旦缺少 persisted runtime payload，fallback 只能提供轻量证据，不应被视作完整放行依据。
+- `pacing` fallback 当前会补看段落重复与 progression density；`promise_payoff` fallback 会补看短兑现是否落地，以及章尾有没有继续抬高 long-tail pressure。
+- `character / causality / dialogue` fallback 当前还能补抓 relationship shift 与 information transfer 缺口，例如“已经试出信息，但关系、站位或压制没有继续转手”这类空转。
+- `promise_payoff` 的 fallback 只检查“短兑现是否落地”与“章尾是否继续抬高 long-tail pressure”，不能替代 runtime 对整章承诺债务、回收顺序和升级强度的全链路裁决。
+- 即使 fallback 命中了上述新信号，它仍然只是质量闸门的轻量代偿，不等于重新跑过完整 `LeadWriter` 决策与 rewrite loop。

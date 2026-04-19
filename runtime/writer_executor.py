@@ -214,18 +214,43 @@ class WriterExecutor:
             "protagonist_taboo": protagonist_taboo,
         }
 
+    def _is_counterpart(self, speaker: dict[str, str]) -> bool:
+        role = speaker.get("role", "")
+        relationship = speaker.get("relationship", "")
+        role_text = role.lower()
+        relationship_text = relationship.lower()
+        return any(token in role for token in ("盟友", "搭档", "对手", "反派")) or any(
+            token in role_text or token in relationship_text for token in ("ally", "friend", "opponent", "villain")
+        )
+
     def _line_for(self, speaker: dict[str, str], profile: dict[str, str], intent: str) -> str:
+        goal = speaker.get("goal") or "局面必须被压住"
+        fear = speaker.get("fear") or "局面彻底失控"
+        counterpart_like = self._is_counterpart(speaker)
+
         if intent == "probe":
-            if "盟友" in speaker.get("relationship", "") or "盟友" in speaker.get("role", ""):
-                text = "你先别把话说满，我要先确认你手里到底有什么。"
+            if counterpart_like:
+                text = "你先别把话说满。先把底牌掀一角，我才知道今晚怎么替你兜。"
             else:
-                text = "你别以为自己已经翻盘了，我只看结果。"
+                text = "你盯结果，我盯活路。先让我把话说完。"
         elif intent == "push":
-            text = f"我现在只认一件事，{speaker.get('goal') or '局面必须被压住'}。"
+            text = f"我现在只认一件事，{goal}。"
         elif intent == "fear":
-            text = f"再拖下去，{speaker.get('fear') or '局面彻底失控'}。"
+            if counterpart_like:
+                text = f"再拖半分钟，{fear}。到时候不是你一个人赔进去，是整盘都要一起塌。"
+            else:
+                text = f"怕归怕，{fear}也得先有人顶住。"
+        elif intent == "counter":
+            text = "我还没输。"
+        elif intent == "cost":
+            text = "筹码我收下，账我自己记。"
+        elif intent == "warning":
+            if counterpart_like:
+                text = "系统敢把价码抬到这一步，就说明后面那刀只会更狠。"
+            else:
+                text = "代价我看见了，所以我不会在这里乱伸手。"
         else:
-            text = f"{speaker.get('goal') or '先把主动权拿回来'}。"
+            text = f"{goal}。"
         return f"“{text}”"
 
     def _build_scene_outline(
@@ -315,6 +340,7 @@ class WriterExecutor:
                 f"{counterpart['name']}这趟来，不只是盯人，她真正要确认的是{counterpart_goal}。",
                 f"{counterpart['name']}盯着他，语气里没有缓冲。{self._line_for(counterpart, counterpart_profile, 'probe')}",
                 f"{protagonist['name']}没有立刻抢话，他先把呼吸压稳，再把结论往前送。{self._line_for(protagonist, protagonist_profile, 'push')}",
+                f"{counterpart['name']}没被这句结论安抚，反而把视线压得更低。{self._line_for(counterpart, counterpart_profile, 'counter')}",
                 "这一轮还没有人真正赢下来，但局面已经从失控边缘，被他硬生生拽回了一寸。",
             ]
         if index == 2:
@@ -324,7 +350,8 @@ class WriterExecutor:
                 "他不是单纯顶回去，而是先把现实里的站位换掉，让对面必须跟着他的节奏走。" if is_urban_system else "他不是单纯顶回去，而是先把节奏换掉，让对面必须重新判断。",
                 f"他没有碰那条红线，因为{state['protagonist_taboo']}这件事，比一时的漂亮回顶更重要。",
                 f"{counterpart['name']}话锋更快，明显在试他到底敢不敢再往前走一步。{self._line_for(counterpart, counterpart_profile, 'fear')}",
-                f"{protagonist['name']}只用了一句更硬的结论把节奏截断，逼得对面先停下来算代价。",
+                f"{protagonist['name']}只用了一句更硬的结论把节奏截断。{self._line_for(protagonist, protagonist_profile, 'counter')}",
+                f"这一下不是逞强，而是把局面往自己熟悉的算法里拖。{self._line_for(protagonist, protagonist_profile, 'push')}",
                 "场面上的胜负还没翻盘，但信任已经开始绷紧，这就是本章第一次真正的反击。",
             ]
         if index == 3:
@@ -333,6 +360,7 @@ class WriterExecutor:
                 f"可他也立刻意识到，系统给出的不是白拿的筹码，而是一笔必须回收的{pressure_noun}。",
                 "那感觉像一次冷冰冰的结算，赢面刚到手，账也同时记到了他头上。" if is_urban_system else "那感觉像一记回响，赢面刚到手，账也同时记到了他头上。",
                 f"{counterpart['name']}看见他终于不再只会挨打，眼神里第一次出现了迟疑和重新估价。",
+                f"{protagonist['name']}把那口气压进喉咙里，声音反而更稳。{self._line_for(protagonist, protagonist_profile, 'cost')}",
                 f"这份结果来得够快，却不够轻，越是往前推进，{state['counterpart_fear']}这层阴影就越压得近。",
                 f"{protagonist['name']}把那股冲动摁回去，没有为了把局面做满就越界，他要的是能继续赢下去的空间。",
                 "于是这一场不是圆满兑现，而是带着回响的局部兑现，赢面刚露出来，代价也跟着露头。",
@@ -342,7 +370,8 @@ class WriterExecutor:
             f"{protagonist['name']}听出了那一点犹豫，也看见了更重的东西正往下压：{state['counterpart_fear']}。",
             f"系统没有再给他喘息，只把下一步的{pressure_noun}冷冰冰抛到眼前，逼他在赢面和代价之间立刻做选择。",
             "这不只是情绪上的悬着，而是现实账面上的下一轮结算已经开始倒计时。" if is_urban_system else "这不只是情绪上的悬着，而是下一轮真正的后果已经开始倒计时。",
-            f"{counterpart['name']}低声补了一句，提醒他真正危险的从来不是眼前这一下，而是之后每一次必须继续付出的成本。",
+            f"{counterpart['name']}低声补了一句，提醒他真正危险的从来不是眼前这一下，而是之后每一次必须继续付出的成本。{self._line_for(counterpart, counterpart_profile, 'warning')}",
+            f"{protagonist['name']}没有被这句提醒吓退，只把代价重新记牢。{self._line_for(protagonist, protagonist_profile, 'warning')}",
             f"{protagonist['name']}没有回答得很满，他只是把退路、目标和代价一起记住，准备把下一章的主动权继续抓在手里。",
             f"所以本章的结尾不是收平，而是把更高一级的钩子钉住：局面暂时稳住了，{hook_phrase}。",
         ]
@@ -364,7 +393,10 @@ class WriterExecutor:
         manuscript_paragraphs: list[str] = []
 
         for index, item in enumerate(outline, start=1):
+            scene_summary = self._scene_summary(brief, str(item["summary"]), index)
+            scene_targets = self._scene_targets(brief, index)
             beats = self._scene_beats(protagonist, counterpart, state, genre_profile)
+            beats = self._augment_scene_beats(brief, beats, index)
             draft_lines = self._scene_paragraph_template(
                 index,
                 packet,
@@ -376,11 +408,15 @@ class WriterExecutor:
                 counterpart_goal,
                 genre_profile,
             )
+            draft_lines = self._apply_brief_to_scene_draft(draft_lines, scene_targets, index, genre_profile)
             scenes.append(
                 {
                     "label": item["label"],
                     "title": item["title"],
-                    "summary": item["summary"],
+                    "summary": scene_summary,
+                    "scene_plan_focus": scene_targets["scene_plan"],
+                    "payoff_or_pressure": scene_targets["payoff_or_pressure"],
+                    "success_criterion": scene_targets["success_criterion"],
                     "beats": beats,
                     "draft_lines": draft_lines,
                     "result_type": item["result_type"],
@@ -393,12 +429,83 @@ class WriterExecutor:
                 manuscript_paragraphs.append("")
         return scenes, manuscript_paragraphs
 
+    def _scene_summary(self, brief: ChapterBrief, fallback: str, index: int) -> str:
+        scene_index = index - 1
+        if 0 <= scene_index < len(brief.scene_plan):
+            scene_plan = brief.scene_plan[scene_index].strip()
+            if scene_plan and scene_plan != fallback.strip():
+                return f"{scene_plan} {fallback}".strip()
+            if scene_plan:
+                return scene_plan
+        return fallback
+
+    def _scene_targets(self, brief: ChapterBrief, index: int) -> dict[str, str]:
+        scene_index = index - 1
+        scene_plan = brief.scene_plan[scene_index].strip() if 0 <= scene_index < len(brief.scene_plan) else ""
+        payoff_or_pressure = (
+            brief.required_payoff_or_pressure[scene_index].strip()
+            if 0 <= scene_index < len(brief.required_payoff_or_pressure)
+            else (brief.required_payoff_or_pressure[0].strip() if brief.required_payoff_or_pressure else "")
+        )
+        success_criterion = (
+            brief.success_criteria[scene_index].strip()
+            if 0 <= scene_index < len(brief.success_criteria)
+            else (brief.success_criteria[0].strip() if brief.success_criteria else "")
+        )
+        return {
+            "scene_plan": scene_plan,
+            "payoff_or_pressure": payoff_or_pressure,
+            "success_criterion": success_criterion,
+        }
+
+    def _apply_brief_to_scene_draft(
+        self,
+        draft_lines: list[str],
+        scene_targets: dict[str, str],
+        index: int,
+        genre_profile: dict[str, str],
+    ) -> list[str]:
+        updated = list(draft_lines)
+        scene_plan = scene_targets["scene_plan"]
+        payoff_or_pressure = scene_targets["payoff_or_pressure"]
+        success_criterion = scene_targets["success_criterion"]
+        pressure_noun = genre_profile["pressure_noun"]
+
+        if scene_plan:
+            updated.insert(1 if updated else 0, f"这一场先不扩支线，只沿着既定推进：{scene_plan}。")
+        if payoff_or_pressure:
+            insert_at = 3 if len(updated) >= 3 else len(updated)
+            updated.insert(insert_at, f"这一拍必须正面处理{payoff_or_pressure}，不然新的{pressure_noun}只会继续上抬。")
+        if success_criterion:
+            closing_line = f"所以这一场不能只停在气氛上，必须把{success_criterion}压成看得见的结果。"
+            if index >= 4:
+                updated.append(closing_line)
+            else:
+                updated.insert(len(updated) - 1 if updated else 0, closing_line)
+        return updated
+
+    def _augment_scene_beats(self, brief: ChapterBrief, beats: list[str], index: int) -> list[str]:
+        augmented = list(beats)
+        scene_index = index - 1
+        if 0 <= scene_index < len(brief.required_payoff_or_pressure):
+            augmented.append(f"required_payoff_or_pressure: {brief.required_payoff_or_pressure[scene_index]}")
+        elif brief.required_payoff_or_pressure:
+            augmented.append(f"required_payoff_or_pressure: {brief.required_payoff_or_pressure[0]}")
+        if index == 1 and brief.must_not_repeat:
+            augmented.extend(f"must_not_repeat: {item}" for item in brief.must_not_repeat[:2])
+        if index == 1 and brief.success_criteria:
+            augmented.extend(f"success_criteria: {item}" for item in brief.success_criteria[:2])
+        return augmented
+
     def _scene_cards(self, scenes: list[dict[str, object]]) -> list[dict[str, str]]:
         return [
             {
                 "scene": str(item["label"]),
                 "title": str(item["title"]),
                 "summary": str(item["summary"]),
+                "scene_plan_focus": str(item.get("scene_plan_focus", "")),
+                "payoff_or_pressure": str(item.get("payoff_or_pressure", "")),
+                "success_criterion": str(item.get("success_criterion", "")),
                 "result_type": str(item["result_type"]),
                 "cost_type": str(item["cost_type"]),
                 "hook_type": str(item["hook_type"]),
@@ -486,6 +593,9 @@ class WriterExecutor:
                 [
                     "",
                     "### Scene Card",
+                    f"- scene_plan_focus: {item.get('scene_plan_focus', '')}",
+                    f"- payoff_or_pressure: {item.get('payoff_or_pressure', '')}",
+                    f"- success_criterion: {item.get('success_criterion', '')}",
                     f"- result_type: {item['result_type']}",
                     f"- cost_type: {item['cost_type']}",
                     f"- hook_type: {item['hook_type']}",
@@ -570,6 +680,9 @@ class WriterExecutor:
                 [
                     f"### {item['label']} {item['title']}",
                     f"- summary: {item['summary']}",
+                    f"- scene_plan_focus: {item.get('scene_plan_focus', '') or 'none'}",
+                    f"- payoff_or_pressure: {item.get('payoff_or_pressure', '') or 'none'}",
+                    f"- success_criterion: {item.get('success_criterion', '') or 'none'}",
                     f"- result_type: {item['result_type']}",
                     f"- cost_type: {item['cost_type']}",
                     f"- hook_type: {item['hook_type']}",
@@ -637,16 +750,11 @@ class WriterExecutor:
     ) -> dict[str, object]:
         draft_dir = self._draft_dir(project_dir, brief.chapter)
         draft_dir.mkdir(parents=True, exist_ok=True)
-
+        rewrite_handoff_path: Path | None = None
+        rewrite_text = ""
         if decision.decision == "revise":
             rewrite_handoff_path = draft_dir / "rewrite_handoff.md"
             rewrite_text = self._build_rewrite_handoff(brief, decision)
-            rewrite_handoff_path.write_text(rewrite_text + "\n", encoding="utf-8")
-            return {
-                "status": "pending-human-rewrite",
-                "rewrite_handoff_path": rewrite_handoff_path.as_posix(),
-                "rewrite_handoff_preview": "\n".join(rewrite_text.splitlines()[:8]),
-            }
 
         protagonist, counterpart = self._speaker_profiles(project_dir)
         protagonist_profile = self._role_voice_profile(protagonist)
@@ -713,14 +821,24 @@ class WriterExecutor:
         blueprint_path.write_text(blueprint_text + "\n", encoding="utf-8")
         editorial_summary_path.write_text(editorial_summary_text + "\n", encoding="utf-8")
         manuscript_path.write_text(manuscript_text + "\n", encoding="utf-8")
+        if rewrite_handoff_path is not None:
+            rewrite_handoff_path.write_text(rewrite_text + "\n", encoding="utf-8")
 
         return {
-            "status": "ready-human-review" if dry_run else "drafted-runtime-output",
+            "project": project_dir.as_posix(),
+            "chapter": brief.chapter,
+            "status": (
+                "rewritten-runtime-output"
+                if decision.decision == "revise"
+                else ("ready-human-review" if dry_run else "drafted-runtime-output")
+            ),
             "draft_path": draft_path.as_posix(),
             "review_notes_path": review_notes_path.as_posix(),
             "blueprint_path": blueprint_path.as_posix(),
             "editorial_summary_path": editorial_summary_path.as_posix(),
             "manuscript_path": manuscript_path.as_posix(),
+            "rewrite_handoff_path": "" if rewrite_handoff_path is None else rewrite_handoff_path.as_posix(),
+            "rewrite_handoff_preview": "\n".join(rewrite_text.splitlines()[:8]) if rewrite_text else "",
             "draft_preview": "\n".join(draft_text.splitlines()[:12]),
             "review_notes_preview": "\n".join(review_text.splitlines()[:12]),
             "blueprint_preview": "\n".join(blueprint_text.splitlines()[:12]),

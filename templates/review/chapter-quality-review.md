@@ -4,9 +4,7 @@
 把连续性、因果、风格一致性、语言反 AI 味合成一个 review 入口。
 
 ## 兼容旧模板
-- `templates/continuity-report.md`
-- `templates/language-anti-ai-review.md`
-- `templates/style-consistency-review.md`
+- 连贯性、语言 anti-AI、风格一致性检查已合并进当前套件，不再依赖根层旧模板。
 
 ## 建议复核顺序
 1. 先整章顺读，不要先抓关键词

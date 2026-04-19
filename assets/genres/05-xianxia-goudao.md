@@ -3,6 +3,7 @@
 **触发条件**：只有在规划或写作「仙侠苟道/稳健流」题材时，才加载此规则。
 
 **补读导航**：
+- 默认资料入口：`../../docs/assets/goudao-xianxia-reference-map.md`
 - 专项库：`../../references/goudao-chapter-card-library.md` | `../../references/goudao-character-learning.md` | `../../references/goudao-volume-route-library.md` | `../../references/goudao-negative-patterns.md`
 - 钩子/结果路线：`../../references/hook-result-learning.md`
 - 本地语料：`../../references/local-corpus-learning.md`（苟道部分）

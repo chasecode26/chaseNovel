@@ -3,6 +3,7 @@
 **触发条件**：只有在规划或写作「盗墓 / 摸金 / 民国奇诡 / 墓下冒险」题材时，才加载此规则。
 
 **补读导航**：
+- 默认资料入口：`../../docs/assets/daomu-republic-reference-map.md`
 - 专项参考：`../../references/daomu-writing-notes.md`
 - 开篇校准：`../../references/opening-sample-library.md` | `../../references/title-and-selling.md`
 - 情绪与语言：`../../references/chapter-emotion-and-ai-check.md` | `../../references/language-governance.md`

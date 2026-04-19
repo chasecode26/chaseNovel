@@ -8,7 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from novel_utils import has_placeholder, read_text
+from novel_utils import derive_plan_target_words, has_placeholder, read_text
 
 
 REQUIRED_LAUNCH_FILES = [
@@ -22,10 +22,15 @@ REQUIRED_LAUNCH_FILES = [
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Open-book entry: launch-readiness scan by default, chapter planning/context when --chapter is set."
+        description="Open-book entry: launch-readiness scan by default, chapter planning/context when --chapter or --target-chapter is set."
     )
     parser.add_argument("--project", required=True, help="Path to the novel project root")
-    parser.add_argument("--chapter", type=int, help="Target chapter number; when set, delegate to chapter planning/context preparation")
+    parser.add_argument(
+        "--chapter",
+        type=int,
+        help="Existing drafted current chapter number. Open-book planning/context targets the next chapter by default.",
+    )
+    parser.add_argument("--target-chapter", type=int, help="Explicit target chapter number")
     parser.add_argument("--dry-run", action="store_true", help="Do not write output files")
     parser.add_argument("--json", action="store_true", help="Print JSON result")
     return parser.parse_args()
@@ -33,7 +38,11 @@ def parse_args() -> argparse.Namespace:
 
 def run_planning_context(args: argparse.Namespace) -> int:
     script_path = Path(__file__).with_name("planning_context.py")
-    cmd = [sys.executable, str(script_path), "--project", args.project, "--chapter", str(args.chapter)]
+    cmd = [sys.executable, str(script_path), "--project", args.project]
+    if args.chapter is not None:
+        cmd.extend(["--chapter", str(args.chapter)])
+    if args.target_chapter is not None:
+        cmd.extend(["--target-chapter", str(args.target_chapter)])
     if args.dry_run:
         cmd.append("--dry-run")
     if args.json:
@@ -43,10 +52,16 @@ def run_planning_context(args: argparse.Namespace) -> int:
 
 
 def check_plan(plan_text: str, warnings: list[str], blockers: list[str]) -> None:
-    required_labels = ["书名", "题材", "核心卖点", "预计总字数"]
+    required_labels = ["书名", "题材", "核心卖点"]
     for label in required_labels:
         if f"- {label}：" not in plan_text and f"- {label}:" not in plan_text:
             blockers.append(f"`plan.md` 缺少“{label}”，开书锚点不足。")
+    if "预计总字数" not in plan_text:
+        derived_target_words = derive_plan_target_words(plan_text)
+        if derived_target_words <= 0:
+            blockers.append("`plan.md` 缺少“预计总字数”，且无法从章节字数约束与卷范围推导总字数。")
+        else:
+            warnings.append(f"`plan.md` 未直写预计总字数，当前按卷范围推导约 `{derived_target_words}` 字。")
     if has_placeholder(plan_text):
         warnings.append("`plan.md` 仍含占位符，说明开书信息还没有填实。")
 
@@ -165,7 +180,7 @@ def main() -> int:
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     args = parse_args()
-    if args.chapter is not None:
+    if args.chapter is not None or args.target_chapter is not None:
         return run_planning_context(args)
 
     project_dir = Path(args.project).resolve()

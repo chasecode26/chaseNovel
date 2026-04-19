@@ -71,6 +71,40 @@ def parse_rows(path: Path) -> list[dict[str, object]]:
     return rows
 
 
+def load_schema_rows(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        return []
+    try:
+        payload = json.loads(read_text(path))
+    except json.JSONDecodeError:
+        return []
+    if isinstance(payload, dict):
+        payload = payload.get("threads", [])
+    if not isinstance(payload, list):
+        return []
+    rows: list[dict[str, object]] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        item_id = str(item.get("id", "")).strip()
+        if not item_id:
+            continue
+        rows.append(
+            {
+                "id": item_id,
+                "seed_chapter": int(item.get("seed_chapter", 0) or 0),
+                "content": str(item.get("content", "")).strip(),
+                "who_knows": str(item.get("who_knows", "")).strip(),
+                "trigger_condition": str(item.get("trigger_condition", "")).strip(),
+                "invalid_condition": str(item.get("invalid_condition", "")).strip(),
+                "due_chapter": item.get("due_chapter"),
+                "priority": str(item.get("priority", "unknown")).strip() or "unknown",
+                "status": str(item.get("status", "active")).strip() or "active",
+            }
+        )
+    return rows
+
+
 def extract_number(text: str) -> int | None:
     digits = "".join(ch for ch in text if ch.isdigit())
     return int(digits) if digits else None
@@ -157,6 +191,8 @@ def main() -> int:
     target_chapter = args.chapter or detect_current_chapter(state_text)
     foreshadow_path = project_dir / "00_memory" / "foreshadowing.md"
     rows = parse_rows(foreshadow_path) if foreshadow_path.exists() else []
+    if not rows:
+        rows = load_schema_rows(project_dir / "00_memory" / "schema" / "foreshadowing.json")
     groups = classify_items(rows, target_chapter)
 
     reports_dir = project_dir / "05_reports"
@@ -172,7 +208,7 @@ def main() -> int:
         "warnings": [],
         "warning_count": 0,
     }
-    if not rows:
+    if not rows and target_chapter >= 3:
         payload["warnings"].append("伏笔表为空，当前没有可调度条目。")
     if groups["overdue"]:
         payload["warnings"].append(f"存在 {len(groups['overdue'])} 条超期伏笔，应优先处理。")

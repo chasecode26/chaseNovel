@@ -37,17 +37,18 @@ STEP_MAP = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run a local chaseNovel workflow sequence. When --chapter is set, pass the number of an already existing drafted chapter, not the next chapter you plan to write."
+        description="Run a local chaseNovel workflow sequence with explicit reference/target chapter semantics."
     )
     parser.add_argument("--project", required=True, help="Path to the novel project root")
     parser.add_argument(
         "--chapter",
         type=int,
-        help="Existing drafted chapter number for context/memory/foreshadow steps. Do not pass the next unwritten chapter here.",
+        help="Existing drafted reference chapter number. Open/planning/context target the next chapter by default.",
     )
+    parser.add_argument("--target-chapter", type=int, help="Explicit target chapter number for open/planning/context steps")
     parser.add_argument(
         "--steps",
-        default="doctor,open,runtime,status",
+        default="doctor,open,runtime,quality,status",
         help="Comma-separated workflow steps",
     )
     parser.add_argument("--json", action="store_true", help="Print JSON result")
@@ -55,9 +56,25 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run_step(repo_root: Path, step: str, project: Path, chapter: int | None, dry_run: bool) -> dict[str, object]:
+def resolve_target_chapter(reference_chapter: int | None, explicit_target: int | None) -> int | None:
+    if explicit_target is not None:
+        return explicit_target
+    if reference_chapter is not None:
+        return reference_chapter + 1
+    return None
+
+
+def run_step(
+    repo_root: Path,
+    step: str,
+    project: Path,
+    reference_chapter: int | None,
+    target_chapter: int | None,
+    dry_run: bool,
+) -> dict[str, object]:
     if step == "runtime":
-        runtime_payload = LeadWriterRuntime().run(project, chapter or 0, dry_run=dry_run)
+        runtime_chapter = reference_chapter or 0
+        runtime_payload = LeadWriterRuntime().run(project, runtime_chapter, dry_run=dry_run)
         return {
             "step": "runtime",
             "returncode": 0,
@@ -66,14 +83,20 @@ def run_step(repo_root: Path, step: str, project: Path, chapter: int | None, dry
             "warning_count": len(runtime_payload.get("context", {}).get("warnings", [])),
             "warnings": runtime_payload.get("context", {}).get("warnings", []),
             "report_paths": runtime_payload.get("report_paths", {}),
+            "reference_chapter": runtime_chapter,
             "summary": runtime_payload,
         }
     script_name = STEP_MAP[step]
     command = ["--project", project.as_posix()]
-    if chapter is not None and step in {"open", "planning", "context", "memory", "status", "foreshadow"}:
-        command.extend(["--chapter", str(chapter)])
-    if step in {"quality", "gate", "draft", "audit"} and chapter is not None:
-        command.extend(["--chapter-no", str(chapter)])
+    if step in {"open", "planning", "context"}:
+        if reference_chapter is not None:
+            command.extend(["--chapter", str(reference_chapter)])
+        if target_chapter is not None:
+            command.extend(["--target-chapter", str(target_chapter)])
+    if reference_chapter is not None and step in {"memory", "status", "foreshadow"}:
+        command.extend(["--chapter", str(reference_chapter)])
+    if step in {"quality", "gate", "draft", "audit"} and reference_chapter is not None:
+        command.extend(["--chapter-no", str(reference_chapter)])
     if step == "foreshadow":
         command.extend(["--focus", "foreshadow"])
     if step == "arc":
@@ -96,6 +119,11 @@ def run_step(repo_root: Path, step: str, project: Path, chapter: int | None, dry
         "warnings": parsed.get("warnings", []),
         "report_paths": parsed.get("report_paths", {}),
     }
+    if step in {"open", "planning", "context"}:
+        payload["reference_chapter"] = reference_chapter
+        payload["target_chapter"] = target_chapter
+    elif step in {"runtime", "quality", "gate", "draft", "audit", "memory", "status", "foreshadow"}:
+        payload["reference_chapter"] = reference_chapter
     payload["summary"] = {
         key: value
         for key, value in parsed.items()
@@ -131,26 +159,255 @@ def collect_report_paths(steps: list[dict[str, object]]) -> dict[str, dict[str, 
     return report_paths
 
 
+def find_step(steps: list[dict[str, object]], step_name: str) -> dict[str, object]:
+    for item in steps:
+        if str(item.get("step", "")).strip() == step_name:
+            return item
+    return {}
+
+
+def to_string_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def has_meaningful_value(value: object) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, list):
+        return len(value) > 0
+    if isinstance(value, dict):
+        return len(value) > 0
+    return True
+
+
+def build_normalized_step_fields(step: dict[str, object]) -> dict[str, object]:
+    normalized: dict[str, object] = {}
+    summary = step.get("summary", {})
+    if not isinstance(summary, dict):
+        return normalized
+
+    step_name = str(step.get("step", "")).strip()
+    if step_name in {"open", "planning", "context"}:
+        normalized.update(
+            {
+                "target_chapter": summary.get("target_chapter"),
+                "planning_status": str(summary.get("planning_status", "")).strip(),
+                "planning_verdict": str(summary.get("planning_verdict", "")).strip(),
+                "planning_blockers": to_string_list(summary.get("planning_blockers", [])),
+                "planning_warnings": to_string_list(summary.get("planning_warnings", [])),
+                "context_warnings": to_string_list(summary.get("context_warnings", [])),
+                "blocking": str(summary.get("blocking", "")).strip(),
+                "write_ready": str(summary.get("write_ready", "")).strip(),
+                "readiness_summary": str(summary.get("readiness_summary", "")).strip(),
+            }
+        )
+    elif step_name in {"quality", "gate", "draft", "audit", "batch"}:
+        normalized.update(
+            {
+                "final_release": str(summary.get("final_release", "")).strip(),
+                "blocking_dimensions": to_string_list(summary.get("blocking_dimensions", [])),
+                "advisory_dimensions": to_string_list(summary.get("advisory_dimensions", [])),
+                "runtime_verdict_source": str(summary.get("runtime_verdict_source", "")).strip(),
+                "loaded_runtime_dimensions": to_string_list(summary.get("loaded_runtime_dimensions", [])),
+                "fallback_runtime_dimensions": to_string_list(summary.get("fallback_runtime_dimensions", [])),
+                "missing_runtime_dimensions": to_string_list(summary.get("missing_runtime_dimensions", [])),
+                "verdicts": summary.get("verdicts", []),
+            }
+        )
+    elif step_name == "runtime":
+        decision = summary.get("decision", {})
+        draft = summary.get("draft", {})
+        if isinstance(decision, dict):
+            normalized.update(
+                {
+                    "runtime_decision": str(decision.get("decision", "")).strip(),
+                    "blocking_dimensions": to_string_list(decision.get("blocking_dimensions", [])),
+                    "advisory_dimensions": to_string_list(decision.get("advisory_dimensions", [])),
+                }
+            )
+        if isinstance(draft, dict):
+            normalized["draft_status"] = str(draft.get("status", "")).strip()
+    elif step_name in {"status", "foreshadow", "arc", "timeline", "repeat", "dashboard"}:
+        runtime_signals = summary.get("runtime_signals", {})
+        if isinstance(runtime_signals, dict):
+            normalized.update(
+                {
+                    "runtime_decision": str(runtime_signals.get("decision", "")).strip(),
+                    "blocking_dimensions": to_string_list(runtime_signals.get("blocking_dimensions", [])),
+                    "advisory_dimensions": to_string_list(runtime_signals.get("advisory_dimensions", [])),
+                    "attention_queue": to_string_list(runtime_signals.get("attention_queue", [])),
+                }
+            )
+    elif step_name == "memory":
+        normalized["recommended_apply_order"] = to_string_list(summary.get("recommended_apply_order", []))
+    return {key: value for key, value in normalized.items() if has_meaningful_value(value)}
+
+
+def enrich_steps_with_normalized_fields(steps: list[dict[str, object]]) -> list[dict[str, object]]:
+    enriched: list[dict[str, object]] = []
+    for item in steps:
+        merged = dict(item)
+        merged.update(build_normalized_step_fields(item))
+        enriched.append(merged)
+    return enriched
+
+
+def build_pipeline_summary(results: list[dict[str, object]]) -> dict[str, object]:
+    open_step = find_step(results, "open")
+    quality_step = find_step(results, "quality")
+    runtime_step = find_step(results, "runtime")
+    status_step = find_step(results, "status")
+
+    summary: dict[str, object] = {
+        "write_ready": str(open_step.get("write_ready", "")).strip(),
+        "open_blocking": str(open_step.get("blocking", "")).strip(),
+        "planning_verdict": str(open_step.get("planning_verdict", "")).strip(),
+        "planning_status": str(open_step.get("planning_status", "")).strip(),
+        "quality_final_release": str(quality_step.get("final_release", "")).strip(),
+        "quality_runtime_verdict_source": str(quality_step.get("runtime_verdict_source", "")).strip(),
+        "quality_loaded_runtime_dimensions": to_string_list(quality_step.get("loaded_runtime_dimensions", [])),
+        "quality_fallback_runtime_dimensions": to_string_list(quality_step.get("fallback_runtime_dimensions", [])),
+        "quality_missing_runtime_dimensions": to_string_list(quality_step.get("missing_runtime_dimensions", [])),
+        "runtime_decision": str(runtime_step.get("runtime_decision", "")).strip(),
+        "draft_status": str(runtime_step.get("draft_status", "")).strip(),
+        "status_runtime_decision": str(status_step.get("runtime_decision", "")).strip(),
+        "attention_queue": to_string_list(status_step.get("attention_queue", [])),
+    }
+
+    blocking_dimensions: list[str] = []
+    advisory_dimensions: list[str] = []
+    for step in results:
+        blocking_dimensions.extend(to_string_list(step.get("blocking_dimensions", [])))
+        advisory_dimensions.extend(to_string_list(step.get("advisory_dimensions", [])))
+
+    dedup_blocking: list[str] = []
+    seen_blocking: set[str] = set()
+    for item in blocking_dimensions:
+        if item in seen_blocking:
+            continue
+        seen_blocking.add(item)
+        dedup_blocking.append(item)
+
+    dedup_advisory: list[str] = []
+    seen_advisory: set[str] = set()
+    for item in advisory_dimensions:
+        if item in seen_advisory:
+            continue
+        seen_advisory.add(item)
+        dedup_advisory.append(item)
+
+    summary["blocking_dimensions"] = dedup_blocking
+    summary["advisory_dimensions"] = dedup_advisory
+    summary["final_release"] = derive_pipeline_final_release(summary)
+    return {key: value for key, value in summary.items() if has_meaningful_value(value)}
+
+
+def derive_pipeline_final_release(summary: dict[str, object]) -> str:
+    open_blocking = str(summary.get("open_blocking", "")).strip().lower()
+    planning_verdict = str(summary.get("planning_verdict", "")).strip().lower()
+    runtime_decision = str(summary.get("runtime_decision", "")).strip().lower()
+    quality_final_release = str(summary.get("quality_final_release", "")).strip().lower()
+    status_runtime_decision = str(summary.get("status_runtime_decision", "")).strip().lower()
+    blocking_dimensions = to_string_list(summary.get("blocking_dimensions", []))
+
+    if open_blocking == "yes":
+        return "revise"
+    if planning_verdict == "fail":
+        return "revise"
+    if runtime_decision in {"fail", "revise"}:
+        return "revise"
+    if quality_final_release == "revise":
+        return "revise"
+    if status_runtime_decision in {"fail", "revise"}:
+        return "revise"
+    if blocking_dimensions:
+        return "revise"
+    return "pass"
+
+
 def render_markdown(payload: dict[str, object]) -> str:
+    pipeline_summary = payload.get("pipeline_summary", {})
+    if not isinstance(pipeline_summary, dict):
+        pipeline_summary = {}
+
     lines = [
-        "# 流水线汇总报告",
+        "# Pipeline Report",
         "",
-        f"- 项目：`{payload['project']}`",
-        f"- 生成时间：`{payload['generated_at']}`",
-        f"- 总体状态：`{payload['status'].upper()}`",
-        f"- 失败步骤数：`{payload['failed']}`",
-        f"- 预警数：`{payload['warning_count']}`",
+        f"- project: `{payload['project']}`",
+        f"- generated_at: `{payload['generated_at']}`",
+        f"- status: `{payload['status'].upper()}`",
+        f"- final_release: `{payload.get('final_release', '') or 'n/a'}`",
+        f"- failed_steps: `{payload['failed']}`",
+        f"- warning_count: `{payload['warning_count']}`",
         "",
-        "## 步骤结果",
+        "## Aggregate Summary",
     ]
+    if pipeline_summary:
+        if str(pipeline_summary.get("write_ready", "")).strip():
+            lines.append(f"- write_ready=`{pipeline_summary['write_ready']}`")
+        if str(pipeline_summary.get("open_blocking", "")).strip():
+            lines.append(f"- open_blocking=`{pipeline_summary['open_blocking']}`")
+        if str(pipeline_summary.get("planning_verdict", "")).strip():
+            lines.append(f"- planning_verdict=`{pipeline_summary['planning_verdict']}`")
+        if str(pipeline_summary.get("planning_status", "")).strip():
+            lines.append(f"- planning_status=`{pipeline_summary['planning_status']}`")
+        if str(pipeline_summary.get("runtime_decision", "")).strip():
+            lines.append(f"- runtime_decision=`{pipeline_summary['runtime_decision']}`")
+        if str(pipeline_summary.get("quality_final_release", "")).strip():
+            lines.append(f"- quality_final_release=`{pipeline_summary['quality_final_release']}`")
+        if str(pipeline_summary.get("quality_runtime_verdict_source", "")).strip():
+            lines.append(
+                f"- quality_runtime_verdict_source=`{pipeline_summary['quality_runtime_verdict_source']}`"
+            )
+        if str(pipeline_summary.get("final_release", "")).strip():
+            lines.append(f"- final_release=`{pipeline_summary['final_release']}`")
+        if str(pipeline_summary.get("status_runtime_decision", "")).strip():
+            lines.append(f"- status_runtime_decision=`{pipeline_summary['status_runtime_decision']}`")
+        if str(pipeline_summary.get("draft_status", "")).strip():
+            lines.append(f"- draft_status=`{pipeline_summary['draft_status']}`")
+
+        blocking_dimensions = to_string_list(pipeline_summary.get("blocking_dimensions", []))
+        advisory_dimensions = to_string_list(pipeline_summary.get("advisory_dimensions", []))
+        attention_queue = to_string_list(pipeline_summary.get("attention_queue", []))
+        if blocking_dimensions:
+            lines.append(f"- blocking_dimensions=`{', '.join(blocking_dimensions)}`")
+        if advisory_dimensions:
+            lines.append(f"- advisory_dimensions=`{', '.join(advisory_dimensions)}`")
+        quality_loaded_runtime_dimensions = to_string_list(pipeline_summary.get("quality_loaded_runtime_dimensions", []))
+        quality_fallback_runtime_dimensions = to_string_list(
+            pipeline_summary.get("quality_fallback_runtime_dimensions", [])
+        )
+        quality_missing_runtime_dimensions = to_string_list(pipeline_summary.get("quality_missing_runtime_dimensions", []))
+        if quality_loaded_runtime_dimensions:
+            lines.append(f"- quality_loaded_runtime_dimensions=`{', '.join(quality_loaded_runtime_dimensions)}`")
+        if quality_fallback_runtime_dimensions:
+            lines.append(
+                f"- quality_fallback_runtime_dimensions=`{', '.join(quality_fallback_runtime_dimensions)}`"
+            )
+        if quality_missing_runtime_dimensions:
+            lines.append(
+                f"- quality_missing_runtime_dimensions=`{', '.join(quality_missing_runtime_dimensions)}`"
+            )
+        if attention_queue:
+            lines.append("- attention_queue:")
+            lines.extend([f"  - {item}" for item in attention_queue])
+    else:
+        lines.append("- none")
+
+    lines.extend(["", "## Step Results"])
     for item in payload["steps"]:
         lines.append(f"- `{item['step']}` -> rc={item['returncode']} / status={item['status']} / warnings={item['warning_count']}")
-    lines.extend(["", "## 预警"])
+
+    lines.extend(["", "## Warnings"])
     warnings = payload.get("warnings", [])
     if warnings:
         lines.extend([f"- {warning}" for warning in warnings])
     else:
-        lines.append("- 无")
+        lines.append("- none")
     return "\n".join(lines) + "\n"
 
 
@@ -159,6 +416,7 @@ def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parent.parent
     project_dir = Path(args.project).resolve()
+    target_chapter = resolve_target_chapter(args.chapter, args.target_chapter)
     steps = [item.strip() for item in args.steps.split(",") if item.strip()]
     invalid_steps = [item for item in steps if item not in STEP_MAP]
     if invalid_steps:
@@ -175,12 +433,15 @@ def main() -> int:
             print(payload["error"])
             print("available=" + ",".join(payload["available_steps"]))
         return 1
-    results = [run_step(repo_root, step, project_dir, args.chapter, args.dry_run) for step in steps]
+    results = [run_step(repo_root, step, project_dir, args.chapter, target_chapter, args.dry_run) for step in steps]
+    results = enrich_steps_with_normalized_fields(results)
     failed = [item for item in results if int(item["returncode"]) != 0]
     report_dir = project_dir / "05_reports"
     payload = {
         "project": project_dir.as_posix(),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "reference_chapter": args.chapter,
+        "target_chapter": target_chapter,
         "steps": results,
         "failed": len(failed),
         "status": summarize_status(results, len(failed)),
@@ -193,6 +454,8 @@ def main() -> int:
         "step_reports": collect_report_paths(results),
     }
     payload["warning_count"] = len(payload["warnings"])
+    payload["pipeline_summary"] = build_pipeline_summary(results)
+    payload["final_release"] = str(payload["pipeline_summary"].get("final_release", "")).strip() or "pass"
     if not args.dry_run:
         report_dir.mkdir(parents=True, exist_ok=True)
         (report_dir / "pipeline_report.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

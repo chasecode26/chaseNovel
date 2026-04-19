@@ -34,6 +34,9 @@ class ChapterBrief:
     allowed_threads: list[str]
     disallowed_moves: list[str]
     voice_constraints: list[str]
+    required_payoff_or_pressure: list[str] = field(default_factory=list)
+    scene_plan: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

@@ -1,163 +1,107 @@
 # chaseNovel
 
-`chaseNovel` 是一套面向中文网文长篇连载的写作引擎仓库。
+`chaseNovel` 是一套面向中文网文长篇连载的本地写作引擎仓库。
+它关注的不是“随手写一章”，而是让项目在几十章、几百章后仍能稳住节奏、设定、人物、伏笔、章尾钩子与书级状态。
 
-它解决的不是“随手给我一个 prompt 写一章”，而是让项目在几十章、几百章、甚至百万字推进后，仍能稳住：
-- 节奏
-- 设定
-- 人物
-- 伏笔
-- 章尾钩子
-- 文风与对白差分
-- 追读动力
+## 主入口
 
-## 当前重构方向
+默认只看四条主链：
+1. 开书：`docs/core/open-book.md`
+2. 写作：`docs/core/write-workflow.md`
+3. 质量：`docs/core/revise-diagnostics.md` / `docs/core/task-contracts.md`
+4. 状态：`docs/core/status-workflow.md`
 
-当前仓库正在从“大量平铺资料 + 多个平级命令”收敛为：
+CLI 主入口：
 
-- **通用长篇连载写作引擎**
-- **可插拔题材资产包**
+```bash
+chase open --project <dir> [--chapter <n> | --target-chapter <n>]
+chase quality --project <dir> [--chapter-no <n> | --from <n> --to <n>]
+chase write --project <dir> [--chapter <n> | --target-chapter <n>] [--steps <csv>]
+chase status --project <dir> [--chapter <n>] [--focus <all|dashboard|foreshadow|arc|timeline|repeat>]
+chase check --project <dir> [--chapter <n> | --target-chapter <n>]
+```
 
-第一优先级始终是：**保证小说写作质量**。
+兼容命令仍可用，但不再作为默认心智入口。
 
-## 现在最重要的两条主链路
+## 当前运行事实
 
-### 1. 开书
-- 入口：`docs/core/open-book.md`
-- 目标：题材定位、卖点、黄金三章、卷纲、阶段目标、书级风格与 voice
+- `scripts/workflow_runner.py` 是现行 shipped 聚合编排入口。
+- `write / run / check` 都走聚合链。
+- `check` 当前默认链路是 `doctor,open,quality,status`，保持 dry-run，但会显式补做 quality 关卡。
+- `open / planning / context` 负责下一章准备。
+- `status / memory / runtime / quality` 负责当前参考章检查或回写。
+- `engine_runner` 只是未来可选重命名方向，不是当前主链入口。
 
-### 2. 写作
-- 入口：`docs/core/write-workflow.md`
-- 目标：锚定上下文 -> 起稿 -> 复核 -> 回写记忆 -> 书级健康检查
+## 章节语义
 
-### 3. 状态 / 健康
-- 入口：`docs/core/status-workflow.md`
-- 目标：统一查看 dashboard / 伏笔 / 角色弧 / 时间线 / 重复推进风险
+- `--chapter <n>` 在聚合链中表示当前已经写完的 reference chapter。
+- `open / planning / context` 会把它视为“当前已写章节”，默认准备 `target_chapter = n + 1`。
+- 需要跳章、补章、回头指定目标章时，显式传 `--target-chapter <m>`。
+- `status / runtime / memory / quality` 不会自动把 `--chapter` 加一。
 
 ## 核心文档
-- `SKILL.md`：技能主入口
-- `docs/core/cli-quickstart.md`：CLI 快速上手
-- `docs/core/open-book.md`：开书主链路
-- `docs/core/write-workflow.md`：写作主链路
-- `docs/core/revise-diagnostics.md`：改写与诊断
-- `docs/core/style-governance.md`：文风治理
-- `docs/core/status-workflow.md`：状态与书级健康
-- `docs/core/task-contracts.md`：任务输出契约
-- `docs/core/migration-notes.md`：兼容迁移说明
-- `docs/core/legacy-cleanup-candidates.md`：兼容层清理候选清单
-- `docs/core/refactor-summary.md`：本轮重构总结
-- `docs/core/final-optimization-todo.md`：剩余优化待办清单
-- `docs/assets/genre-index.md`：题材资产入口
 
-## 资产层
-- `assets/genres/`：题材资产包
-- `assets/substyles/`：子风格资产
-- `assets/common/`：公共风格资产
-- `assets/examples/`：示例资产
-- `assets/technique-kb/`：结构化技法库主内容
-- `technique-kb/`：兼容 shim
+- `SKILL.md`
+- `docs/core/cli-quickstart.md`
+- `docs/core/runtime-design-baseline.md`
+- `docs/core/open-book.md`
+- `docs/core/write-workflow.md`
+- `docs/core/revise-diagnostics.md`
+- `docs/core/style-governance.md`
+- `docs/core/status-workflow.md`
+- `docs/core/task-contracts.md`
+- `docs/assets/genre-index.md`
+- `docs/assets/xuanhuan-xiuxian-reference-map.md`
+- `docs/assets/dushi-system-reference-map.md`
+- `docs/assets/goudao-xianxia-reference-map.md`
+- `docs/assets/historical-power-reference-map.md`
+- `docs/assets/apocalypse-reference-map.md`
+- `docs/assets/farming-reference-map.md`
+- `docs/assets/daomu-republic-reference-map.md`
 
-## 当前兼容说明
+## Design Baseline
 
-已完成：
-- 新的核心文档结构已建立
-- 新的资产层入口已建立
-- 新的模板分层已建立
-- 新增了聚合别名：`chase open`、`chase quality`、`chase write`、`chase status`
-- 多份旧重规则文档已降级为 shim + legacy 归档
+- Recovered design spec: `docs/superpowers/specs/2026-04-14-leadwriter-runtime-design.md`
+- Recovered implementation plan: `docs/superpowers/plans/2026-04-14-leadwriter-runtime.md`
+- Runtime alignment note: `docs/core/runtime-design-baseline.md`
 
-当前尚未做的：
-- 旧命令仍然保留为兼容层
-- `references/` 仍保留部分旧资料，后续继续下沉/合并
-- 少量根层模板仍保留 shim，避免马上打断现有工作流
+## 仓库校验
 
-## 当前可用 CLI（兼容层）
-```bash
-chase bootstrap --project <dir>
-chase doctor --project <dir>
-chase open --project <dir> [--chapter <n>]
-chase quality --project <dir> [--chapter-no <n> | --from <n> --to <n>]
-chase write --project <dir> [--chapter <n>] [--steps <csv>]
-chase status --project <dir> [--chapter <n>] [--focus <all|dashboard|foreshadow|arc|timeline|repeat>]
-chase planning --project <dir> [--chapter <n> | --target-chapter <n>]
-chase context --project <dir> [--chapter <n>]
-chase foreshadow --project <dir> [--chapter <n>]
-chase dashboard --project <dir>
-chase arc --project <dir>
-chase timeline --project <dir>
-chase repeat --project <dir>
-chase memory --project <dir> [--chapter <n>]
-chase gate --project <dir> [--chapter-no <n>]
-chase draft --project <dir> [--chapter-no <n>]
-chase batch --project <dir> [--from <n> --to <n>]
-chase audit --project <dir> [--chapter-no <n>]
-chase check --project <dir> [--chapter <n>]
-chase run --project <dir> [--chapter <n>] [--steps <csv>]
-```
-
-其中：
-- `open` 是新的开书入口：默认做开书 readiness 扫描，传 `--chapter` 时兼容章节规划/上下文准备
-- `quality` 是新的质量闸门聚合入口，当前先聚合 gate + draft + language
-- `write` 是新的写作聚合入口，默认优先走 `doctor + open + memory + status`
-- `status` 是新的书级健康聚合别名，当前聚合 dashboard / foreshadow / arc / timeline / repeat
-- 旧 `planning/context/gate/draft/audit/batch/foreshadow/arc/timeline/repeat/dashboard` 现在都属于兼容别名，内部会转到新聚合入口
-- `quality` 当前支持统一子检查协议：`--check all|chapter|draft|language|batch`
-- `check` 现在也优先走 `doctor + open + status`
-
-## 仓库维护校验
 ```bash
 npm run smoke
+node ./scripts/change_analyzer.js --mode working --json
 ```
 
-它当前会做四件事：
+当前会做：
 - 检查 `chase --help`
 - 编译全部 Python 脚本语法
-- 跑一轮临时项目 fixture：`bootstrap -> doctor -> open -> status`
+- 跑一轮 fixture 主链
 - 执行 `npm pack --dry-run`
 
-## 当前维护状态
+`change_analyzer` 用于提交前验更，支持：
+- `--mode working`：检查当前工作区全部变更
+- `--mode staged`：只检查暂存区
+- `--mode committed`：只检查最近一次提交
+- `--json`：输出机器可消费的分类、模块、告警与建议
+- `--summary-only`：只保留摘要、模块、告警，不回传逐文件列表
+- `--max-files <n>`：在保留摘要的同时，只返回前 `n` 个文件明细，并显式标记省略数量
+- `--category <code|docs|tests|config|other>`：只看单一类别变更，适合重构期快速切到代码视角或文档视角
+- `--module <name>`：只看单一模块桶，例如 `scripts`、`references`、`docs/core`
+- `--module-prefix <prefix>`：只看一整组模块家族，例如 `docs`、`references`，但仍保留细分模块统计
+- `--top-modules <n>`：模块很多时只保留前 `n` 个模块摘要，便于先抓主战场
+- 当使用 `--category` / `--module` / `--module-prefix` 时，输出仍会保留 `global_warnings` 与 `global_recommendations`，避免局部筛选掩盖全局风险
+- 如果本轮存在删除文件，输出会附带 `deleted_reference_hits` / `global_deleted_reference_hits`，把仍在引用旧路径的位置直接列出来
 
-当前仓库已经进入“稳定维护版”阶段：
-- 主入口已收口
-- `docs/core/*` 已成为默认阅读路径
-- `references/` 主要承担兼容层与题材资料层职责
-- `references/legacy/` 仅保留源码仓库归档，不再进入 npm 分发包
-- 根层若干模板只保留 shim，真实内容已下沉到分层目录
+## 当前状态
 
-这意味着后续工作更偏向：
-- 维护型优化
-- fixture / smoke 校验增强
-- 分发面继续瘦身
-- 兼容层按需清理
+仓库已进入聚合主链稳定维护阶段：
+- `docs/core/*` 是默认阅读面
+- 聚合层章节语义已统一为 `reference_chapter / target_chapter`
+- `references/` 主要承担兼容层与资料层职责
+- 根层只保留少量仍有兼容价值的 shim
 
-## npm 分发策略
+## 仓库结构
 
-当前 npm 包默认分发：
-- `docs/`
-- `assets/`
-- `templates/`
-- `schemas/`
-- `scripts/*.py`
-- 仍有默认入口价值的 `references/*`
-- `references/contracts/*`
-
-当前 npm 包默认不分发：
-- `references/legacy/*`
-- 若干零引用、仅源码仓库保留的旧参考文档
-
-如果你维护的是源码仓库，可以看到完整归档；如果你消费的是 npm 包，拿到的是更偏“当前可用主路径”的精简分发面。
-
-## 推荐阅读顺序
-1. `SKILL.md`
-2. `docs/core/cli-quickstart.md`
-3. `docs/core/open-book.md` 或 `docs/core/write-workflow.md`
-4. `docs/core/status-workflow.md`
-5. `docs/core/revise-diagnostics.md`
-6. `docs/core/style-governance.md`
-7. `docs/assets/genre-index.md`
-8. 需要兼容旧项目时再看 `docs/core/migration-notes.md`
-
-## 仓库结构（Phase 1 后）
 ```text
 repo/
 ├─ SKILL.md
@@ -173,10 +117,13 @@ repo/
 │  ├─ common/
 │  ├─ examples/
 │  └─ technique-kb/
-├─ references/        # 兼容保留，后续继续下沉/合并
-├─ templates/         # 当前主模板层：core/launch/review
-├─ technique-kb/      # 兼容 shim
+├─ references/
+├─ templates/
+│  ├─ core/
+│  ├─ launch/
+│  └─ review/
 ├─ scripts/
+├─ runtime/
+├─ evaluators/
 └─ schemas/
 ```
-

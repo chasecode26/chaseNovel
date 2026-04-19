@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from novel_utils import extract_markdown_table_rows, read_text
+from novel_utils import derive_plan_target_words, extract_markdown_table_rows, parse_plan_volumes, read_text
 from runtime.contracts import ChapterBrief, ChapterContextPacket, EvaluatorVerdict, MemoryPatch, RuntimeDecision
 
 
@@ -164,7 +164,28 @@ class RuntimeMemorySync:
         normalized = dict(defaults)
         normalized.update(payload)
         arcs = normalized.get("arcs", [])
-        normalized["arcs"] = arcs if isinstance(arcs, list) else []
+        deduped: list[dict[str, str]] = []
+        seen_characters: set[str] = set()
+        for item in arcs if isinstance(arcs, list) else []:
+            if not isinstance(item, dict):
+                continue
+            character = str(item.get("character", "")).strip()
+            if not character or character in seen_characters:
+                continue
+            seen_characters.add(character)
+            deduped.append(
+                {
+                    "character": character,
+                    "arcType": str(item.get("arcType", "")).strip(),
+                    "stage": str(item.get("stage", "")).strip(),
+                    "goal": str(item.get("goal", "")).strip(),
+                    "blocker": str(item.get("blocker", "")).strip(),
+                    "recentChange": str(item.get("recentChange", "")).strip(),
+                    "nextWindow": str(item.get("nextWindow", "")).strip(),
+                    "risk": str(item.get("risk", "")).strip(),
+                }
+            )
+        normalized["arcs"] = deduped
         return normalized
 
     def _normalize_foreshadow_payload(self, payload: dict[str, object], schema_dir: Path) -> dict[str, object]:
@@ -227,8 +248,12 @@ class RuntimeMemorySync:
             after["genre"] = genre
         if hook:
             after["hook"] = hook
-        if target_words:
-            after["targetWords"] = target_words
+        derived_target_words = derive_plan_target_words(plan_text)
+        if target_words or derived_target_words:
+            after["targetWords"] = target_words or derived_target_words
+        volumes = parse_plan_volumes(plan_text)
+        if volumes:
+            after["volumes"] = volumes
         after = self._normalize_plan_payload(after, schema_dir)
         return MemoryPatch(schema_file=plan_path.as_posix(), before=before, after=after)
 
@@ -277,7 +302,67 @@ class RuntimeMemorySync:
         after = self._normalize_characters_payload(after, schema_dir)
         return MemoryPatch(schema_file=characters_path.as_posix(), before=before, after=after)
 
-    def _build_character_arcs_patch(self, project_dir: Path, schema_dir: Path) -> MemoryPatch:
+    def _build_runtime_character_arcs(self, draft_payload: dict[str, object]) -> list[dict[str, object]]:
+        constraints = draft_payload.get("character_constraints", {})
+        outcome_signature = draft_payload.get("outcome_signature", {})
+        if not isinstance(constraints, dict) or not isinstance(outcome_signature, dict):
+            return []
+
+        chapter_result = str(outcome_signature.get("chapter_result", "")).strip()
+        next_pull = str(outcome_signature.get("next_pull", "")).strip()
+        result_type = str(outcome_signature.get("result_type", "")).strip()
+        hook_type = str(outcome_signature.get("hook_type", "")).strip()
+        if not chapter_result:
+            return []
+
+        protagonist = constraints.get("protagonist", {})
+        counterpart = constraints.get("counterpart", {})
+        if not isinstance(protagonist, dict) or not isinstance(counterpart, dict):
+            return []
+
+        stage = hook_type or result_type or "runtime_progress"
+        protagonist_name = str(protagonist.get("name", "")).strip()
+        counterpart_name = str(counterpart.get("name", "")).strip()
+        protagonist_goal = str(constraints.get("protagonist_goal", "")).strip()
+        protagonist_taboo = str(constraints.get("protagonist_taboo", "")).strip()
+        counterpart_goal = str(constraints.get("counterpart_goal", "")).strip()
+        counterpart_fear = str(constraints.get("counterpart_fear", "")).strip()
+
+        runtime_arcs: list[dict[str, object]] = []
+        if protagonist_name:
+            runtime_arcs.append(
+                {
+                    "character": protagonist_name,
+                    "arcType": "runtime_protagonist",
+                    "stage": stage,
+                    "goal": protagonist_goal,
+                    "blocker": protagonist_taboo,
+                    "recentChange": chapter_result,
+                    "nextWindow": next_pull,
+                    "risk": "",
+                }
+            )
+        if counterpart_name:
+            runtime_arcs.append(
+                {
+                    "character": counterpart_name,
+                    "arcType": "runtime_counterpart",
+                    "stage": stage,
+                    "goal": counterpart_goal,
+                    "blocker": counterpart_fear,
+                    "recentChange": chapter_result,
+                    "nextWindow": next_pull,
+                    "risk": "",
+                }
+            )
+        return runtime_arcs
+
+    def _build_character_arcs_patch(
+        self,
+        project_dir: Path,
+        schema_dir: Path,
+        draft_payload: dict[str, object] | None = None,
+    ) -> MemoryPatch:
         arcs_path = schema_dir / "character_arcs.json"
         before = self._load_json(arcs_path)
         after = dict(before)
@@ -295,11 +380,15 @@ class RuntimeMemorySync:
                     "character": character_name,
                     "arcType": row[1].strip(),
                     "stage": row[2].strip(),
+                    "goal": row[3].strip() if len(row) > 3 else "",
+                    "blocker": row[4].strip() if len(row) > 4 else "",
                     "recentChange": row[5].strip() if len(row) > 5 else "",
                     "nextWindow": row[6].strip() if len(row) > 6 else "",
                     "risk": row[7].strip() if len(row) > 7 else "",
                 }
             )
+        if not arcs and isinstance(draft_payload, dict):
+            arcs = self._build_runtime_character_arcs(draft_payload)
         after["arcs"] = arcs
         after = self._normalize_character_arcs_payload(after, schema_dir)
         return MemoryPatch(schema_file=arcs_path.as_posix(), before=before, after=after)
@@ -411,6 +500,25 @@ class RuntimeMemorySync:
                     "status": "pending",
                 }
             )
+        for item in self._dedupe_strings(brief.required_payoff_or_pressure):
+            promise_id = f"runtime:{item}"
+            existing = next(
+                (entry for entry in promises if isinstance(entry, dict) and str(entry.get("promiseId", "")).strip() == promise_id),
+                None,
+            )
+            if existing is not None:
+                existing["readerExpectation"] = item
+                existing["promiseType"] = str(existing.get("promiseType", "runtime_pressure") or "runtime_pressure")
+                existing["status"] = str(existing.get("status", "pending") or "pending")
+                continue
+            promises.append(
+                {
+                    "promiseId": promise_id,
+                    "promiseType": "runtime_pressure",
+                    "readerExpectation": item,
+                    "status": "pending",
+                }
+            )
         after["promises"] = promises
         after = self._normalize_payoff_payload(after, schema_dir)
         return MemoryPatch(schema_file=payoff_path.as_posix(), before=before, after=after)
@@ -490,6 +598,7 @@ class RuntimeMemorySync:
         decision: RuntimeDecision,
         verdicts: list[EvaluatorVerdict],
         *,
+        draft_payload: dict[str, object] | None = None,
         apply_changes: bool,
     ) -> dict[str, object]:
         retrieval_dir = project_dir / "00_memory" / "retrieval"
@@ -502,7 +611,7 @@ class RuntimeMemorySync:
             self._build_state_patch(schema_dir, packet, brief, decision),
             self._build_timeline_patch(schema_dir, packet),
             self._build_characters_patch(project_dir, schema_dir),
-            self._build_character_arcs_patch(project_dir, schema_dir),
+            self._build_character_arcs_patch(project_dir, schema_dir, draft_payload=draft_payload),
             self._build_foreshadow_patch(project_dir, schema_dir, packet.chapter),
             self._build_payoff_patch(schema_dir, brief),
         ]
@@ -519,13 +628,34 @@ class RuntimeMemorySync:
             f"- current_place: {packet.current_place}",
             f"- chapter_function: {brief.chapter_function}",
             f"- hook_goal: {brief.hook_goal}",
+            f"- required_payoff_or_pressure: {', '.join(brief.required_payoff_or_pressure) if brief.required_payoff_or_pressure else 'none'}",
             f"- runtime_decision: {decision.decision}",
             f"- blocking_dimensions: {', '.join(decision.blocking_dimensions) if decision.blocking_dimensions else 'none'}",
             f"- advisory_dimensions: {', '.join(decision.advisory_dimensions) if decision.advisory_dimensions else 'none'}",
             f"- apply_changes: {'yes' if apply_changes else 'no'}",
             "",
-            "## Verdicts",
+            "## Scene Plan",
         ]
+        if brief.scene_plan:
+            lines.extend(f"- {item}" for item in brief.scene_plan)
+        else:
+            lines.append("- none")
+        lines.extend(
+            [
+                "",
+                "## Success Criteria",
+            ]
+        )
+        if brief.success_criteria:
+            lines.extend(f"- {item}" for item in brief.success_criteria)
+        else:
+            lines.append("- none")
+        lines.extend(
+            [
+                "",
+            "## Verdicts",
+            ]
+        )
         if verdicts:
             for verdict in verdicts:
                 lines.append(

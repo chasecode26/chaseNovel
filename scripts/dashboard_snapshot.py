@@ -27,6 +27,7 @@ KNOWN_PATCH_TARGETS = (
 )
 
 HEALTH_DIGEST_LIMIT = 3
+RUNTIME_DIGEST_LIMIT = 3
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,20 +54,104 @@ def count_list_items(value: object) -> int:
     return len(value) if isinstance(value, list) else 0
 
 
-def load_runtime_state(schema_dir: Path) -> dict[str, object]:
+def normalize_list(value: object, *, limit: int | None = None) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    items = [str(item).strip() for item in value if str(item).strip()]
+    return items if limit is None else items[:limit]
+
+
+def build_runtime_digest(
+    verdicts_payload: object,
+    *,
+    dimensions: list[str] | None = None,
+    blocking: bool | None = None,
+    limit: int = RUNTIME_DIGEST_LIMIT,
+) -> list[str]:
+    if not isinstance(verdicts_payload, list):
+        return []
+
+    verdicts = [item for item in verdicts_payload if isinstance(item, dict)]
+    if not verdicts:
+        return []
+
+    ordered: list[dict[str, object]] = []
+    if dimensions is not None:
+        if not dimensions:
+            return []
+        seen_dimensions: set[str] = set()
+        for dimension in dimensions:
+            for verdict in verdicts:
+                verdict_dimension = str(verdict.get("dimension", "")).strip()
+                if verdict_dimension != dimension or verdict_dimension in seen_dimensions:
+                    continue
+                if blocking is not None and bool(verdict.get("blocking", False)) != blocking:
+                    continue
+                ordered.append(verdict)
+                seen_dimensions.add(verdict_dimension)
+                break
+    else:
+        for verdict in verdicts:
+            if blocking is not None and bool(verdict.get("blocking", False)) != blocking:
+                continue
+            ordered.append(verdict)
+
+    digest: list[str] = []
+    for verdict in ordered[:limit]:
+        dimension = str(verdict.get("dimension", "unknown")).strip() or "unknown"
+        evidence = normalize_list(verdict.get("evidence", []), limit=1)
+        minimal_fix = str(verdict.get("minimal_fix", "")).strip()
+        rewrite_scope = str(verdict.get("rewrite_scope", "")).strip()
+        detail = evidence[0] if evidence else (minimal_fix or str(verdict.get("status", "pass")).strip())
+        digest.append(f"{dimension}: {detail}" + (f" [scope={rewrite_scope}]" if rewrite_scope else ""))
+    return digest
+
+
+def load_runtime_state(schema_dir: Path, retrieval_dir: Path) -> dict[str, object]:
     state_json = load_json(schema_dir / "state.json")
+    runtime_payload = load_json(retrieval_dir / "leadwriter_runtime_payload.json")
     if not isinstance(state_json, dict):
-        return {"decision": "unknown", "blocking_dimensions": [], "advisory_dimensions": []}
-    blocking_dimensions = state_json.get("runtimeBlockingDimensions", [])
-    advisory_dimensions = state_json.get("runtimeAdvisoryDimensions", [])
+        state_json = {}
+
+    payload_decision = runtime_payload.get("decision", {}) if isinstance(runtime_payload, dict) else {}
+    if not isinstance(payload_decision, dict):
+        payload_decision = {}
+    rewrite_brief = payload_decision.get("rewrite_brief", {})
+    if not isinstance(rewrite_brief, dict):
+        rewrite_brief = {}
+
+    blocking_dimensions = payload_decision.get("blocking_dimensions", state_json.get("runtimeBlockingDimensions", []))
+    advisory_dimensions = payload_decision.get("advisory_dimensions", state_json.get("runtimeAdvisoryDimensions", []))
+    cycles_payload = runtime_payload.get("cycles", []) if isinstance(runtime_payload, dict) else []
+    cycle_count = len(cycles_payload) if isinstance(cycles_payload, list) else 0
+    last_cycle_decision = "unknown"
+    if isinstance(cycles_payload, list) and cycles_payload:
+        last_cycle = cycles_payload[-1]
+        if isinstance(last_cycle, dict) and isinstance(last_cycle.get("decision"), dict):
+            last_cycle_decision = str(last_cycle["decision"].get("decision", "unknown") or "unknown")
+
     return {
-        "decision": str(state_json.get("runtimeDecision", "unknown") or "unknown"),
-        "blocking_dimensions": [
-            str(item) for item in blocking_dimensions if str(item).strip()
-        ] if isinstance(blocking_dimensions, list) else [],
-        "advisory_dimensions": [
-            str(item) for item in advisory_dimensions if str(item).strip()
-        ] if isinstance(advisory_dimensions, list) else [],
+        "decision": str(payload_decision.get("decision", state_json.get("runtimeDecision", "unknown")) or "unknown"),
+        "blocking_dimensions": normalize_list(blocking_dimensions),
+        "advisory_dimensions": normalize_list(advisory_dimensions),
+        "first_fix_priority": str(rewrite_brief.get("first_fix_priority", "")).strip(),
+        "rewrite_scope": str(rewrite_brief.get("rewrite_scope", "")).strip(),
+        "return_to": str(rewrite_brief.get("return_to", "")).strip(),
+        "blocking_reasons": normalize_list(rewrite_brief.get("blocking_reasons", []), limit=RUNTIME_DIGEST_LIMIT),
+        "must_change": normalize_list(rewrite_brief.get("must_change", []), limit=RUNTIME_DIGEST_LIMIT),
+        "recheck_order": normalize_list(rewrite_brief.get("recheck_order", [])),
+        "blocking_digest": build_runtime_digest(
+            runtime_payload.get("verdicts", []) if isinstance(runtime_payload, dict) else [],
+            dimensions=normalize_list(blocking_dimensions),
+            blocking=True,
+        ),
+        "advisory_digest": build_runtime_digest(
+            runtime_payload.get("verdicts", []) if isinstance(runtime_payload, dict) else [],
+            dimensions=normalize_list(advisory_dimensions),
+            blocking=False,
+        ),
+        "cycle_count": cycle_count,
+        "last_cycle_decision": last_cycle_decision,
     }
 
 
@@ -168,9 +253,10 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     memory_sync_json = load_json(retrieval_dir / "memory_sync_queue.json")
     memory_patch_json = load_json(retrieval_dir / "leadwriter_memory_patches.json")
     memory_apply_json = load_json(retrieval_dir / "leadwriter_memory_apply.json")
-    runtime_state = load_runtime_state(schema_dir)
+    runtime_state = load_runtime_state(schema_dir, retrieval_dir)
     character_verdict = load_character_verdict(retrieval_dir)
     apply_summary = summarize_apply_results(memory_apply_json)
+    runtime_payload_exists = (retrieval_dir / "leadwriter_runtime_payload.json").exists()
 
     active_volume = extract_state_value(state_text, "当前卷")
     active_arc = extract_state_value(state_text, "当前弧")
@@ -179,7 +265,7 @@ def build_payload(project_dir: Path) -> dict[str, object]:
 
     if chapter_count == 0:
         warnings.append("当前项目尚未检测到正文章节，dashboard 只能反映模板与记忆状态。")
-    if not (retrieval_dir / "next_context.md").exists():
+    if not (retrieval_dir / "next_context.md").exists() and not runtime_payload_exists:
         warnings.append("缺少 next_context.md；建议先运行 context_compiler.py 或 chase context。")
 
     overdue_count = count_list_items(foreshadow_json.get("overdue"))
@@ -237,6 +323,16 @@ def build_payload(project_dir: Path) -> dict[str, object]:
             "decision": runtime_state["decision"],
             "blocking_dimensions": runtime_state["blocking_dimensions"],
             "advisory_dimensions": runtime_state["advisory_dimensions"],
+            "first_fix_priority": runtime_state["first_fix_priority"],
+            "rewrite_scope": runtime_state["rewrite_scope"],
+            "return_to": runtime_state["return_to"],
+            "blocking_reasons": runtime_state["blocking_reasons"],
+            "must_change": runtime_state["must_change"],
+            "recheck_order": runtime_state["recheck_order"],
+            "blocking_digest": runtime_state["blocking_digest"],
+            "advisory_digest": runtime_state["advisory_digest"],
+            "cycle_count": runtime_state["cycle_count"],
+            "last_cycle_decision": runtime_state["last_cycle_decision"],
             "character_alignment_status": character_verdict["status"],
             "character_alignment_evidence": character_verdict["evidence"],
             "plan_status": "pass" if str(plan_json.get("hook", "")).strip() and int(plan_json.get("targetWords", 0) or 0) > 0 else "warn",
@@ -264,6 +360,7 @@ def format_targets(targets: list[str]) -> str:
 
 
 def render_markdown(payload: dict[str, object]) -> str:
+    runtime_signals = payload.get("runtime_signals", {})
     lines = [
         "# 项目 Dashboard",
         "",
@@ -302,6 +399,25 @@ def render_markdown(payload: dict[str, object]) -> str:
             f"- dashboard.json：`{payload['report_paths']['json']}`",
         ]
     )
+
+    if isinstance(runtime_signals, dict):
+        lines.extend(
+            [
+                "",
+                "## Runtime Signals",
+                f"- decision：`{runtime_signals.get('decision', 'unknown')}`",
+                f"- blocking_dimensions：`{format_targets(list(runtime_signals.get('blocking_dimensions', [])) if isinstance(runtime_signals.get('blocking_dimensions'), list) else [])}`",
+                f"- advisory_dimensions：`{format_targets(list(runtime_signals.get('advisory_dimensions', [])) if isinstance(runtime_signals.get('advisory_dimensions'), list) else [])}`",
+                f"- first_fix_priority：`{runtime_signals.get('first_fix_priority', '') or 'none'}`",
+                f"- rewrite_scope：`{runtime_signals.get('rewrite_scope', '') or 'none'}`",
+                f"- return_to：`{runtime_signals.get('return_to', '') or 'none'}`",
+                f"- cycle_count：`{runtime_signals.get('cycle_count', 0)}`",
+                f"- last_cycle_decision：`{runtime_signals.get('last_cycle_decision', 'unknown')}`",
+                f"- blocking_digest：`{format_targets(list(runtime_signals.get('blocking_digest', [])) if isinstance(runtime_signals.get('blocking_digest'), list) else [])}`",
+                f"- advisory_digest：`{format_targets(list(runtime_signals.get('advisory_digest', [])) if isinstance(runtime_signals.get('advisory_digest'), list) else [])}`",
+                f"- must_change：`{format_targets(list(runtime_signals.get('must_change', [])) if isinstance(runtime_signals.get('must_change'), list) else [])}`",
+            ]
+        )
 
     if payload["warnings"]:
         lines.extend(["", "## 警告"])

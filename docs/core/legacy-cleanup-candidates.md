@@ -1,42 +1,36 @@
 # Legacy Cleanup Candidates
 
-## Safe now / completed
+## Completed
 
-- scripts/__pycache__/
-- references/advanced-template-map.md
-- references/genre-asset-index.md
-- references/output-contracts.md
-- templates/causality-review-card.md
-- templates/continuity-review-card.md
-- templates/style-consistency-review.md
-- templates/reviewer-stage-retro.md
-- templates/language-anti-ai-review.md
-- templates/opening-route-cheatsheet.md
-- templates/golden-three-route-cheatsheet.md
-- templates/genre-writing-guide.md
-- templates/result-route-cheatsheet.md
-- templates/hook-route-cheatsheet.md
-- templates/opening-setup-checklist.md
-- templates/worldbuilding-index.md
-- templates/midgame-fatigue-cheatsheet.md
-- templates/genres/
-- templates/substyles/
+The phase-1 migration residue below has already been removed from the live tree:
 
-## Merge targets (phase 1.5)
-- 根层模板 shim：
-  - `templates/style-defaults.md`
-  - `templates/style_fingerprints.md`
-  - `templates/chapter-planning-review.md`
-  - `templates/rewrite-handoff.md`
-  - `templates/volume_blueprint.md`
-- references 导航继续上提：
-  - `references/anti-repeat-rules.md` -> `docs/core/revise-diagnostics.md`
-  - `references/writing-patterns.md` -> `docs/core/write-workflow.md` / `docs/core/style-governance.md`
-  - 题材路由说明 -> `docs/assets/genre-index.md`
+- generated caches and build artifacts
+- obsolete reference index docs
+- deprecated root-level review cards and route cheatsheets
+- duplicated genre and substyle template directories
+- root-level genre route docs downgraded to compatibility shims
+- root-level style, opening, hook, language, and audit rule docs downgraded to compatibility summaries
+- legacy continuity / language anti-AI / style consistency review templates merged into `templates/review/chapter-quality-review.md`
+
+## Remaining merge targets
+
+### Keep for now: root shim templates
+
+- `templates/style-defaults.md`
+- `templates/style_fingerprints.md`
+- `templates/chapter-planning-review.md`
+- `templates/rewrite-handoff.md`
+- `templates/volume_blueprint.md`
+
+### Keep for now: references compatibility layer
+
+- `references/anti-repeat-rules.md` -> compatibility summary to `docs/core/revise-diagnostics.md`
+- `references/writing-patterns.md` -> compatibility summary to `docs/core/write-workflow.md` / `docs/core/style-governance.md`
+- genre routing notes -> compatibility shims to `docs/assets/genre-index.md`
+- style / opening / hook / language notes -> compatibility summaries to `docs/core/*`
 
 ## Keep for now: script dependent
 
-- `templates/continuity-report.md`
 - `templates/core/plan.md`
 - `templates/core/state.md`
 - `templates/core/style.md`

@@ -3,6 +3,7 @@
 **触发条件**：只有在规划或写作「历史/朝堂/权谋博弈」题材时，才加载此规则。
 
 **补读导航**：
+- 默认资料入口：`../../docs/assets/historical-power-reference-map.md`
 - 专项库：`../../references/historical-chapter-card-library.md` | `../../references/historical-character-learning.md` | `../../references/historical-volume-route-library.md` | `../../references/historical-negative-patterns.md`
 - 关系卡组：`../../references/historical-relationship-card-deck.md`
 - 军令后账：`../../references/historical-command-and-aftermath-library.md`

@@ -3,6 +3,8 @@
 **触发条件**：只有在规划或写作「玄幻/修仙」题材时，才加载此规则。
 
 **补读导航**：
+- 默认资料入口：`../../docs/assets/xuanhuan-xiuxian-reference-map.md`
+- 题材资产包：`xuanhuan-xiuxian/pack.md`
 - 子风格选择：凡人流 → `01a-xuanhuan-fanrenliu.md` | 稳健流 → `01b-xuanhuan-wenjianliu.md` | 搞笑流 → `01c-xuanhuan-gaoxiaoliu.md` | 探案修仙 → `01d-xuanhuan-tananxiuxian.md` | 系统修仙 → `01e-xuanhuan-xitongxiuxian.md`
 - 通用技法：`../../references/writing-patterns.md`（配合本题材模板吸收修仙爽点引擎与战斗写法）
 - 开篇路线：`../../references/opening-sample-library.md`
