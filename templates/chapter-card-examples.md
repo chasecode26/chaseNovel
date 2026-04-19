@@ -6,7 +6,7 @@
 
 原则：
 - 章卡不是摘要，是开写前的执行卡
-- 至少写清：功能、冲突、结果变化、角色推进、钩子、字数等级、目标字数、锚定包
+- 至少写清：功能、冲突、结果变化、角色推进、钩子、字数等级、目标字数、时间/地点/在场/知情/消息传播/资源锚定包，以及本章推进上限/禁止提前兑现项
 
 ## 通用最小模板
 
@@ -20,7 +20,16 @@
 - location_anchor：
 - present_characters：
 - knowledge_boundary：
+- message_flow：
+- arrival_timing：
+- who_knows_now：
+- who_cannot_know_yet：
+- travel_time_floor：
 - resource_state：
+- progress_floor：
+- progress_ceiling：
+- must_not_payoff_yet：
+- allowed_change_scope：
 - open_threads：
 - forbidden_inventions：
 - 本章功能：
@@ -63,6 +72,11 @@
 - location_anchor：青云宗外门试场
 - present_characters：主角、执事、围观弟子、内定弟子
 - knowledge_boundary：主角知道执事在换名额；旁人只看见临时改规，不知道背后交易
+- message_flow：执事改规由执事本人当众宣布，围观弟子只能听到表层理由
+- arrival_timing：消息在试场当场扩散，不存在场外人物先知
+- who_knows_now：主角、执事、在场弟子知道规则被改；真正交易内情只有执事自己清楚
+- who_cannot_know_yet：内门长老和场外弟子此时还不知道具体冲突经过
+- travel_time_floor：本章只发生在同一试场内，无跨地移动
 - resource_state：主角只有入场凭证和一次系统提示
 - open_threads：入山资格、系统价值、执事背后的靠山
 - forbidden_inventions：不能临时冒出更高级长老替主角解围
@@ -88,6 +102,11 @@
 - location_anchor：公司大会议室
 - present_characters：主角、上司、客户、同事
 - knowledge_boundary：主角知道客户的真实需求；同事只等着看笑话
+- message_flow：客户需求变化只在会前短沟通里被主角确认，会议室其他人尚未同步
+- arrival_timing：需求变化在例会开始前刚确认，足够支持主角现场发言，但不足以让全组提前统一口径
+- who_knows_now：主角、客户知道真实需求；上司只知道原方案；同事只知道例会流程
+- who_cannot_know_yet：未参会部门和老板此时还不知道客户会临场改口
+- travel_time_floor：全部发生在公司会议室与工位间，同楼层移动
 - resource_state：系统临时任务未完成，上司手里握着汇报顺序
 - open_threads：系统翻身线、客户签约线、上司打压线
 - forbidden_inventions：不能突然追加主角私下认识客户的旧设定
@@ -113,7 +132,16 @@
 - location_anchor：偏殿回廊
 - present_characters：男主、女主、第三方见证者
 - knowledge_boundary：男主知道更大的麻烦已被自己处理；女主暂时不知道
+- message_flow：宫宴上的公开站队所有在场人都能看到，但男主私下处理麻烦的细节尚未外传
+- arrival_timing：偏殿回廊承接宫宴余波，当夜能传开的只有公开动作，密处理结果要到回府后才会被女主发现
+- who_knows_now：男主、第三方见证者知道男主已经公开护短；女主只知道表层站队
+- who_cannot_know_yet：宫外势力和女主身边下人此时还不知道男主已提前处理更大麻烦
+- travel_time_floor：从宫宴到偏殿回廊为宫内步行，同夜可达；处理后续麻烦不能在一句话内跨城完成
 - resource_state：女主处于被针对后的弱势，男主刚公开站队
+- progress_floor：女主必须意识到男主已经明确护她
+- progress_ceiling：女主只能起疑男主另有后手，不能当场确认他已替她收拾完更大麻烦
+- must_not_payoff_yet：不能让女主当场知道全部后手；不能让宫外势力同步收到完整消息
+- allowed_change_scope：只允许关系公开度半推进；只允许现场压力抬高，不允许正式结盟或彻底摊牌
 - open_threads：关系公开度、外部针对、后续更大麻烦
 - forbidden_inventions：不能让第三方突然听到全部密谈
 - 本章功能：推进关系线

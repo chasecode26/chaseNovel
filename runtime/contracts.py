@@ -13,8 +13,22 @@ class ChapterContextPacket:
     chapter: int
     active_volume: str
     active_arc: str
+    time_anchor: str
     current_place: str
+    location_anchor: str
     next_goal: str
+    present_characters: list[str]
+    knowledge_boundary: str
+    message_flow: str
+    arrival_timing: str
+    who_knows_now: str
+    who_cannot_know_yet: str
+    travel_time_floor: str
+    resource_state: str
+    progress_floor: str
+    progress_ceiling: str
+    must_not_payoff_yet: list[str]
+    allowed_change_scope: list[str]
     open_threads: list[str]
     forbidden_inventions: list[str]
     voice_rules: list[str]
@@ -33,6 +47,10 @@ class ChapterBrief:
     hook_goal: str
     allowed_threads: list[str]
     disallowed_moves: list[str]
+    progress_floor: str
+    progress_ceiling: str
+    must_not_payoff_yet: list[str]
+    allowed_change_scope: list[str]
     voice_constraints: list[str]
     required_payoff_or_pressure: list[str] = field(default_factory=list)
     scene_plan: list[str] = field(default_factory=list)

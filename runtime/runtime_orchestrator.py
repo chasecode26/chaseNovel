@@ -5,6 +5,7 @@ from pathlib import Path
 
 from evaluators.character import from_runtime_draft
 from evaluators.causality import from_runtime_output as from_causality_runtime_output
+from evaluators.chapter_progress import from_runtime_output as from_chapter_progress_runtime_output
 from evaluators.continuity import from_gate_payload
 from evaluators.dialogue import from_runtime_output as from_dialogue_runtime_output
 from evaluators.pacing import from_runtime_output as from_pacing_runtime_output
@@ -344,6 +345,7 @@ class LeadWriterRuntime:
         verdicts.append(self._coerce_verdict(from_pacing_runtime_output(project_dir, draft_payload)))
         verdicts.append(self._coerce_verdict(from_causality_runtime_output(draft_payload)))
         verdicts.append(self._coerce_verdict(from_promise_payoff_runtime_output(brief, draft_payload)))
+        verdicts.append(self._coerce_verdict(from_chapter_progress_runtime_output(brief, draft_payload)))
         verdicts.append(self._coerce_verdict(from_dialogue_runtime_output(draft_payload)))
         if isinstance(draft_payload.get("character_constraints"), dict):
             postdraft_verdict = self._coerce_verdict(from_runtime_draft(draft_payload))

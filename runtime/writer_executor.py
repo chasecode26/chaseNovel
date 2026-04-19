@@ -200,6 +200,13 @@ class WriterExecutor:
             profile["sentence_length"] = "短句"
         if "盟友" in relationship and "确认底牌" not in profile["pressure_mode"]:
             profile["pressure_mode"] = "先确认底牌，再决定站位"
+        personality = character.get("personality", "")
+        if any(token in personality for token in ("冷", "稳", "寡言", "谨慎")):
+            profile["texture"] = "冷硬"
+            profile["sentence_length"] = "中短句"
+        elif any(token in personality for token in ("急", "利", "直", "狠")):
+            profile["texture"] = "利落"
+            profile["sentence_length"] = "短句"
         return profile
 
     def _state_summary(self, packet: ChapterContextPacket, brief: ChapterBrief) -> dict[str, str]:
@@ -223,35 +230,168 @@ class WriterExecutor:
             token in role_text or token in relationship_text for token in ("ally", "friend", "opponent", "villain")
         )
 
-    def _line_for(self, speaker: dict[str, str], profile: dict[str, str], intent: str) -> str:
+    def _line_pool(self, speaker: dict[str, str], profile: dict[str, str], intent: str) -> list[str]:
         goal = speaker.get("goal") or "局面必须被压住"
         fear = speaker.get("fear") or "局面彻底失控"
         counterpart_like = self._is_counterpart(speaker)
+        tactic = profile.get("tactic", "")
+        pressure_mode = profile.get("pressure_mode", "")
+        texture = profile.get("texture", "")
+        sentence_length = profile.get("sentence_length", "")
 
         if intent == "probe":
+            if counterpart_like and "确认底牌" in pressure_mode:
+                return [
+                    "你先把底牌掀一角，我才知道这一步该站哪边。",
+                    "你先漏一句真话，我才好替你看路。",
+                    "别只拿场面压我，先让我知道你手里还扣着什么。",
+                ]
+            if counterpart_like and "压场" in pressure_mode:
+                return [
+                    "别绕。你现在就把话落地。",
+                    "少兜圈子，把你真正要的那句先说出来。",
+                    "把话挑明，别逼我一句句替你拆。",
+                ]
+            if "先判断" in tactic:
+                return [
+                    "你先别催，我得先把活路看清。",
+                    "先别把我往前推，这一步我得先看明白。",
+                    "急着要答案没用，我先得把退路摸出来。",
+                ]
+            return [
+                "你盯结果，我先看这一步能不能走。",
+                "结果先别急着算，我先看眼前这道坎怎么过。",
+                "你要的是一句准话，我先得把局面站稳。",
+            ]
+        if intent == "push":
+            if "先判断" in tactic:
+                return [
+                    f"我先认准一件事，{goal}。",
+                    f"别的先不谈，我先把{goal}扣死。",
+                    f"眼下只剩一条线，{goal}。",
+                ]
+            if "先顶回去" in tactic:
+                return [
+                    f"别的先放下，{goal}。",
+                    f"你先别吵，我现在只做{goal}。",
+                    f"这一步不谈虚的，只看{goal}。",
+                ]
+            return [
+                f"这一步我只看{goal}。",
+                f"眼前先办一件事，{goal}。",
+                f"现在能落地的只有{goal}。",
+            ]
+        if intent == "fear":
+            if counterpart_like and "压场" in pressure_mode:
+                return [
+                    f"再拖，{fear}。到时候谁都别想收场。",
+                    f"你再慢半步，{fear}，到时候一个都跑不掉。",
+                    f"别拿命耗，{fear}已经在往前顶了。",
+                ]
             if counterpart_like:
-                text = "你先别把话说满。先把底牌掀一角，我才知道今晚怎么替你兜。"
-            else:
-                text = "你盯结果，我盯活路。先让我把话说完。"
-        elif intent == "push":
-            text = f"我现在只认一件事，{goal}。"
-        elif intent == "fear":
+                return [
+                    f"再拖下去，{fear}，我兜不住你。",
+                    f"你还想拖？{fear}一到，我这边先断。",
+                    f"再往后压，{fear}，到时候我也替你补不上。",
+                ]
+            if "留余地" in pressure_mode:
+                return [
+                    f"急没有用，{fear}也得先有人扛住。",
+                    f"怕归怕，先把{fear}挡在门外再说。",
+                    f"现在慌也没用，先有人把{fear}顶住。",
+                ]
+            return [
+                f"怕归怕，{fear}已经到门口了。",
+                f"你可以怕，但{fear}不会等人。",
+                f"这不是吓唬人，{fear}已经贴脸了。",
+            ]
+        if intent == "counter":
+            if texture == "利落" or sentence_length == "短句":
+                return ["这话不算。", "先别替我定输赢。", "轮不到你现在盖棺。"]
+            if texture == "冷硬":
+                return ["我还没退。", "我还站在这。", "这一步我没让。"]
+            return ["现在还轮不到我认输。", "这口气还没到散的时候。", "你现在下结论太早了。"]
+        if intent == "cost":
+            if texture == "冷硬":
+                return ["东西我拿了，账也认。", "该收的我收下，后账我自己背。", "这份好处我不推，代价也不躲。"]
+            if texture == "利落":
+                return ["好处先收，后账慢慢算。", "这口肉我先咬住，后面的账再说。", "东西到手就行，欠下的我记着。"]
+            return ["这份代价我记下，不往外推。", "账我先记着，没人替我扛。", "该落我头上的，我不往别人身上甩。"]
+        if intent == "warning":
+            if counterpart_like and "压场" in pressure_mode:
+                return [
+                    "这一刀要是真落下来，后面只会更难看。",
+                    "眼前要是压不住，后面的口子只会越撕越大。",
+                    "别把这一下当小事，后头那摊更脏。",
+                ]
             if counterpart_like:
-                text = f"再拖半分钟，{fear}。到时候不是你一个人赔进去，是整盘都要一起塌。"
-            else:
-                text = f"怕归怕，{fear}也得先有人顶住。"
-        elif intent == "counter":
-            text = "我还没输。"
-        elif intent == "cost":
-            text = "筹码我收下，账我自己记。"
-        elif intent == "warning":
-            if counterpart_like:
-                text = "系统敢把价码抬到这一步，就说明后面那刀只会更狠。"
-            else:
-                text = "代价我看见了，所以我不会在这里乱伸手。"
-        else:
-            text = f"{goal}。"
-        return f"“{text}”"
+                return [
+                    "你别只看眼前，后面的窟窿比这一下大。",
+                    "这一下不是最狠的，真正麻烦的还在后面。",
+                    "前面这口气先别松，后头还有更大的洞。",
+                ]
+            if "留余地" in pressure_mode:
+                return [
+                    "代价我看见了，所以这一步我不会乱伸手。",
+                    "我知道后头有账，所以现在不能乱拿。",
+                    "后面还要走路，这一步我得给自己留口气。",
+                ]
+            return [
+                "后面的账还没来，现在不能把路走死。",
+                "眼前能顶住，不代表后头也扛得住。",
+                "这一下过去了，后面的账照样会找上门。",
+            ]
+        return [f"{goal}。"]
+
+    def _line_for(self, speaker: dict[str, str], profile: dict[str, str], intent: str, scene_index: int = 0) -> str:
+        options = self._line_pool(speaker, profile, intent)
+        name = speaker.get("name", "角色")
+        offset = sum(ord(char) for char in (name + intent)) + scene_index
+        return f"“{options[offset % len(options)]}”"
+
+    def _action_pool(self, actor: str, mood: str) -> list[str]:
+        if mood == "observe":
+            return [
+                f"{actor}先看了一眼门口，又扫了一遍能退开的空当。",
+                f"{actor}没急着出声，先把四周的路和人都过了一遍。",
+                f"{actor}先把目光从门边、桌角一路带过去，确认哪一处最先会动。",
+            ]
+        if mood == "pressure":
+            return [
+                f"{actor}把话往前逼了一寸，连喘气的空当都没留。",
+                f"{actor}顺着那点松动继续往里压，明显不打算给人缓口气。",
+                f"{actor}盯得更紧，像是非要当场把话逼实。",
+            ]
+        if mood == "steady":
+            return [
+                f"{actor}把气息压平，没顺着对面的火气走。",
+                f"{actor}站着没动，只把声音一点点收稳。",
+                f"{actor}没抢那口气，先把自己的节奏按住。",
+            ]
+        if mood == "interrupt":
+            return [
+                f"{actor}抬眼把话截断。",
+                f"{actor}没等对面说完，就把那句顶了回去。",
+                f"{actor}在对方再开口前先把节奏卡住了。",
+            ]
+        if mood == "cost":
+            return [
+                f"{actor}没把情绪露出来，只把那口气硬压回去。",
+                f"{actor}指节收紧了一下，面上却没露半点虚。",
+                f"{actor}把那点起伏压在喉咙口，面上还是稳的。",
+            ]
+        if mood == "warning":
+            return [
+                f"{actor}把声音压低，话却比刚才更重。",
+                f"{actor}停了半拍，再开口时已经不带试探。",
+                f"{actor}没再抬声，只把后果一层层往前摆。",
+            ]
+        return [f"{actor}没有再多说。"]
+
+    def _action_for(self, actor: str, mood: str, scene_index: int) -> str:
+        options = self._action_pool(actor, mood)
+        offset = sum(ord(char) for char in (actor + mood)) + scene_index
+        return options[offset % len(options)]
 
     def _build_scene_outline(
         self,
@@ -301,6 +441,7 @@ class WriterExecutor:
 
     def _scene_beats(
         self,
+        packet: ChapterContextPacket,
         protagonist: dict[str, str],
         counterpart: dict[str, str],
         state: dict[str, str],
@@ -308,12 +449,28 @@ class WriterExecutor:
     ) -> list[str]:
         win_noun = genre_profile["win_noun"]
         pressure_noun = genre_profile["pressure_noun"]
-        return [
+        beats = [
             f"{protagonist['name']}先判断局面，目标是{state['protagonist_goal']}并拿回{win_noun}",
             f"{counterpart['name']}不断施压，想确认{state['counterpart_goal']}",
             f"{protagonist['name']}始终守住禁忌：{state['protagonist_taboo']}",
             f"章内风险被重新命名成：{state['counterpart_fear']}，并升级成新的{pressure_noun}",
         ]
+        if packet.time_anchor or packet.location_anchor:
+            beats.insert(0, f"起章时空锚点固定为：{packet.time_anchor or '当前时间'} / {packet.location_anchor or packet.current_place or '当前地点'}")
+        if packet.present_characters:
+            beats.append(f"当前在场人物限定：{'、'.join(packet.present_characters[:6])}")
+        if packet.message_flow:
+            beats.append(f"消息传播链必须成立：{packet.message_flow}")
+        if packet.who_cannot_know_yet:
+            beats.append(f"按理还不能知道的人不能提前得知：{packet.who_cannot_know_yet}")
+        if packet.travel_time_floor:
+            beats.append(f"跨地行动至少满足：{packet.travel_time_floor}")
+        return beats
+
+    def _scene_variant(self, packet: ChapterContextPacket, protagonist: dict[str, str], index: int) -> int:
+        seed = f"{packet.chapter}-{protagonist.get('name', '角色')}-{index}"
+        mod = 3 if index == 4 else 2
+        return sum(ord(char) for char in seed) % mod
 
     def _scene_paragraph_template(
         self,
@@ -329,52 +486,132 @@ class WriterExecutor:
     ) -> list[str]:
         place = packet.current_place or "昏暗走廊"
         pressure_noun = genre_profile["pressure_noun"]
-        win_noun = genre_profile["win_noun"]
         hook_phrase = genre_profile["hook_phrase"]
         is_urban_system = genre_profile["genre"] == "urban_system"
+        time_anchor = packet.time_anchor or "此刻"
+        location_anchor = packet.location_anchor or place
+        present_limit = "、".join(packet.present_characters[:6]) if packet.present_characters else ""
+        knowledge_boundary = packet.knowledge_boundary
+        message_flow = packet.message_flow
+        arrival_timing = packet.arrival_timing
+        who_knows_now = packet.who_knows_now
+        who_cannot_know_yet = packet.who_cannot_know_yet
+        travel_time_floor = packet.travel_time_floor
+        resource_state = packet.resource_state
+        variant = self._scene_variant(packet, protagonist, index)
         if index == 1:
-            return [
-                f"{protagonist['name']}没有急着开口，只是先把视线压在{place}的尽头，确认每一步退路都还在。",
-                f"他很清楚，今晚真正要拿回来的不是面子，而是{state['protagonist_goal']}，也是更现实的{win_noun}。",
-                "他先确认的不是情绪，而是现实里还有没有能挪动的位置。" if is_urban_system else "他先确认的不是情绪，而是接下来还能不能稳住局面。",
-                f"{counterpart['name']}这趟来，不只是盯人，她真正要确认的是{counterpart_goal}。",
-                f"{counterpart['name']}盯着他，语气里没有缓冲。{self._line_for(counterpart, counterpart_profile, 'probe')}",
-                f"{protagonist['name']}没有立刻抢话，他先把呼吸压稳，再把结论往前送。{self._line_for(protagonist, protagonist_profile, 'push')}",
-                f"{counterpart['name']}没被这句结论安抚，反而把视线压得更低。{self._line_for(counterpart, counterpart_profile, 'counter')}",
-                "这一轮还没有人真正赢下来，但局面已经从失控边缘，被他硬生生拽回了一寸。",
-            ]
+            if variant == 0:
+                lines = [
+                    f"{time_anchor}，{location_anchor}里静得只剩脚步和呼吸，{self._action_for(protagonist['name'], 'observe', index)}",
+                    f"他今晚不是来争口气的，他得把{state['protagonist_goal']}先稳住。",
+                    f"{self._action_for(counterpart['name'], 'pressure', index)} {self._line_for(counterpart, counterpart_profile, 'probe', index)}",
+                    f"{self._action_for(protagonist['name'], 'steady', index)} {self._line_for(protagonist, protagonist_profile, 'push', index)}",
+                    f"{self._action_for(counterpart['name'], 'interrupt', index)} {self._line_for(counterpart, counterpart_profile, 'counter', index)}",
+                    f"第一轮还没分出高下，但场子已经没再往失控那边滑。",
+                ]
+            else:
+                lines = [
+                    f"{time_anchor}，{location_anchor}里那点安静只撑了一瞬，{self._action_for(counterpart['name'], 'pressure', index)}",
+                    f"{self._action_for(protagonist['name'], 'observe', index)} 他先没接话，只在心里把{state['protagonist_goal']}重新扣了一遍。",
+                    f"{self._line_for(counterpart, counterpart_profile, 'probe', index)}",
+                    f"{self._action_for(protagonist['name'], 'steady', index)} {self._line_for(protagonist, protagonist_profile, 'push', index)}",
+                    f"{self._action_for(counterpart['name'], 'interrupt', index)} {self._line_for(counterpart, counterpart_profile, 'counter', index)}",
+                    f"这一轮像是刚碰上刀背，火星没炸开，力道却已经压出来了。",
+                ]
+            if present_limit:
+                lines.insert(1, f"此刻真正留在场上的，只有{present_limit}。")
+            if knowledge_boundary:
+                lines.insert(2 if len(lines) > 2 else len(lines), f"眼下能被看见的只到这一步：{knowledge_boundary}。")
+            return lines
         if index == 2:
-            return [
-                f"{counterpart['name']}没有退，她顺着刚才那点松动继续往里逼，想把{counterpart_goal}彻底坐实。",
-                f"{protagonist['name']}顺着墙边挪开半步，把最危险的角度让空，却没有把主动权一起让出去。",
-                "他不是单纯顶回去，而是先把现实里的站位换掉，让对面必须跟着他的节奏走。" if is_urban_system else "他不是单纯顶回去，而是先把节奏换掉，让对面必须重新判断。",
-                f"他没有碰那条红线，因为{state['protagonist_taboo']}这件事，比一时的漂亮回顶更重要。",
-                f"{counterpart['name']}话锋更快，明显在试他到底敢不敢再往前走一步。{self._line_for(counterpart, counterpart_profile, 'fear')}",
-                f"{protagonist['name']}只用了一句更硬的结论把节奏截断。{self._line_for(protagonist, protagonist_profile, 'counter')}",
-                f"这一下不是逞强，而是把局面往自己熟悉的算法里拖。{self._line_for(protagonist, protagonist_profile, 'push')}",
-                "场面上的胜负还没翻盘，但信任已经开始绷紧，这就是本章第一次真正的反击。",
-            ]
+            if variant == 0:
+                lines = [
+                    f"{self._action_for(counterpart['name'], 'pressure', index)} 她想当场坐实{counterpart_goal}。",
+                    f"{protagonist['name']}沿着墙边让开半步，把最危险的位置空出来，自己却没退。",
+                    f"他记着{state['protagonist_taboo']}，所以这一步只换站位，不赌狠。",
+                    f"{self._action_for(counterpart['name'], 'warning', index)} {self._line_for(counterpart, counterpart_profile, 'fear', index)}",
+                    f"{self._action_for(protagonist['name'], 'interrupt', index)} {self._line_for(protagonist, protagonist_profile, 'counter', index)}",
+                    f"{self._action_for(protagonist['name'], 'steady', index)} {self._line_for(protagonist, protagonist_profile, 'push', index)}",
+                    "场面还是绷着的，但反击已经落到了实处。",
+                ]
+            else:
+                lines = [
+                    f"{protagonist['name']}先沿着墙边挪开半步，把最危险的位置让出来，自己却还钉在原地。",
+                    f"{self._action_for(counterpart['name'], 'pressure', index)} 她就是要借这口气把{counterpart_goal}逼成现成的事实。",
+                    f"{self._action_for(protagonist['name'], 'steady', index)} 他记着{state['protagonist_taboo']}，所以只换节奏，不换底牌。",
+                    f"{self._line_for(counterpart, counterpart_profile, 'fear', index)}",
+                    f"{self._action_for(protagonist['name'], 'interrupt', index)} {self._line_for(protagonist, protagonist_profile, 'counter', index)}",
+                    f"{self._line_for(protagonist, protagonist_profile, 'push', index)}",
+                    "话锋还是尖的，可局面已经不是单向挨打。",
+                ]
+            if message_flow:
+                lines.insert(1, "风声真要散开，也不过是先落进在场人的耳朵里。")
+            if who_knows_now:
+                lines.insert(2 if len(lines) > 2 else len(lines), f"现在真正能把这件事听明白的人，只有{who_knows_now}。")
+            if who_cannot_know_yet:
+                lines.append(f"至于{who_cannot_know_yet}，此刻还都隔着一道门，不会这么快摸到这里。")
+            return lines
         if index == 3:
-            return [
-                f"{protagonist['name']}抓住那一瞬间的停顿，把最关键的信息先握进自己手里，局部优势终于落袋。",
-                f"可他也立刻意识到，系统给出的不是白拿的筹码，而是一笔必须回收的{pressure_noun}。",
-                "那感觉像一次冷冰冰的结算，赢面刚到手，账也同时记到了他头上。" if is_urban_system else "那感觉像一记回响，赢面刚到手，账也同时记到了他头上。",
-                f"{counterpart['name']}看见他终于不再只会挨打，眼神里第一次出现了迟疑和重新估价。",
-                f"{protagonist['name']}把那口气压进喉咙里，声音反而更稳。{self._line_for(protagonist, protagonist_profile, 'cost')}",
-                f"这份结果来得够快，却不够轻，越是往前推进，{state['counterpart_fear']}这层阴影就越压得近。",
-                f"{protagonist['name']}把那股冲动摁回去，没有为了把局面做满就越界，他要的是能继续赢下去的空间。",
-                "于是这一场不是圆满兑现，而是带着回响的局部兑现，赢面刚露出来，代价也跟着露头。",
+            if variant == 0:
+                lines = [
+                    f"{protagonist['name']}趁那一下停顿把最要紧的信息先抓住，局面终于往自己这边偏了一寸。",
+                    f"可东西刚到手，新的{pressure_noun}也跟着压了下来。",
+                    "那感觉像刚把门顶住，门外又有人添了一根横木。" if is_urban_system else "那感觉像刚把局面按稳，下一笔账就已经记上了。",
+                    f"{counterpart['name']}看着他，眼神第一次变了，像是在重新估这一步值不值。",
+                    f"{self._action_for(protagonist['name'], 'cost', index)} {self._line_for(protagonist, protagonist_profile, 'cost', index)}",
+                    f"他心里清楚，越往前走，{state['counterpart_fear']}就会压得越近。",
+                    f"所以他把那点想继续追打的冲动按了回去，先给自己留出下一步。",
+                ]
+            else:
+                lines = [
+                    f"最要紧的那一点终于被{protagonist['name']}攥进手里，局面也跟着偏了过来。",
+                    f"可他指尖刚一收紧，新的{pressure_noun}就已经顺着那点空隙压上来。",
+                    f"{self._action_for(protagonist['name'], 'cost', index)} {self._line_for(protagonist, protagonist_profile, 'cost', index)}",
+                    f"{counterpart['name']}没立刻说话，只是盯着他，像在重新算这一步到底亏不亏。",
+                    "那感觉像刚把门顶住，门外又有人添了一根横木。" if is_urban_system else "那感觉像刚把局面按稳，下一笔账就已经记上了。",
+                    f"{state['counterpart_fear']}没有退，反而借着这一停顿压得更近。",
+                    f"他到底还是把继续追打的冲动压了回去，给后手留了一口气。",
+                ]
+            if arrival_timing:
+                lines.insert(2, self._render_arrival_timing(arrival_timing))
+            if travel_time_floor:
+                lines.append(self._render_travel_time_floor(travel_time_floor))
+            return lines
+        scene4_close = self._render_scene4_close(variant, hook_phrase, packet.open_threads[0] if packet.open_threads else "")
+        if variant == 0:
+            lines = [
+                f"{counterpart['name']}最后还是停了一拍，没有再往前逼到底。",
+                f"{protagonist['name']}听出了那一瞬的迟疑，也听见更麻烦的事正在逼近：{state['counterpart_fear']}。",
+                f"这一下虽然先兜住了，可下一步的{pressure_noun}已经摆上桌。",
+                "系统没再留缓冲，新的账单就贴在眼前。" if is_urban_system else "回廊里没人再接话，可那口气并没有散，反而越压越实。",
+                f"{self._action_for(counterpart['name'], 'warning', index)} {self._line_for(counterpart, counterpart_profile, 'warning', index)}",
+                f"{self._action_for(protagonist['name'], 'warning', index)} {self._line_for(protagonist, protagonist_profile, 'warning', index)}",
+                *scene4_close,
             ]
-        return [
-            f"{counterpart['name']}终究还是停了一拍，没有逼到底，她知道再往前一步就会把局面彻底推翻。",
-            f"{protagonist['name']}听出了那一点犹豫，也看见了更重的东西正往下压：{state['counterpart_fear']}。",
-            f"系统没有再给他喘息，只把下一步的{pressure_noun}冷冰冰抛到眼前，逼他在赢面和代价之间立刻做选择。",
-            "这不只是情绪上的悬着，而是现实账面上的下一轮结算已经开始倒计时。" if is_urban_system else "这不只是情绪上的悬着，而是下一轮真正的后果已经开始倒计时。",
-            f"{counterpart['name']}低声补了一句，提醒他真正危险的从来不是眼前这一下，而是之后每一次必须继续付出的成本。{self._line_for(counterpart, counterpart_profile, 'warning')}",
-            f"{protagonist['name']}没有被这句提醒吓退，只把代价重新记牢。{self._line_for(protagonist, protagonist_profile, 'warning')}",
-            f"{protagonist['name']}没有回答得很满，他只是把退路、目标和代价一起记住，准备把下一章的主动权继续抓在手里。",
-            f"所以本章的结尾不是收平，而是把更高一级的钩子钉住：局面暂时稳住了，{hook_phrase}。",
-        ]
+        elif variant == 1:
+            lines = [
+                f"眼前这一下虽然没崩，可{pressure_noun}也已经明明白白地摆到了桌上。",
+                f"{counterpart['name']}先停了半拍，像是把那口气重新压回胸口，随后才把后话一点点递出来。",
+                f"{self._line_for(counterpart, counterpart_profile, 'warning', index)}",
+                "系统没再留缓冲，新的账单就贴在眼前。" if is_urban_system else "后面的后果并没有散，反而顺着这一停顿继续往前推。",
+                f"{protagonist['name']}把那一下迟疑听得很清楚，也知道{state['counterpart_fear']}已经贴到了门口。",
+                f"{self._action_for(protagonist['name'], 'warning', index)} {self._line_for(protagonist, protagonist_profile, 'warning', index)}",
+                *scene4_close,
+            ]
+        else:
+            lines = [
+                f"{self._action_for(counterpart['name'], 'warning', index)} {self._line_for(counterpart, counterpart_profile, 'warning', index)}",
+                f"{protagonist['name']}没有立刻顶回去，只把那口气硬生生咽住，听着{state['counterpart_fear']}一点点贴到跟前。",
+                f"眼前这一下还不算垮，可{pressure_noun}已经顺着话缝露了头。",
+                "系统没再留缓冲，新的账单就贴在眼前。" if is_urban_system else "后面的后果没有退，反而在这一静之间越推越近。",
+                f"{self._action_for(protagonist['name'], 'warning', index)} {self._line_for(protagonist, protagonist_profile, 'warning', index)}",
+                *scene4_close,
+            ]
+        if resource_state:
+            lines.insert(3, self._render_resource_state(resource_state))
+        if who_cannot_know_yet:
+            lines.insert(len(lines) - 1, f"所以这一夜的后手还卡在这里，{who_cannot_know_yet}不会比该知道的时间更早收到风声。")
+        return lines
 
     def _build_scene_paragraphs(
         self,
@@ -395,7 +632,7 @@ class WriterExecutor:
         for index, item in enumerate(outline, start=1):
             scene_summary = self._scene_summary(brief, str(item["summary"]), index)
             scene_targets = self._scene_targets(brief, index)
-            beats = self._scene_beats(protagonist, counterpart, state, genre_profile)
+            beats = self._scene_beats(packet, protagonist, counterpart, state, genre_profile)
             beats = self._augment_scene_beats(brief, beats, index)
             draft_lines = self._scene_paragraph_template(
                 index,
@@ -408,7 +645,7 @@ class WriterExecutor:
                 counterpart_goal,
                 genre_profile,
             )
-            draft_lines = self._apply_brief_to_scene_draft(draft_lines, scene_targets, index, genre_profile)
+            draft_lines = self._apply_brief_to_scene_draft(draft_lines, scene_targets, index, genre_profile, brief)
             scenes.append(
                 {
                     "label": item["label"],
@@ -433,10 +670,11 @@ class WriterExecutor:
         scene_index = index - 1
         if 0 <= scene_index < len(brief.scene_plan):
             scene_plan = brief.scene_plan[scene_index].strip()
-            if scene_plan and scene_plan != fallback.strip():
-                return f"{scene_plan} {fallback}".strip()
-            if scene_plan:
-                return scene_plan
+            softened = self._narrativize_scene_plan(scene_plan, index)
+            if softened and softened != fallback.strip():
+                return f"{softened}。 {fallback}".strip()
+            if softened:
+                return softened
         return fallback
 
     def _scene_targets(self, brief: ChapterBrief, index: int) -> dict[str, str]:
@@ -458,12 +696,153 @@ class WriterExecutor:
             "success_criterion": success_criterion,
         }
 
+    def _normalize_directive(self, text: str) -> str:
+        return text.strip().rstrip("。.!！?？")
+
+    def _compress_field_text(self, text: str) -> str:
+        value = self._normalize_directive(text)
+        replacements = {
+            "只有": "只到",
+            "可见": "看见",
+            "尚未外传": "还没外传",
+            "只能传开": "才会传开",
+            "处理结果": "结果",
+            "当前": "眼下",
+            "暂时": "一时",
+        }
+        for old, new in replacements.items():
+            value = value.replace(old, new)
+        return value
+
+    def _render_message_flow(self, text: str) -> str:
+        value = self._normalize_directive(text)
+        if not value:
+            return ""
+        if "只有在场人可见" in value and "尚未外传" in value:
+            return "所有人能亲眼看见的，也只有场上这一幕，至于后手，还压着没往外走。"
+        return f"这话真要散出去，也只会沿着{self._compress_field_text(value)}这条线慢慢传。"
+
+    def _render_arrival_timing(self, text: str) -> str:
+        value = self._normalize_directive(text)
+        if not value:
+            return ""
+        if "当夜只能传开公开动作" in value and "回府后" in value:
+            return "当夜能传开的，也只有人人看见的那一下，真到后手露底，怎么也得拖到回府后。"
+        return f"就算风声真传开，也得等到{self._compress_field_text(value)}，中间这一段谁都抄不了近路。"
+
+    def _render_knowledge_boundary(self, text: str) -> str:
+        value = self._normalize_directive(text)
+        if not value:
+            return ""
+        if "可知=" in value and "不可知=" in value:
+            visible, hidden = value.split("不可知=", 1)
+            visible = visible.replace("可知=", "").strip("：:；;，, ")
+            hidden = hidden.strip()
+            return f"眼下真正看清局面的，只有{visible}；至于{hidden}，还都隔着一层。"
+        return f"眼下能摸到真相边上的人不多，{self._compress_field_text(value)}。"
+
+    def _render_time_anchor(self, text: str, location: str) -> str:
+        value = self._normalize_directive(text)
+        place = self._normalize_directive(location)
+        if not value:
+            return ""
+        if place:
+            return f"{value}的{place}，连一点转圜的空隙都没有。"
+        return f"{value}这一刻，连一点转圜的空隙都没有。"
+
+    def _render_travel_time_floor(self, text: str) -> str:
+        value = self._normalize_directive(text)
+        if not value:
+            return ""
+        if "不能一句话跨城" in value:
+            return "真要把动作接到场外，也得一步步走过去，没人能靠一句话就把整段路抹掉。"
+        return f"真要把动作接到场外，也得先满足{self._compress_field_text(value)}，没人能在一句话里赶完这段路。"
+
+    def _render_resource_state(self, text: str) -> str:
+        value = self._normalize_directive(text)
+        if not value:
+            return ""
+        if "处于弱势" in value and "刚公开站队" in value:
+            return "眼下真正能拿来顶事的并不多，一边还在失势，一边也只是刚把态度摆到明面上。"
+        return f"可真能立刻动用的东西其实不多：{self._compress_field_text(value)}。"
+
+    def _render_scene4_close(self, variant: int, hook_phrase: str, open_thread: str) -> list[str]:
+        if variant == 0:
+            return [
+                f"两个人都没再往前多逼那半寸，可{hook_phrase}已经顺着这口气压到了眼前。",
+                f"回廊里一时静了，可{open_thread}已经被硬生生往前拱了一步。" if open_thread else "回廊里一时静了，可下一步已经被悄悄推着往前走。",
+            ]
+        if variant == 1:
+            return [
+                "这一下还不算翻盘，只是把最先塌下来的那块地方硬撑住了。",
+                f"可后手并没停，{hook_phrase}。",
+            ]
+        return [
+            "眼前这口气虽然没断，可真正的账反倒从这里开始往后排。",
+            f"真要紧的，不是刚才谁赢半寸，而是{hook_phrase}。",
+        ]
+
+    def _narrativize_scene_plan(self, scene_plan: str, index: int) -> str:
+        plan = self._normalize_directive(scene_plan)
+        if not plan:
+            return ""
+        if plan.startswith("开场先锁定"):
+            core = plan.replace("开场先锁定", "", 1).strip()
+            core = core.replace("不要先讲背景", "").strip(" ，,、")
+            return f"连空气都先被{core}压紧了"
+        if plan.startswith("起章先钉死时空锚点："):
+            core = plan.split("：", 1)[1].strip()
+            if "/" in core:
+                time_part, place_part = [item.strip() for item in core.split("/", 1)]
+                return self._render_time_anchor(time_part, place_part)
+            return self._render_time_anchor(core, "")
+        if plan.startswith("在场人物只保留："):
+            core = plan.split("：", 1)[1].strip()
+            return f"场上能把这口气接住的，也只剩{core}"
+        if plan.startswith("知情边界要稳定："):
+            core = self._render_knowledge_boundary(plan.split("：", 1)[1].strip())
+            return core or ""
+        prefix = "眼前先得咬住的是" if index == 1 else "这一段真正往前顶的是"
+        return f"{prefix}{plan}"
+
+    def _narrativize_payoff(self, payoff_or_pressure: str, pressure_noun: str) -> str:
+        payoff = self._normalize_directive(payoff_or_pressure)
+        if not payoff:
+            return ""
+        if payoff.startswith("本章必须兑现或抬高："):
+            core = payoff.split("：", 1)[1].strip()
+            return f"眼下最不能松手的，就是{core}这一下，稍一后撤，新的{pressure_noun}立刻就会顶上来。"
+        if payoff.startswith("消息传播必须遵守："):
+            return self._render_message_flow(payoff.split("：", 1)[1].strip())
+        if payoff.startswith("越界知情禁止发生："):
+            core = self._compress_field_text(payoff.split("：", 1)[1].strip())
+            return f"这口风只能压在这里，{core}，谁都不能比该知道的时候更早听见。"
+        return f"眼下最急的还是{payoff}，再拖一步，新的{pressure_noun}就会压上来。"
+
+    def _narrativize_success(self, success_criterion: str, index: int) -> str:
+        criterion = self._normalize_directive(success_criterion)
+        if not criterion:
+            return ""
+        if criterion.startswith("本章功能必须成立："):
+            core = criterion.split("：", 1)[1].strip()
+            return f"这一轮不管怎么绕，最后都得把{core}真正落住，不然前面那些拉扯都白费。"
+        if criterion.startswith("章节内必须出现结果变化"):
+            return "这一轮不能只把气氛架高，总得真有一寸地方被推过去。"
+        if criterion.startswith("章节尾部必须留下下一步压力或回收牵引"):
+            return "到收尾时，下一步压力得自己露头，不能还停在原地打转。"
+        if criterion.startswith("至少推进一个 open thread："):
+            core = criterion.split("：", 1)[1].strip()
+            return f"至少也得把{core}往前送一步，不然这一场就还是空转。"
+        prefix = "这一轮至少得把" if index < 4 else "收尾前总得把"
+        return f"{prefix}{criterion}落下来，不然前面那些话都不算数。"
+
     def _apply_brief_to_scene_draft(
         self,
         draft_lines: list[str],
         scene_targets: dict[str, str],
         index: int,
         genre_profile: dict[str, str],
+        brief: ChapterBrief,
     ) -> list[str]:
         updated = list(draft_lines)
         scene_plan = scene_targets["scene_plan"]
@@ -471,17 +850,35 @@ class WriterExecutor:
         success_criterion = scene_targets["success_criterion"]
         pressure_noun = genre_profile["pressure_noun"]
 
-        if scene_plan:
-            updated.insert(1 if updated else 0, f"这一场先不扩支线，只沿着既定推进：{scene_plan}。")
-        if payoff_or_pressure:
+        scene_plan_line = self._narrativize_scene_plan(scene_plan, index)
+        payoff_line = self._narrativize_payoff(payoff_or_pressure, pressure_noun)
+        success_line = self._narrativize_success(success_criterion, index)
+        guardrail_tokens = (
+            "中段推进最多只能到：",
+            "本章变化范围只允许：",
+            "结尾只能留下压力，不能提前兑现：",
+            "本章推进不得越过：",
+            "本章禁止提前兑现：",
+        )
+        if any(scene_plan.startswith(token) for token in guardrail_tokens):
+            scene_plan_line = ""
+        if any(payoff_or_pressure.startswith(token) for token in ("只可预热不可兑现：",)):
+            payoff_line = ""
+        if any(success_criterion.startswith(token) for token in ("本章推进不得越过：", "本章禁止提前兑现：", "本章变化范围只允许：")):
+            success_line = ""
+
+        if scene_plan_line:
+            line = scene_plan_line if scene_plan_line.endswith(("。", "！", "？")) else f"{scene_plan_line}。"
+            updated.insert(1 if updated else 0, line)
+        if payoff_line:
             insert_at = 3 if len(updated) >= 3 else len(updated)
-            updated.insert(insert_at, f"这一拍必须正面处理{payoff_or_pressure}，不然新的{pressure_noun}只会继续上抬。")
-        if success_criterion:
-            closing_line = f"所以这一场不能只停在气氛上，必须把{success_criterion}压成看得见的结果。"
+            updated.insert(insert_at, payoff_line)
+        if success_line:
             if index >= 4:
-                updated.append(closing_line)
+                if not any(token in success_line for token in ("至少也得把", "收尾前总得把")):
+                    updated.append(success_line)
             else:
-                updated.insert(len(updated) - 1 if updated else 0, closing_line)
+                updated.insert(len(updated) - 1 if updated else 0, success_line)
         return updated
 
     def _augment_scene_beats(self, brief: ChapterBrief, beats: list[str], index: int) -> list[str]:
@@ -495,6 +892,14 @@ class WriterExecutor:
             augmented.extend(f"must_not_repeat: {item}" for item in brief.must_not_repeat[:2])
         if index == 1 and brief.success_criteria:
             augmented.extend(f"success_criteria: {item}" for item in brief.success_criteria[:2])
+        if brief.progress_floor:
+            augmented.append(f"progress_floor: {brief.progress_floor}")
+        if brief.progress_ceiling:
+            augmented.append(f"progress_ceiling: {brief.progress_ceiling}")
+        if brief.must_not_payoff_yet:
+            augmented.extend(f"must_not_payoff_yet: {item}" for item in brief.must_not_payoff_yet[:2])
+        if brief.allowed_change_scope:
+            augmented.extend(f"allowed_change_scope: {item}" for item in brief.allowed_change_scope[:2])
         return augmented
 
     def _scene_cards(self, scenes: list[dict[str, object]]) -> list[dict[str, str]]:
@@ -610,6 +1015,22 @@ class WriterExecutor:
                 f"- counterpart_goal: {notes['counterpart_goal']}",
                 f"- counterpart_fear: {notes['counterpart_fear']}",
                 "",
+                "## Continuity Notes",
+                f"- time_anchor: {notes.get('time_anchor', '')}",
+                f"- location_anchor: {notes.get('location_anchor', '')}",
+                f"- present_characters: {notes.get('present_characters', '')}",
+                f"- knowledge_boundary: {notes.get('knowledge_boundary', '')}",
+                f"- message_flow: {notes.get('message_flow', '')}",
+                f"- arrival_timing: {notes.get('arrival_timing', '')}",
+                f"- who_knows_now: {notes.get('who_knows_now', '')}",
+                f"- who_cannot_know_yet: {notes.get('who_cannot_know_yet', '')}",
+                f"- travel_time_floor: {notes.get('travel_time_floor', '')}",
+                f"- resource_state: {notes.get('resource_state', '')}",
+                f"- progress_floor: {notes.get('progress_floor', '')}",
+                f"- progress_ceiling: {notes.get('progress_ceiling', '')}",
+                f"- must_not_payoff_yet: {notes.get('must_not_payoff_yet', '')}",
+                f"- allowed_change_scope: {notes.get('allowed_change_scope', '')}",
+                "",
             ]
         )
         return "\n".join(lines)
@@ -622,6 +1043,7 @@ class WriterExecutor:
         counterpart: dict[str, str],
         protagonist_profile: dict[str, str],
         counterpart_profile: dict[str, str],
+        packet: ChapterContextPacket,
     ) -> str:
         lines = ["# Runtime Draft Review Notes", "", "## Dialogue Check"]
         lines.extend(
@@ -642,6 +1064,22 @@ class WriterExecutor:
                 f"- cost_type: {outcome_signature['cost_type']}",
                 f"- hook_type: {outcome_signature['hook_type']}",
                 f"- next_pull: {outcome_signature['next_pull']}",
+                "",
+                "## Continuity Guardrails",
+                f"- time_anchor: {packet.time_anchor or 'missing'}",
+                f"- location_anchor: {packet.location_anchor or packet.current_place or 'missing'}",
+                f"- present_characters: {'、'.join(packet.present_characters) if packet.present_characters else 'missing'}",
+                f"- knowledge_boundary: {packet.knowledge_boundary or 'missing'}",
+                f"- message_flow: {packet.message_flow or 'missing'}",
+                f"- arrival_timing: {packet.arrival_timing or 'missing'}",
+                f"- who_knows_now: {packet.who_knows_now or 'missing'}",
+                f"- who_cannot_know_yet: {packet.who_cannot_know_yet or 'missing'}",
+                f"- travel_time_floor: {packet.travel_time_floor or 'missing'}",
+                f"- resource_state: {packet.resource_state or 'missing'}",
+                f"- progress_floor: {packet.progress_floor or 'missing'}",
+                f"- progress_ceiling: {packet.progress_ceiling or 'missing'}",
+                f"- must_not_payoff_yet: {'、'.join(packet.must_not_payoff_yet) if packet.must_not_payoff_yet else 'missing'}",
+                f"- allowed_change_scope: {'、'.join(packet.allowed_change_scope) if packet.allowed_change_scope else 'missing'}",
                 "",
                 "## Review Checklist",
             ]
@@ -673,8 +1111,29 @@ class WriterExecutor:
         lines.extend(["", "## Chapter Function", f"- {brief.chapter_function}", ""])
         return "\n".join(lines)
 
-    def _build_chapter_blueprint(self, scenes: list[dict[str, object]], outcome_signature: dict[str, str]) -> str:
-        lines = ["# Chapter Blueprint", "", "## Scene Cards"]
+    def _build_chapter_blueprint(
+        self,
+        scenes: list[dict[str, object]],
+        outcome_signature: dict[str, str],
+        packet: ChapterContextPacket,
+    ) -> str:
+        lines = ["# Chapter Blueprint", "", "## Continuity Anchors",
+            f"- time_anchor: {packet.time_anchor or 'missing'}",
+            f"- location_anchor: {packet.location_anchor or packet.current_place or 'missing'}",
+            f"- present_characters: {'、'.join(packet.present_characters) if packet.present_characters else 'missing'}",
+            f"- knowledge_boundary: {packet.knowledge_boundary or 'missing'}",
+            f"- message_flow: {packet.message_flow or 'missing'}",
+            f"- arrival_timing: {packet.arrival_timing or 'missing'}",
+            f"- who_knows_now: {packet.who_knows_now or 'missing'}",
+            f"- who_cannot_know_yet: {packet.who_cannot_know_yet or 'missing'}",
+            f"- travel_time_floor: {packet.travel_time_floor or 'missing'}",
+            f"- resource_state: {packet.resource_state or 'missing'}",
+            f"- progress_floor: {packet.progress_floor or 'missing'}",
+            f"- progress_ceiling: {packet.progress_ceiling or 'missing'}",
+            f"- must_not_payoff_yet: {'、'.join(packet.must_not_payoff_yet) if packet.must_not_payoff_yet else 'missing'}",
+            f"- allowed_change_scope: {'、'.join(packet.allowed_change_scope) if packet.allowed_change_scope else 'missing'}",
+            "",
+            "## Scene Cards"]
         for item in scenes:
             lines.extend(
                 [
@@ -733,9 +1192,6 @@ class WriterExecutor:
             "",
             body,
             "",
-            f"这一章真正被拿回来的，是{outcome_signature['chapter_result']}。",
-            f"但更重的东西已经压下来：{outcome_signature['next_pull']}，它直接变成了新的{genre_profile['pressure_noun']}。",
-            "",
         ]
         return "\n".join(lines)
 
@@ -778,6 +1234,20 @@ class WriterExecutor:
                 "protagonist_taboo": protagonist.get("taboo") or state["protagonist_taboo"],
                 "counterpart_goal": counterpart.get("goal") or state["counterpart_goal"],
                 "counterpart_fear": counterpart.get("fear") or state["counterpart_fear"],
+                "time_anchor": packet.time_anchor,
+                "location_anchor": packet.location_anchor or packet.current_place,
+                "present_characters": "、".join(packet.present_characters),
+                "knowledge_boundary": packet.knowledge_boundary,
+                "message_flow": packet.message_flow,
+                "arrival_timing": packet.arrival_timing,
+                "who_knows_now": packet.who_knows_now,
+                "who_cannot_know_yet": packet.who_cannot_know_yet,
+                "travel_time_floor": packet.travel_time_floor,
+                "resource_state": packet.resource_state,
+                "progress_floor": packet.progress_floor,
+                "progress_ceiling": packet.progress_ceiling,
+                "must_not_payoff_yet": "、".join(packet.must_not_payoff_yet),
+                "allowed_change_scope": "、".join(packet.allowed_change_scope),
             },
         )
         character_constraints = self._character_constraints(
@@ -795,6 +1265,10 @@ class WriterExecutor:
                 "protagonist_taboo": str(character_constraints["protagonist_taboo"]),
                 "counterpart_goal": str(character_constraints["counterpart_goal"]),
                 "counterpart_fear": str(character_constraints["counterpart_fear"]),
+                "progress_floor": packet.progress_floor,
+                "progress_ceiling": packet.progress_ceiling,
+                "must_not_payoff_yet": "、".join(packet.must_not_payoff_yet),
+                "allowed_change_scope": "、".join(packet.allowed_change_scope),
             },
         )
         behavior_snapshot = character_constraints["behavior_snapshot"]
@@ -805,8 +1279,9 @@ class WriterExecutor:
             counterpart,
             protagonist_profile,
             counterpart_profile,
+            packet,
         )
-        blueprint_text = self._build_chapter_blueprint(scenes, outcome_signature)
+        blueprint_text = self._build_chapter_blueprint(scenes, outcome_signature, packet)
         editorial_summary_text = self._build_editorial_summary(behavior_snapshot, protagonist, counterpart)
         manuscript_text = self._build_reader_manuscript(brief, manuscript_paragraphs, outcome_signature, genre_profile)
 

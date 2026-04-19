@@ -92,6 +92,19 @@ HOOK_KEYWORDS = (
     "旧账",
 )
 
+HIGH_RISK_PROGRESS_KEYWORDS = (
+    "掉马",
+    "结盟",
+    "联盟",
+    "确认",
+    "揭露",
+    "揭开",
+    "公开站队",
+    "摊牌",
+    "彻底知道",
+    "正式坐实",
+)
+
 PRIORITY_DEBT_RULES = (
     {
         "key": "repeat_variation",
@@ -355,7 +368,16 @@ def parse_chapter_card(card_text: str) -> dict[str, str]:
         "location_anchor": parse_heading_value(card_text, ["location_anchor", "本章地点", "地点锚点"]),
         "present_characters": parse_heading_value(card_text, ["present_characters", "在场人物"]),
         "knowledge_boundary": parse_heading_value(card_text, ["knowledge_boundary", "知情边界"]),
+        "message_flow": parse_heading_value(card_text, ["message_flow", "消息传播链", "消息传播"]),
+        "arrival_timing": parse_heading_value(card_text, ["arrival_timing", "最早送达时间", "消息送达时点"]),
+        "who_knows_now": parse_heading_value(card_text, ["who_knows_now", "谁现在能知道", "当前知情人"]),
+        "who_cannot_know_yet": parse_heading_value(card_text, ["who_cannot_know_yet", "谁按理还不能知道", "当前不应知情人"]),
+        "travel_time_floor": parse_heading_value(card_text, ["travel_time_floor", "路程至少多久", "最短路程时间"]),
         "resource_state": parse_heading_value(card_text, ["resource_state", "资源状态"]),
+        "progress_floor": parse_heading_value(card_text, ["progress_floor", "本章至少推进到哪里", "本章推进下限"]),
+        "progress_ceiling": parse_heading_value(card_text, ["progress_ceiling", "本章最多只能推进到哪里", "本章推进上限"]),
+        "must_not_payoff_yet": parse_heading_value(card_text, ["must_not_payoff_yet", "本章不能提前兑现", "本章禁止提前兑现"]),
+        "allowed_change_scope": parse_heading_value(card_text, ["allowed_change_scope", "本章允许变化范围", "允许变化层级"]),
         "open_threads": parse_heading_value(card_text, ["open_threads", "开放线索", "开放线程"]),
         "forbidden_inventions": parse_heading_value(card_text, ["forbidden_inventions", "禁止发明"]),
         "chapter_function": parse_heading_value(card_text, ["chapter_function", "本章功能"]),
@@ -489,7 +511,16 @@ def build_planning_contract(
             "present_characters": chapter_card.get("present_characters", ""),
             "scene_focal_character": chapter_card.get("present_characters", ""),
             "knowledge_boundary": chapter_card.get("knowledge_boundary", ""),
+            "message_flow": chapter_card.get("message_flow", ""),
+            "arrival_timing": chapter_card.get("arrival_timing", ""),
+            "who_knows_now": chapter_card.get("who_knows_now", ""),
+            "who_cannot_know_yet": chapter_card.get("who_cannot_know_yet", ""),
+            "travel_time_floor": chapter_card.get("travel_time_floor", ""),
             "resource_state": chapter_card.get("resource_state", ""),
+            "progress_floor": chapter_card.get("progress_floor", ""),
+            "progress_ceiling": chapter_card.get("progress_ceiling", ""),
+            "must_not_payoff_yet": chapter_card.get("must_not_payoff_yet", ""),
+            "allowed_change_scope": chapter_card.get("allowed_change_scope", ""),
             "open_threads": chapter_card.get("open_threads", ""),
             "forbidden_inventions": chapter_card.get("forbidden_inventions", ""),
             "health_digest": health_digest,
@@ -589,6 +620,51 @@ def build_analysis(project_dir: Path, target_chapter: int) -> dict[str, object]:
         blockers.append("显式章卡存在，但缺少“本章结果变化”，正文容易写成无效推进。")
     if chapter_card_path and not chapter_card.get("hook_text", ""):
         blockers.append("显式章卡存在，但缺少“本章章尾钩子”，不允许带空钩子开写。")
+    if chapter_card_path and not chapter_card.get("message_flow", ""):
+        blockers.append("显式章卡存在，但缺少“消息传播链”，无法判断消息是谁发出、经谁送、如何扩散。")
+    if chapter_card_path and not chapter_card.get("arrival_timing", ""):
+        blockers.append("显式章卡存在，但缺少“最早送达时间”，无法预审消息先后与时序压缩。")
+    if chapter_card_path and not chapter_card.get("who_knows_now", ""):
+        blockers.append("显式章卡存在，但缺少“谁现在能知道”，知情边界仍然是空的。")
+    if chapter_card_path and not chapter_card.get("who_cannot_know_yet", ""):
+        blockers.append("显式章卡存在，但缺少“谁按理还不能知道”，无法拦住越界知情。")
+    if chapter_card_path and not chapter_card.get("travel_time_floor", ""):
+        warnings.append("显式章卡存在，但缺少“路程至少多久”，跨地行动仍可能被一句话压缩。")
+
+    progress_text = " ".join(
+        [
+            chapter_card.get("result_change", ""),
+            chapter_card.get("hook_text", ""),
+            chapter_card.get("promise_progress", ""),
+            chapter_card.get("chapter_goal", ""),
+        ]
+    )
+    high_risk_progress = any(keyword in progress_text for keyword in HIGH_RISK_PROGRESS_KEYWORDS)
+    if chapter_card_path and not chapter_card.get("progress_ceiling", ""):
+        message = "显式章卡存在，且本章存在高风险推进，但缺少“本章推进上限”，无法拦住提前兑现或推进过线。"
+        if high_risk_progress:
+            blockers.append(message)
+        else:
+            warnings.append("显式章卡存在，但缺少“本章推进上限”，本章容易把试探写成坐实、把半推进写成全兑现。")
+    if chapter_card_path and not chapter_card.get("must_not_payoff_yet", ""):
+        warnings.append("显式章卡存在，但缺少“本章不能提前兑现”，后续章的重要结果仍可能被本章提前写穿。")
+    if chapter_card_path and not chapter_card.get("allowed_change_scope", ""):
+        warnings.append("显式章卡存在，但缺少“本章允许变化范围”，关系/局面/认知变化层级容易写过线。")
+    if chapter_card.get("progress_ceiling", "") and chapter_card.get("result_change", ""):
+        ceiling = chapter_card.get("progress_ceiling", "")
+        result_change = chapter_card.get("result_change", "")
+        contradiction_pairs = (
+            ("不能确认", "确认"),
+            ("不能坐实", "坐实"),
+            ("不能结盟", "结盟"),
+            ("不能掉马", "掉马"),
+            ("不能揭露", "揭露"),
+            ("不能摊牌", "摊牌"),
+        )
+        for ceiling_token, result_token in contradiction_pairs:
+            if ceiling_token in ceiling and result_token in result_change:
+                blockers.append(f"章卡“本章推进上限”写着{ceiling_token}，但“本章结果变化”已经写成{result_token}，推进边界自相矛盾。")
+                break
 
     if not active_volume:
         warnings.append("`state.md` 未识别到“当前卷”，卷级节奏容易失焦。")
@@ -712,6 +788,13 @@ def render_markdown(project_dir: Path, analysis: dict[str, object]) -> str:
         "## 4. 因果与连续性",
         f"- 当前卷 / 当前弧：{analysis['active_volume']} / {analysis['active_arc']}",
         f"- 当前绝对时间 / 当前地点：{analysis['absolute_time']} / {analysis['current_place']}",
+        f"- 在场人物：{analysis['chapter_card'].get('present_characters', '') or '未填写'}",
+        f"- 知情边界：{analysis['chapter_card'].get('knowledge_boundary', '') or '未填写'}",
+        f"- 关键消息传播链：{analysis['chapter_card'].get('message_flow', '') or '未填写'}",
+        f"- 最早送达时间：{analysis['chapter_card'].get('arrival_timing', '') or '未填写'}",
+        f"- 谁现在能知道：{analysis['chapter_card'].get('who_knows_now', '') or '未填写'}",
+        f"- 谁按理还不能知道：{analysis['chapter_card'].get('who_cannot_know_yet', '') or '未填写'}",
+        f"- 路程至少多久：{analysis['chapter_card'].get('travel_time_floor', '') or '未填写'}",
         f"- 到期伏笔：{'、'.join(analysis['due_foreshadow_ids']) if analysis['due_foreshadow_ids'] else '无'}",
         f"- 本章窗口内关键节点：{'、'.join(analysis['due_milestones']) if analysis['due_milestones'] else '无'}",
         f"- 已超期关键节点：{'、'.join(analysis['overdue_milestones']) if analysis['overdue_milestones'] else '无'}",
@@ -766,6 +849,11 @@ def render_markdown_v2(project_dir: Path, analysis: dict[str, object]) -> str:
         f"- location_anchor: {planner_contract.get('location_anchor', '') or analysis['current_place']}",
         f"- present_characters: {planner_contract.get('present_characters', '') or 'missing'}",
         f"- knowledge_boundary: {planner_contract.get('knowledge_boundary', '') or 'missing'}",
+        f"- message_flow: {planner_contract.get('message_flow', '') or 'missing'}",
+        f"- arrival_timing: {planner_contract.get('arrival_timing', '') or 'missing'}",
+        f"- who_knows_now: {planner_contract.get('who_knows_now', '') or 'missing'}",
+        f"- who_cannot_know_yet: {planner_contract.get('who_cannot_know_yet', '') or 'missing'}",
+        f"- travel_time_floor: {planner_contract.get('travel_time_floor', '') or 'missing'}",
         f"- resource_state: {planner_contract.get('resource_state', '') or 'missing'}",
         f"- open_threads: {planner_contract.get('open_threads', '') or 'missing'}",
         f"- priority_debt: {planner_contract.get('priority_debt', '') or analysis['priority_debt'] or 'none'}",

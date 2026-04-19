@@ -154,6 +154,10 @@ SUMMARY_STYLE_MARKERS = (
     "关键在于",
     "这意味着",
     "这说明",
+    "这一轮不能只",
+    "场面看着像是",
+    "真正重要的是",
+    "后面的后果",
 )
 AUTHORIAL_SUMMARY_BLACKLIST = (
     "真正的问题是",
@@ -170,6 +174,9 @@ AUTHORIAL_SUMMARY_BLACKLIST = (
     "像极了",
     "终究是",
     "从来都是",
+    "这一轮不能只",
+    "场面看着像是",
+    "真正重要的是",
 )
 SUMMARY_ABSTRACT_NOUNS = (
     "局势",
@@ -184,6 +191,10 @@ SUMMARY_ABSTRACT_NOUNS = (
     "根子",
     "本质",
     "那口气",
+    "推进",
+    "结果",
+    "变化",
+    "麻烦",
 )
 EUNUCH_ADDRESS_TERMS = ("公公",)
 CIVIL_OFFICIAL_TITLE_TERMS = ("郎中", "侍郎", "尚书", "御史", "给事中", "学士", "祭酒", "主事")
@@ -217,6 +228,22 @@ DIALOGUE_CONFLICT_MARKERS = (
     "让开",
     "住手",
     "别碰",
+)
+MESSAGE_SEND_MARKERS = (
+    "传信", "送信", "报信", "递信", "飞鸽", "信使", "快马", "差人", "派人去报", "着人去报", "使人去报",
+)
+MESSAGE_RECEIVE_MARKERS = (
+    "收到消息", "接到消息", "得知", "知道了", "听说", "收到信", "接信", "看完信", "信到了", "人到了", "报到", "已经知道",
+)
+TRAVEL_DURATION_MARKERS = (
+    "三日", "三天", "四日", "四天", "五日", "五天", "六日", "六天", "七日", "七天", "数日", "数天", "几日", "几天",
+    "一路快马", "昼夜兼程", "连夜赶路", "路上要", "至少要", "赶到需要", "才能赶到",
+)
+IMMEDIATE_TIME_MARKERS = (
+    "转眼", "片刻", "没多久", "当夜", "当天", "当晚", "不到一个时辰", "一炷香", "立刻", "马上", "很快",
+)
+KNOWLEDGE_LEAK_MARKERS = (
+    "还没送出去", "还未送出去", "信还没出门", "人还没出门", "信使还没走", "消息还没送到", "尚未送到",
 )
 FAST_VOICE_MARKERS = ("快", "紧", "利落", "凌厉", "直给", "短促")
 RESTRAINED_VOICE_MARKERS = ("克制", "冷", "硬", "冷峻", "压住", "收着", "不外放")
@@ -1180,6 +1207,9 @@ def build_gate_stats(issues: list[dict[str, object]]) -> dict[str, dict[str, str
         "dialogue_question_missed_answer",
         "military_order_execution_chain_missing",
         "war_shared_conditions_missing",
+        "message_delivery_timing_gap",
+        "knowledge_boundary_violation",
+        "travel_time_compression",
     }
     return {
         "language_block": {
@@ -1189,9 +1219,9 @@ def build_gate_stats(issues: list[dict[str, object]]) -> dict[str, dict[str, str
             "order_can_execute": "no" if "military_order_execution_chain_missing" in issue_types else "yes",
         },
         "causality_block": {
-            "fact_judgment_consequence_clear": "no" if "war_causality_incomplete" in issue_types else "yes",
-            "protagonist_reasoning_clear": "no" if issue_types & {"war_reasoning_gap", "opaque_tactical_expression"} else "yes",
-            "shared_conditions_checked": "no" if "war_shared_conditions_missing" in issue_types else "yes",
+            "fact_judgment_consequence_clear": "no" if issue_types & {"war_causality_incomplete", "message_delivery_timing_gap", "travel_time_compression"} else "yes",
+            "protagonist_reasoning_clear": "no" if issue_types & {"war_reasoning_gap", "opaque_tactical_expression", "knowledge_boundary_violation"} else "yes",
+            "shared_conditions_checked": "no" if issue_types & {"war_shared_conditions_missing", "travel_time_compression"} else "yes",
             "reader_inference_gap": "yes" if issue_types & inference_gap_types else "no",
         },
     }
@@ -1237,6 +1267,9 @@ def derive_first_fix_priority(issues: list[dict[str, object]]) -> str:
         "military_order_execution_chain_missing",
         "dialogue_question_missed_answer",
         "war_shared_conditions_missing",
+        "message_delivery_timing_gap",
+        "knowledge_boundary_violation",
+        "travel_time_compression",
     }:
         return "plain_language_and_causality"
     if issue_types & {
@@ -1475,6 +1508,45 @@ def detect_opaque_tactical_expression_issues(
         "不要只写“有鬼”“主口”“主杀招”或“把眼睛拽过去”这种作者脑内简称和比喻。"
     )
     return [build_issue("opaque_tactical_expression", "high", reason, f"p{index}")]
+
+
+def detect_message_timing_issues(
+    paragraph: str,
+    next_paragraph: str,
+    index: int,
+) -> list[dict[str, object]]:
+    context = paragraph + "\n" + next_paragraph
+    has_send = any(marker in context for marker in MESSAGE_SEND_MARKERS)
+    has_receive = any(marker in context for marker in MESSAGE_RECEIVE_MARKERS)
+    has_travel_duration = any(marker in context for marker in TRAVEL_DURATION_MARKERS)
+    has_immediate = any(marker in context for marker in IMMEDIATE_TIME_MARKERS)
+    issues: list[dict[str, object]] = []
+
+    if any(marker in context for marker in KNOWLEDGE_LEAK_MARKERS) and has_receive:
+        issues.append(build_issue(
+            "knowledge_boundary_violation",
+            "high",
+            "消息还没送出或还没送到，段落里就已经有人提前知道结果了。要补清是谁先得知、消息通过什么渠道泄露，或把知晓时点往后挪。",
+            f"p{index}",
+        ))
+
+    if has_send and has_receive and has_travel_duration and has_immediate:
+        issues.append(build_issue(
+            "travel_time_compression",
+            "high",
+            "段落同时写了长距离传信/赶路和几乎立刻收到消息，路程时长被压扁了。要补中转、提前布置或直接改成合理的送达时间。",
+            f"p{index}",
+        ))
+
+    if has_send and has_receive and not any(marker in context for marker in ("送到", "赶到", "报到", "递到", "到了", "接住")):
+        issues.append(build_issue(
+            "message_delivery_timing_gap",
+            "medium",
+            "段落里既有传信也有知晓结果，但中间缺少送达动作，读者看不清消息是怎么过去的。默认要补谁送、怎么到、何时到。",
+            f"p{index}",
+        ))
+
+    return issues
 
 
 def count_dialogue_ratio(text: str) -> float:
@@ -1902,6 +1974,7 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
         issues.extend(detect_war_term_explanation_issues(paragraph, next_paragraph, index, seen_war_terms))
         issues.extend(detect_war_causality_issues(paragraph, next_paragraph, index))
         issues.extend(detect_military_order_issues(paragraph, next_paragraph, index))
+        issues.extend(detect_message_timing_issues(paragraph, next_paragraph, index))
         hard_authorial_hits = [
             pattern for pattern in AUTHORIAL_HARD_PATTERNS
             if pattern not in allowed_authorial_patterns and pattern in paragraph
@@ -1998,7 +2071,9 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
             build_issue(
                 "abstract_word_overuse",
                 "medium",
-                "高频抽象词或预警词过多：" + ", ".join(f"{word}x{count}" for word, count in high_freq_abstract.items()),
+                "高频抽象词或预警词过多："
+                + ", ".join(f"{word}x{count}" for word, count in high_freq_abstract.items())
+                + "。优先改成动作尾、对话尾、感知尾或环境反馈，不要继续用抽象判断句顶段尾。",
             )
         )
 
