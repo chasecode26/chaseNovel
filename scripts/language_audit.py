@@ -260,6 +260,170 @@ DEFAULT_THRESHOLDS = {
     "lyrical_paragraph_tolerance": 1,
     "vague_expression_tolerance": 1,
 }
+
+# 中文网文连载核心规则补丁：
+# 历史迁移中部分常量出现过编码污染。这里保留旧常量以兼容既有样本，
+# 同时追加一组正常 UTF-8 中文规则，保证新写正文能被真实命中。
+CN_AUTHORIAL_HARD_PATTERNS = (
+    "真正的问题是",
+    "关键在于",
+    "本质上",
+    "某种意义上",
+    "换句话说",
+    "也就是说",
+    "这意味着",
+    "说到底",
+    "归根结底",
+    "毫无疑问",
+)
+CN_AUTHORIAL_SOFT_PATTERNS = (
+    "这一刻",
+    "他终于明白",
+    "他突然意识到",
+    "命运仿佛",
+    "空气里弥漫着",
+)
+CN_ABSTRACT_WORDS = (
+    "压迫感",
+    "宿命",
+    "命运",
+    "代价",
+    "局面",
+    "处境",
+    "压力",
+    "风险",
+    "选择",
+    "问题",
+    "本质",
+    "真相",
+    "结果",
+    "变化",
+    "推进",
+)
+CN_SUMMARY_STYLE_MARKERS = (
+    "总的来说",
+    "总结来说",
+    "说白了",
+    "说穿了",
+    "归根到底",
+    "归根结底",
+    "真正的问题是",
+    "关键在于",
+    "本质上",
+    "这意味着",
+    "这说明",
+    "某种意义上",
+)
+CN_DIALOGUE_INFO_MARKERS = (
+    "也就是说",
+    "换句话说",
+    "意思是",
+    "你要知道",
+    "说白了",
+    "归根结底",
+    "本质上",
+    "关键在于",
+    "这意味着",
+    "这说明",
+    "因为",
+    "所以",
+)
+CN_DIALOGUE_CONFLICT_MARKERS = (
+    "给我",
+    "闭嘴",
+    "交出来",
+    "还我",
+    "不行",
+    "凭什么",
+    "现在",
+    "马上",
+    "让开",
+    "住手",
+    "别动",
+    "你敢",
+    "我不答应",
+)
+CN_ACTION_MARKERS = (
+    "伸手",
+    "抬手",
+    "转身",
+    "推开",
+    "按住",
+    "站起",
+    "跪下",
+    "抱住",
+    "拖住",
+    "砸下",
+    "踢开",
+    "拦住",
+    "躲开",
+    "低头",
+    "抬眼",
+    "盯着",
+    "确认",
+    "拿回",
+    "稳住",
+    "靠近",
+    "后退",
+    "拔刀",
+    "扣住",
+)
+CN_RESULT_MARKERS = (
+    "结果",
+    "拿回",
+    "赢回",
+    "失去",
+    "改变",
+    "暴露",
+    "确认",
+    "兑现",
+    "落定",
+    "留下",
+)
+CN_COST_MARKERS = (
+    "代价",
+    "风险",
+    "失去",
+    "受伤",
+    "欠下",
+    "牺牲",
+    "暴露",
+    "反噬",
+    "惹怒",
+)
+CN_NEXT_HOOK_MARKERS = (
+    "下一步",
+    "接下来",
+    "倒计时",
+    "明天",
+    "三日后",
+    "有人来了",
+    "门外",
+    "信送到",
+    "还没完",
+    "任务",
+    "后面",
+    "继续",
+)
+
+
+def _append_unique_tuple(base: tuple[str, ...], extra: tuple[str, ...]) -> tuple[str, ...]:
+    merged: list[str] = []
+    for item in base + extra:
+        if item and item not in merged:
+            merged.append(item)
+    return tuple(merged)
+
+
+AUTHORIAL_HARD_PATTERNS = _append_unique_tuple(AUTHORIAL_HARD_PATTERNS, CN_AUTHORIAL_HARD_PATTERNS)
+AUTHORIAL_SOFT_PATTERNS = _append_unique_tuple(AUTHORIAL_SOFT_PATTERNS, CN_AUTHORIAL_SOFT_PATTERNS)
+ABSTRACT_WORDS = _append_unique_tuple(ABSTRACT_WORDS, CN_ABSTRACT_WORDS)
+SUMMARY_STYLE_MARKERS = _append_unique_tuple(SUMMARY_STYLE_MARKERS, CN_SUMMARY_STYLE_MARKERS)
+AUTHORIAL_SUMMARY_BLACKLIST = _append_unique_tuple(AUTHORIAL_SUMMARY_BLACKLIST, CN_AUTHORIAL_HARD_PATTERNS)
+SUMMARY_ABSTRACT_NOUNS = _append_unique_tuple(SUMMARY_ABSTRACT_NOUNS, CN_ABSTRACT_WORDS)
+DIALOGUE_INFO_MARKERS = _append_unique_tuple(DIALOGUE_INFO_MARKERS, CN_DIALOGUE_INFO_MARKERS)
+DIALOGUE_CONFLICT_MARKERS = _append_unique_tuple(DIALOGUE_CONFLICT_MARKERS, CN_DIALOGUE_CONFLICT_MARKERS)
+ACTION_MARKERS = _append_unique_tuple(ACTION_MARKERS, CN_ACTION_MARKERS)
 LINE_VALUE_RE = re.compile(r"^- ([^：]+)：\s*(.*)$")
 STYLE_LIST_FIELD_MAP = {
     "禁止句式": "forbidden_phrases",
@@ -1210,16 +1374,18 @@ def build_gate_stats(issues: list[dict[str, object]]) -> dict[str, dict[str, str
         "message_delivery_timing_gap",
         "knowledge_boundary_violation",
         "travel_time_compression",
+        "chapter_event_chain_no_visible_action",
+        "chapter_event_chain_no_result",
     }
     return {
         "language_block": {
-            "plain_language_pass": "no" if issue_types & {"opaque_tactical_expression", "war_term_first_use_unexplained", "vague_expression", "forced_atmosphere"} else "yes",
+            "plain_language_pass": "no" if issue_types & {"opaque_tactical_expression", "war_term_first_use_unexplained", "vague_expression", "forced_atmosphere", "cn_ai_explanation_stack", "cn_abstract_noun_pileup"} else "yes",
             "term_explained_on_first_use": "no" if "war_term_first_use_unexplained" in issue_types else "yes",
             "qa_matched": "no" if "dialogue_question_missed_answer" in issue_types else "yes",
             "order_can_execute": "no" if "military_order_execution_chain_missing" in issue_types else "yes",
         },
         "causality_block": {
-            "fact_judgment_consequence_clear": "no" if issue_types & {"war_causality_incomplete", "message_delivery_timing_gap", "travel_time_compression"} else "yes",
+            "fact_judgment_consequence_clear": "no" if issue_types & {"war_causality_incomplete", "message_delivery_timing_gap", "travel_time_compression", "chapter_event_chain_no_result"} else "yes",
             "protagonist_reasoning_clear": "no" if issue_types & {"war_reasoning_gap", "opaque_tactical_expression", "knowledge_boundary_violation"} else "yes",
             "shared_conditions_checked": "no" if issue_types & {"war_shared_conditions_missing", "travel_time_compression"} else "yes",
             "reader_inference_gap": "yes" if issue_types & inference_gap_types else "no",
@@ -1244,6 +1410,9 @@ def derive_ai_tone_source(issues: list[dict[str, object]]) -> list[str]:
         "forced_atmosphere",
         "vague_expression",
         "opaque_tactical_expression",
+        "cn_ai_explanation_stack",
+        "cn_abstract_noun_pileup",
+        "cn_inner_realization_without_scene",
     }
     hits: list[str] = []
     for item in issues:
@@ -1270,6 +1439,8 @@ def derive_first_fix_priority(issues: list[dict[str, object]]) -> str:
         "message_delivery_timing_gap",
         "knowledge_boundary_violation",
         "travel_time_compression",
+        "chapter_event_chain_no_visible_action",
+        "chapter_event_chain_no_result",
     }:
         return "plain_language_and_causality"
     if issue_types & {
@@ -1280,6 +1451,9 @@ def derive_first_fix_priority(issues: list[dict[str, object]]) -> str:
         "outline_expansion",
         "forced_atmosphere",
         "vague_expression",
+        "cn_ai_explanation_stack",
+        "cn_abstract_noun_pileup",
+        "cn_inner_realization_without_scene",
     }:
         return "remove_ai_tone_and_restore_scene_carrying"
     if any(item.startswith("dialogue_") for item in issue_types):
@@ -1934,6 +2108,111 @@ def build_full_rewrite(text: str, suggestions: list[dict[str, object]]) -> str:
     return "\n\n".join(paragraphs)
 
 
+def detect_cn_ai_tone_issues(paragraph: str, index: int) -> list[dict[str, object]]:
+    """Detect common Chinese web-novel AI-tone patterns with clean UTF-8 markers."""
+    issues: list[dict[str, object]] = []
+    sentences = split_sentences(paragraph)
+    if not sentences:
+        return issues
+
+    explanation_hits = [phrase for phrase in CN_AUTHORIAL_HARD_PATTERNS if phrase in paragraph]
+    abstract_hits = [word for word in CN_ABSTRACT_WORDS if word in paragraph]
+    action_hits = [marker for marker in CN_ACTION_MARKERS if marker in paragraph]
+
+    if len(explanation_hits) >= 2 and not action_hits:
+        issues.append(
+            build_issue(
+                "cn_ai_explanation_stack",
+                "high",
+                "段落连续使用解释腔/总结腔："
+                + "、".join(explanation_hits[:4])
+                + "。这类句子会替读者下结论，削弱网文场面推进；应改成可见动作、对白回击或结果变化。",
+                f"p{index}",
+            )
+        )
+
+    if len(abstract_hits) >= 4 and len(action_hits) <= 1:
+        issues.append(
+            build_issue(
+                "cn_abstract_noun_pileup",
+                "high",
+                "段落抽象词过密："
+                + "、".join(abstract_hits[:6])
+                + "。默认要落到人、物、动作、伤口、账目、位置变化或一句有压力的对白上。",
+                f"p{index}",
+            )
+        )
+
+    if any(phrase in paragraph for phrase in ("他终于明白", "他突然意识到", "这一刻")) and not action_hits:
+        issues.append(
+            build_issue(
+                "cn_inner_realization_without_scene",
+                "medium",
+                "段落用“明白/意识到/这一刻”替代场面转折。中文连载里顿悟必须有外部触发和可见后果，不能只停在心理总结。",
+                f"p{index}",
+            )
+        )
+
+    return issues
+
+
+def detect_chapter_event_chain_issues(paragraphs: list[str]) -> list[dict[str, object]]:
+    """Chapter-level guard: a serial chapter must leave visible action/result/cost/hook."""
+    body = "\n".join(paragraphs)
+    if sum(body.count(marker) for marker in ("锛", "鈥", "€", "俓")) >= 3:
+        # 旧 fixture / 历史资料中存在编码污染，不能拿中文动作词规则误判。
+        # 正常 UTF-8 正文仍会继续执行事件链检测。
+        return []
+    compact_length = len(re.sub(r"\s+", "", body))
+    if compact_length < 600:
+        return []
+
+    action_hits = sum(body.count(marker) for marker in CN_ACTION_MARKERS)
+    result_hits = sum(body.count(marker) for marker in CN_RESULT_MARKERS)
+    cost_hits = sum(body.count(marker) for marker in CN_COST_MARKERS)
+    hook_hits = sum(body.count(marker) for marker in CN_NEXT_HOOK_MARKERS)
+    dialogue_turns = len(extract_dialogue_lines(body))
+
+    issues: list[dict[str, object]] = []
+    if action_hits <= 1 and dialogue_turns <= 1:
+        issues.append(
+            build_issue(
+                "chapter_event_chain_no_visible_action",
+                "high",
+                "整章缺少可见行动或有效对白，像在概述设定/情绪，而不是推动一场戏。至少要补出主角动作、对手反应和场面变化。",
+                "global",
+            )
+        )
+    if result_hits == 0:
+        issues.append(
+            build_issue(
+                "chapter_event_chain_no_result",
+                "high",
+                "整章没有明确结果信号。连载章节必须让读者知道本章之后局面哪里变了，不能只铺气氛和解释判断。",
+                "global",
+            )
+        )
+    if compact_length >= 1000 and cost_hits == 0:
+        issues.append(
+            build_issue(
+                "chapter_event_chain_no_cost",
+                "medium",
+                "较长章节没有代价/风险/损失信号，爽点容易悬空。建议补出主角赢到什么、付出什么、留下什么隐患。",
+                "global",
+            )
+        )
+    if compact_length >= 1000 and hook_hits == 0:
+        issues.append(
+            build_issue(
+                "chapter_event_chain_no_next_hook",
+                "medium",
+                "较长章节缺少下一步牵引或章尾钩子，追读压力不足。章尾应打开新问题，而不是做命运式总结。",
+                "global",
+            )
+        )
+    return issues
+
+
 def analyze_text(text: str, style_profile: dict[str, object], style_path: Path | None = None) -> dict[str, object]:
     paragraphs = split_paragraphs(text)
     sentences = split_sentences(text)
@@ -1966,6 +2245,7 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
 
     for index, paragraph in enumerate(paragraphs, start=1):
         next_paragraph = paragraphs[index] if index < len(paragraphs) else ""
+        issues.extend(detect_cn_ai_tone_issues(paragraph, index))
         issues.extend(detect_vague_expression_issues(paragraph, index, effective_profile))
         issues.extend(detect_summary_statement_issues(paragraph, index))
         issues.extend(detect_authorial_summary_blacklist_issues(paragraph, index))
@@ -2078,6 +2358,7 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
         )
 
     issues.extend(detect_outline_expansion_issues(paragraphs))
+    issues.extend(detect_chapter_event_chain_issues(paragraphs))
 
     style_consistency_issues, style_consistency_stats = detect_style_consistency_issues(
         text,

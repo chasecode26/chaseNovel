@@ -503,9 +503,6 @@ class WriterExecutor:
             profile["sentence_length"] = "短句"
         return profile
 
-    def _has_dramatic_brief(self, brief: ChapterBrief) -> bool:
-        return True
-
     def _state_summary(self, packet: ChapterContextPacket, brief: ChapterBrief) -> dict[str, str]:
         protagonist_goal = brief.result_change.strip() or brief.chapter_function.strip() or packet.next_goal.strip() or "拿回主动权"
         counterpart_goal = brief.core_conflict.strip() or (packet.open_threads[0] if packet.open_threads else "确认局面还在控制内")
@@ -1252,6 +1249,28 @@ class WriterExecutor:
             genre_profile,
             direction,
         )
+
+    def _has_dramatic_brief(self, brief: ChapterBrief) -> bool:
+        """Return whether the chapter card already provides concrete scene beats.
+
+        Older runtime paths may call this helper while fixture cards only fill a
+        subset of ChapterBrief fields. Keep the check permissive: as long as the
+        card gives usable scene/result/hook material, prefer those concrete
+        beats over generic fallback prose.
+        """
+        fields = [
+            brief.opening_image,
+            brief.midpoint_collision,
+            brief.result_change,
+            brief.closing_hook,
+            brief.core_conflict,
+            brief.reader_experience_goal,
+        ]
+        fields.extend(brief.scene_plan)
+        fields.extend(brief.required_payoff_or_pressure)
+        fields.extend(brief.success_criteria)
+        concrete_count = sum(1 for item in fields if str(item).strip())
+        return concrete_count >= 5 and bool(brief.opening_image.strip() and brief.result_change.strip() and brief.closing_hook.strip())
 
     def _scene_summary(self, brief: ChapterBrief, fallback: str, index: int) -> str:
         scene_index = index - 1

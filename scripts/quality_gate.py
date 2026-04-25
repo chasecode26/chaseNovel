@@ -648,8 +648,8 @@ def build_quality_fallback_runtime_verdicts(project_dir: Path, chapter_no: int |
                 status="warn",
                 blocking=False,
                 evidence=causality_evidence,
-                why_it_breaks="章节结果与尾压若未落到正文，quality 即使放行也可能只是放过了空转推进。",
-                minimal_fix="补齐 result_change 与 hook_text 在正文中的承接，让章结果和尾钩都能被正文证据支撑。",
+                why_it_breaks="章节结果、尾压或信息转手没有落到正文时，会出现卡片成立但读者感受不到推进的断层。",
+                minimal_fix="补齐 result_change / hook_text 在正文中的承接，让结果、代价和章尾牵引都有可见证据。",
                 rewrite_scope="chapter_result + hook",
             )
         )
@@ -696,8 +696,8 @@ def build_quality_fallback_runtime_verdicts(project_dir: Path, chapter_no: int |
                 status="warn",
                 blocking=False,
                 evidence=pacing_evidence,
-                why_it_breaks="没有 runtime pacing verdict 时，至少要防止篇幅、段落层次和推进密度明显失衡。",
-                minimal_fix="补齐 chapter card 的字数目标与结果密度约束，并把正文拆出更清晰的推进层次。",
+                why_it_breaks="节奏、段落层次和推进密度明显失衡时，章节会像平铺说明或重复铺垫，追读感会断。",
+                minimal_fix="补齐 chapter card 的字数目标、场面层次、结果密度和下一步牵引。",
                 rewrite_scope="full_chapter",
             )
         )
@@ -719,8 +719,8 @@ def build_quality_fallback_runtime_verdicts(project_dir: Path, chapter_no: int |
                 status="warn",
                 blocking=False,
                 evidence=promise_evidence,
-                why_it_breaks="章节承诺若只留在 chapter card，不进正文，就会出现卡片成立但读感未兑现的断层。",
-                minimal_fix="把卡片层的 result_change 与 hook_text 映射到正文结果和章尾牵引上。",
+                why_it_breaks="承诺如果只留在 chapter card、不进入正文，就会出现卡片成立但读感未兑现的断层。",
+                minimal_fix="把 result_change 和 hook_text 映射到正文结果、可见代价和章尾牵引里。",
                 rewrite_scope="chapter_result + chapter_tail",
             )
         )

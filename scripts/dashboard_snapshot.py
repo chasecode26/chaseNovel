@@ -263,16 +263,13 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     if overdue_count:
         warnings.append(f"当前存在 {overdue_count} 条超期伏笔，建议优先安排回收。")
 
-    volume_warning_count = int(volume_json.get("warning_count", 0) or 0)
-    if volume_warning_count:
-        warnings.append(f"卷级审计当前有 {volume_warning_count} 条预警。")
-
-    milestone_warning_count = int(milestone_json.get("warning_count", 0) or 0)
-    if milestone_warning_count:
-        warnings.append(f"关键节点/十万字审计当前有 {milestone_warning_count} 条预警。")
+    # volume_audit / milestone_audit 已从主链移除；Dashboard 保留字段为 0，
+    # 避免旧报告变量残留导致 status 流程失败。
+    volume_warning_count = 0
+    milestone_warning_count = 0
 
     status = "warn" if warnings else "pass"
-    health_digest = build_health_digest(pipeline_json, volume_json, milestone_json, warnings)
+    health_digest = build_health_digest(pipeline_json, warnings)
     memory_sync_targets = list(memory_sync_json.keys()) if isinstance(memory_sync_json, dict) else []
     if isinstance(memory_patch_json, list):
         memory_patch_targets = [
