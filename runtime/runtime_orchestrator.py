@@ -13,7 +13,8 @@ from evaluators.promise_payoff import from_runtime_output as from_promise_payoff
 from evaluators.repeat import from_repeat_payload
 from evaluators.style import from_language_payload
 from novel_utils import derive_plan_target_words, read_text
-from runtime.contracts import ChapterBrief, EvaluatorVerdict, RuntimeDecision
+from runtime.chapter_director import ChapterDirector
+from runtime.contracts import ChapterBrief, ChapterContextPacket, ChapterDirection, EvaluatorVerdict, RuntimeDecision
 from runtime.decision_engine import DecisionEngine
 from runtime.lead_writer import LeadWriter
 from runtime.memory_compiler import MemoryCompiler
@@ -354,6 +355,9 @@ class LeadWriterRuntime:
         verdicts = self._apply_decision_policy(verdicts)
         return verdicts, postdraft_verdict, warnings
 
+    def _direct_chapter(self, project_dir: Path, packet: ChapterContextPacket, brief: ChapterBrief) -> ChapterDirection:
+        return ChapterDirector().direct(packet, brief, project_dir=project_dir)
+
     def _blocking_signature(self, decision: RuntimeDecision) -> tuple[str, ...]:
         rewrite_brief = decision.rewrite_brief
         must_change = [] if rewrite_brief is None else rewrite_brief.must_change
@@ -367,6 +371,7 @@ class LeadWriterRuntime:
 
         merged_packet = packet
         brief = lead_writer.create_brief(merged_packet)
+        direction = self._direct_chapter(project_dir, merged_packet, brief)
         decision = self._pass_decision()
         all_verdicts: list[EvaluatorVerdict] = []
         postdraft_verdict: EvaluatorVerdict | None = None
@@ -383,6 +388,7 @@ class LeadWriterRuntime:
                 merged_packet,
                 brief,
                 decision,
+                direction=direction,
                 dry_run=dry_run,
             )
             all_verdicts, postdraft_verdict, cycle_warnings = self._evaluate_cycle(
@@ -397,6 +403,7 @@ class LeadWriterRuntime:
                 {
                     "attempt": attempt + 1,
                     "brief": brief.to_dict(),
+                    "direction": direction.to_dict(),
                     "decision": decision.to_dict(),
                     "draft_status": draft_payload.get("status", "unknown"),
                 }
@@ -423,17 +430,27 @@ class LeadWriterRuntime:
                 all_verdicts,
                 attempt=attempt + 1,
             )
+            direction = self._direct_chapter(project_dir, merged_packet, brief)
 
         merged_packet = (
             packet
             if not runtime_warnings
             else type(packet)(**{**packet.to_dict(), "warnings": [*packet.warnings, *runtime_warnings]})
         )
+        final_decision = decision
+        if postdraft_verdict is not None and postdraft_verdict.status != "pass":
+            final_decision = RuntimeDecision(
+                decision=decision.decision,
+                rewrite_brief=decision.rewrite_brief,
+                blocking_dimensions=decision.blocking_dimensions,
+                advisory_dimensions=[],
+            )
+
         report_paths = RuntimeMemorySync().summarize(
             project_dir,
             merged_packet,
             brief,
-            decision,
+            final_decision,
             all_verdicts,
             draft_payload=draft_payload,
             apply_changes=not dry_run,
@@ -443,8 +460,8 @@ class LeadWriterRuntime:
             **self._write_postdraft_report(project_dir, postdraft_verdict),
         }
 
-        runtime_status = "fail" if decision.decision == "fail" else "pass"
-        if runtime_status == "pass" and (decision.decision == "revise" or merged_packet.warnings):
+        runtime_status = "fail" if final_decision.decision == "fail" else "pass"
+        if runtime_status == "pass" and (final_decision.decision == "revise" or merged_packet.warnings):
             runtime_status = "warn"
         if runtime_status == "pass" and postdraft_verdict is not None and postdraft_verdict.status != "pass":
             runtime_status = "warn"
@@ -454,7 +471,8 @@ class LeadWriterRuntime:
             "chapter": chapter,
             "context": merged_packet.to_dict(),
             "brief": brief.to_dict(),
-            "decision": decision.to_dict(),
+            "direction": direction.to_dict(),
+            "decision": final_decision.to_dict(),
             "draft": draft_payload,
             "verdicts": [item.to_dict() for item in all_verdicts],
             "postdraft_verdicts": [] if postdraft_verdict is None else [postdraft_verdict.to_dict()],

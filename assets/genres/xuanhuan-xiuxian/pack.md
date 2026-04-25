@@ -22,6 +22,5 @@
 - `assets/genres/01c-xuanhuan-gaoxiaoliu.md`
 - `assets/genres/01d-xuanhuan-tananxiuxian.md`
 - `assets/genres/01e-xuanhuan-xitongxiuxian.md`
-- `references/writing-patterns.md`
-- `references/opening-sample-library.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - `assets/common/style-fingerprints.md`

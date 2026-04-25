@@ -16,8 +16,5 @@
 
 ## 当前来源
 
-- `references/dushi-chapter-card-library.md`
-- `references/dushi-character-learning.md`
-- `references/dushi-negative-patterns.md`
-- `references/dushi-volume-route-library.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - `assets/genres/02-dushi-xitongliu.md`

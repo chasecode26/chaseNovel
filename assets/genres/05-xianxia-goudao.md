@@ -4,9 +4,7 @@
 
 **补读导航**：
 - 默认资料入口：`../../docs/assets/goudao-xianxia-reference-map.md`
-- 专项库：`../../references/goudao-chapter-card-library.md` | `../../references/goudao-character-learning.md` | `../../references/goudao-volume-route-library.md` | `../../references/goudao-negative-patterns.md`
-- 钩子/结果路线：`../../references/hook-result-learning.md`
-- 本地语料：`../../references/local-corpus-learning.md`（苟道部分）
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - 开书骨架：`../../templates/launch/opening-kit.md`（再结合当前题材包做细化）
 
 ---

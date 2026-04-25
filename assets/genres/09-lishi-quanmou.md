@@ -4,12 +4,7 @@
 
 **补读导航**：
 - 默认资料入口：`../../docs/assets/historical-power-reference-map.md`
-- 专项库：`../../references/historical-chapter-card-library.md` | `../../references/historical-character-learning.md` | `../../references/historical-volume-route-library.md` | `../../references/historical-negative-patterns.md`
-- 关系卡组：`../../references/historical-relationship-card-deck.md`
-- 军令后账：`../../references/historical-command-and-aftermath-library.md`
-- 军政冲突：`../../references/historical-military-political-chapter-card-library.md`
-- 中盘推进：`../../references/historical-midgame-learning.md`
-- 本地语料：`../../references/local-corpus-learning.md`（历史权谋部分）| `../../references/local-corpus-priority-map.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - 开书骨架：`../../templates/launch/opening-kit.md`（再结合当前题材包做细化）
 
 ---

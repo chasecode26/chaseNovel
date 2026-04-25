@@ -4,10 +4,7 @@
 
 **补读导航**：
 - 默认资料入口：`../../docs/assets/apocalypse-reference-map.md`
-- 专项库：`../../references/moshi-chapter-card-library.md` | `../../references/moshi-character-learning.md` | `../../references/moshi-volume-route-library.md` | `../../references/moshi-negative-patterns.md`
-- 据点升级：`../../references/moshi-bastion-and-order-library.md` | `../../references/moshi-bastion-governance-chapter-cards.md`
-- 钩子/结果路线：`../../references/hook-result-learning.md`
-- 本地语料：`../../references/local-corpus-learning.md`（末世部分）
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - 开书骨架：`../../templates/launch/opening-kit.md`（再结合当前题材包做细化）
 
 ---

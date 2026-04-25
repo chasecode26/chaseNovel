@@ -4,9 +4,7 @@
 
 **补读导航**：
 - 默认资料入口：`../../docs/assets/daomu-republic-reference-map.md`
-- 专项参考：`../../references/daomu-writing-notes.md`
-- 开篇校准：`../../references/opening-sample-library.md` | `../../references/title-and-selling.md`
-- 情绪与语言：`../../references/chapter-emotion-and-ai-check.md` | `../../references/language-governance.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - 世界观与术语：`../../templates/launch/worldbuilding-kit.md`
 - 开书骨架：`../../templates/launch/opening-kit.md`（再结合当前题材包做细化）
 

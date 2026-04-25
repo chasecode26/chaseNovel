@@ -6,8 +6,7 @@
 - 默认资料入口：`../../docs/assets/apocalypse-reference-map.md`
 - 题材资产包：`apocalypse/pack.md`
 - 末世通用：`04-moshi.md`
-- 专项库：`../../references/moshi-chapter-card-library.md` | `../../references/moshi-volume-route-library.md` | `../../references/moshi-bastion-and-order-library.md`
-- 本地语料：`../../references/local-corpus-learning.md`（末世囤货部分）| `../../references/local-corpus-priority-map.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - 开书骨架：`../../templates/launch/opening-kit.md`（再结合当前题材包做细化）
 
 ---

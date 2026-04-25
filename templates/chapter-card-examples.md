@@ -160,6 +160,5 @@
 ## 使用提醒
 
 - 不知道怎么收尾时，先看 `templates/launch/chapter-outcome-kit.md`
-- 中盘开始像直线时，先看 `templates/review/midgame-diagnostics.md`
 - 常规章默认控制在 `2300-3500` 字；高潮章才放宽到 `4500`
 - 先照结构写，不要先追求文气

@@ -2,18 +2,18 @@
 
 ## Purpose
 
-This note reconnects the shipped repository to the recovered LeadWriter runtime design baseline.
+This note defines the shipped LeadWriter runtime baseline.
 
 Primary references:
-- [Archived design spec](D:\git\chaseNovel\docs\archive\superpowers\specs\2026-04-14-leadwriter-runtime-design.md)
-- [Archived implementation plan](D:\git\chaseNovel\docs\archive\superpowers\plans\2026-04-14-leadwriter-runtime.md)
+- `workflow_runner.py`, `runtime/`, `quality_gate.py`, and `book_health.py` define shipped behavior.
+- Historical archive and compatibility documents have been removed from the shipped tree.
 
 ## Current Alignment
 
 ### Runtime ownership
-- `LeadWriter` remains the only chapter decision owner.
-- `WriterExecutor` remains the only prose execution path inside the runtime loop.
-- `DecisionEngine` emits a single unified `RewriteBrief`.
+- `LeadWriter` remains the chapter decision owner.
+- `WriterExecutor` remains the prose execution path inside the runtime loop.
+- `DecisionEngine` emits one unified `RewriteBrief`.
 - `EvaluatorVerdict` stays structured and blocking-oriented.
 
 ### Memory truth source
@@ -22,8 +22,8 @@ Primary references:
 - `RuntimeMemorySync` writes normalized schema patches and runtime summaries.
 
 ### Workflow surface
-- `write / run` default to `doctor,open,runtime,quality,status`.
-- `check` default stays `doctor,open,quality,status` and keeps `dry-run`.
+- `write` defaults to `doctor,open,runtime,quality,status`.
+- `check` defaults to `doctor,open,quality,status` and keeps `dry-run`.
 - `workflow_runner.py` exposes `reference_chapter`, `target_chapter`, `pipeline_summary`, and top-level `final_release`.
 
 ### Status and quality
@@ -31,22 +31,8 @@ Primary references:
 - `status` surfaces runtime-facing observation fields through `runtime_signals`.
 - `dashboard_snapshot.py` reads runtime payloads and memory-sync outputs back into book-level observation.
 
-## Recovered Baseline Decision
-
-The design baseline is now archived under `docs/archive/superpowers/` rather than kept in the main documentation path:
-- [2026-04-14-leadwriter-runtime-design.md](D:\git\chaseNovel\docs\archive\superpowers\specs\2026-04-14-leadwriter-runtime-design.md)
-- [2026-04-14-leadwriter-runtime.md](D:\git\chaseNovel\docs\archive\superpowers\plans\2026-04-14-leadwriter-runtime.md)
-
-## Remaining Gaps
-
-These are still acceptable as phase constraints, but they are not fully end-state:
-- `quality` can consume persisted runtime verdicts, but some runtime-only evaluators are still strongest inside the runtime path itself.
-- Compatibility shims still exist under `references/` and some root templates.
-- The repository still carries migration residue that should not regain main-entry status.
-
 ## Rule Of Thumb
 
 If a document conflicts with shipped behavior:
-1. Trust the recovered design spec for target architecture.
-2. Trust `workflow_runner.py`, `runtime/`, `quality_gate.py`, and `book_health.py` for current shipped behavior.
-3. Update compatibility docs so they point back to the current mainline instead of becoming parallel specs.
+1. Trust `workflow_runner.py`, `runtime/`, `quality_gate.py`, and `book_health.py`.
+2. Update docs back to the current mainline instead of creating parallel specs.

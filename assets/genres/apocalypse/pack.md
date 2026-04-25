@@ -16,11 +16,6 @@
 
 ## 当前来源
 
-- `references/moshi-bastion-and-order-library.md`
-- `references/moshi-bastion-governance-chapter-cards.md`
-- `references/moshi-chapter-card-library.md`
-- `references/moshi-character-learning.md`
-- `references/moshi-negative-patterns.md`
-- `references/moshi-volume-route-library.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - `assets/genres/04-moshi.md`
 - `assets/genres/06-moshi-tunhuo.md`

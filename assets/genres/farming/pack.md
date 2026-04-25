@@ -16,8 +16,5 @@
 
 ## 当前来源
 
-- `references/zhongtian-chapter-card-library.md`
-- `references/zhongtian-character-learning.md`
-- `references/zhongtian-negative-patterns.md`
-- `references/zhongtian-volume-route-library.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - `assets/genres/03-zhongtianwen.md`

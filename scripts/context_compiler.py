@@ -365,8 +365,6 @@ def build_payload(project_dir: Path, target_chapter: int, output_path: Path) -> 
     if not character_hotspots:
         character_hotspots = parse_schema_character_hotspots(project_dir, target_chapter)
     repeat_report = load_json(reports_dir / "repeat_report.json")
-    volume_report = load_json(reports_dir / "volume_audit.json")
-    milestone_report = load_json(reports_dir / "milestone_audit.json")
     recent_entries = split_summary_entries(recent_text)
     health_digest = load_health_digest(project_dir)
 
@@ -394,8 +392,6 @@ def build_payload(project_dir: Path, target_chapter: int, output_path: Path) -> 
         "active_promises": active_promises,
         "character_hotspots": character_hotspots,
         "repeat_warnings": [str(item) for item in repeat_report.get("warnings", [])[:4]],
-        "volume_warnings": [str(item) for item in volume_report.get("warnings", [])[:4]],
-        "milestone_warnings": [str(item) for item in milestone_report.get("warnings", [])[:4]],
         "health_digest": health_digest,
         "latest_excerpt": collect_latest_chapter_excerpt(project_dir),
         "warnings": [],
@@ -418,8 +414,6 @@ def build_payload(project_dir: Path, target_chapter: int, output_path: Path) -> 
         not payload["health_digest"]
         and not runtime_payload
         and not payload["repeat_warnings"]
-        and not payload["volume_warnings"]
-        and not payload["milestone_warnings"]
     ):
         warnings.append("当前未收到风险摘要，建议先运行 chase check 或 dashboard 生成总控摘要。")
     payload["warning_count"] = len(warnings)
@@ -498,8 +492,6 @@ def render_markdown(payload: dict[str, object]) -> str:
         "",
         "## 外部审计预警",
         *render_items(payload["repeat_warnings"], "暂无 repeat_report 预警"),
-        *render_items(payload["volume_warnings"], "暂无 volume_audit 预警"),
-        *render_items(payload["milestone_warnings"], "暂无 milestone_audit 预警"),
         "",
         "## 上一章摘录",
         "```md",

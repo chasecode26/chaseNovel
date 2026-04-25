@@ -215,18 +215,11 @@ def summarize_dynamic_changes(step: str, payload: dict[str, object]) -> list[str
 
 def build_health_digest(
     pipeline_json: dict[str, object],
-    volume_json: dict[str, object],
-    milestone_json: dict[str, object],
     warnings: list[str],
 ) -> list[str]:
     pipeline_digest = pipeline_json.get("health_digest", [])
     if isinstance(pipeline_digest, list) and pipeline_digest:
         return [str(item) for item in pipeline_digest[:HEALTH_DIGEST_LIMIT]]
-
-    digest = summarize_dynamic_changes("volume", volume_json)
-    digest.extend(summarize_dynamic_changes("milestone", milestone_json))
-    if digest:
-        return digest[:HEALTH_DIGEST_LIMIT]
     return warnings[:HEALTH_DIGEST_LIMIT]
 
 
@@ -246,8 +239,6 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     schema_dir = memory_dir / "schema"
     state_text = read_text(memory_dir / "state.md")
     foreshadow_json = load_json(reports_dir / "foreshadow_heatmap.json")
-    volume_json = load_json(reports_dir / "volume_audit.json")
-    milestone_json = load_json(reports_dir / "milestone_audit.json")
     pipeline_json = load_json(reports_dir / "pipeline_report.json")
     plan_json = load_json(schema_dir / "plan.json")
     memory_sync_json = load_json(retrieval_dir / "memory_sync_queue.json")
@@ -266,7 +257,7 @@ def build_payload(project_dir: Path) -> dict[str, object]:
     if chapter_count == 0:
         warnings.append("当前项目尚未检测到正文章节，dashboard 只能反映模板与记忆状态。")
     if not (retrieval_dir / "next_context.md").exists() and not runtime_payload_exists:
-        warnings.append("缺少 next_context.md；建议先运行 context_compiler.py 或 chase context。")
+        warnings.append("?? next_context.md?????? `chase open --project <dir> --chapter <n>` ????????")
 
     overdue_count = count_list_items(foreshadow_json.get("overdue"))
     if overdue_count:

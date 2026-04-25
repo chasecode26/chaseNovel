@@ -55,6 +55,39 @@ class ChapterBrief:
     required_payoff_or_pressure: list[str] = field(default_factory=list)
     scene_plan: list[str] = field(default_factory=list)
     success_criteria: list[str] = field(default_factory=list)
+    reader_experience_goal: str = ""
+    core_conflict: str = ""
+    emotional_beat: str = ""
+    opening_image: str = ""
+    midpoint_collision: str = ""
+    result_change: str = ""
+    closing_hook: str = ""
+    one_blade: str = ""
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ChapterDirection:
+    chapter: int
+    chapter_function: str
+    reader_experience_goal: str
+    dramatic_question: str
+    core_conflict: str
+    opening_image: str
+    midpoint_collision: str
+    result_change: str
+    closing_hook: str
+    one_blade: str
+    scene_density_plan: list[str] = field(default_factory=list)
+    silence_points: list[str] = field(default_factory=list)
+    explanation_bans: list[str] = field(default_factory=list)
+    role_speaking_limits: list[str] = field(default_factory=list)
+    emotional_curve: list[str] = field(default_factory=list)
+    ending_drop_mode: str = ""
+    writer_mission: list[str] = field(default_factory=list)
+    hard_limits: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

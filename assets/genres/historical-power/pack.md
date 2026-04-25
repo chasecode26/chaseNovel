@@ -16,12 +16,5 @@
 
 ## 当前来源
 
-- `references/historical-chapter-card-library.md`
-- `references/historical-character-learning.md`
-- `references/historical-command-and-aftermath-library.md`
-- `references/historical-midgame-learning.md`
-- `references/historical-military-political-chapter-card-library.md`
-- `references/historical-negative-patterns.md`
-- `references/historical-relationship-card-deck.md`
-- `references/historical-volume-route-library.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - `assets/genres/09-lishi-quanmou.md`

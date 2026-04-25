@@ -16,8 +16,5 @@
 
 ## 当前来源
 
-- `references/goudao-chapter-card-library.md`
-- `references/goudao-character-learning.md`
-- `references/goudao-negative-patterns.md`
-- `references/goudao-volume-route-library.md`
+- ??????????????? `docs/assets/*-reference-map.md` ? `assets/technique-kb/`?
 - `assets/genres/05-xianxia-goudao.md`

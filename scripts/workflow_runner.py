@@ -17,21 +17,9 @@ from runtime.runtime_orchestrator import LeadWriterRuntime
 STEP_MAP = {
     "doctor": "project_doctor.py",
     "open": "planning_context.py",
-    "planning": "planning_context.py",
-    "context": "planning_context.py",
     "runtime": None,
     "quality": "quality_gate.py",
-    "draft": "quality_gate.py",
-    "gate": "quality_gate.py",
-    "audit": "quality_gate.py",
-    "batch": "quality_gate.py",
-    "memory": "memory_update.py",
     "status": "book_health.py",
-    "foreshadow": "book_health.py",
-    "arc": "book_health.py",
-    "timeline": "book_health.py",
-    "repeat": "book_health.py",
-    "dashboard": "book_health.py",
 }
 
 
@@ -43,9 +31,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--chapter",
         type=int,
-        help="Existing drafted reference chapter number. Open/planning/context target the next chapter by default.",
+        help="Existing drafted reference chapter number. Open targets the next chapter by default.",
     )
-    parser.add_argument("--target-chapter", type=int, help="Explicit target chapter number for open/planning/context steps")
+    parser.add_argument("--target-chapter", type=int, help="Explicit target chapter number for open steps")
     parser.add_argument(
         "--steps",
         default="doctor,open,runtime,quality,status",
@@ -88,25 +76,15 @@ def run_step(
         }
     script_name = STEP_MAP[step]
     command = ["--project", project.as_posix()]
-    if step in {"open", "planning", "context"}:
+    if step == "open":
         if reference_chapter is not None:
             command.extend(["--chapter", str(reference_chapter)])
         if target_chapter is not None:
             command.extend(["--target-chapter", str(target_chapter)])
-    if reference_chapter is not None and step in {"memory", "status", "foreshadow"}:
-        command.extend(["--chapter", str(reference_chapter)])
-    if step in {"quality", "gate", "draft", "audit"} and reference_chapter is not None:
+    elif step == "quality" and reference_chapter is not None:
         command.extend(["--chapter-no", str(reference_chapter)])
-    if step == "foreshadow":
-        command.extend(["--focus", "foreshadow"])
-    if step == "arc":
-        command.extend(["--focus", "arc"])
-    if step == "timeline":
-        command.extend(["--focus", "timeline"])
-    if step == "repeat":
-        command.extend(["--focus", "repeat"])
-    if step == "dashboard":
-        command.extend(["--focus", "dashboard"])
+    elif step == "status" and reference_chapter is not None:
+        command.extend(["--chapter", str(reference_chapter)])
     if dry_run:
         command.append("--dry-run")
     parsed = run_script_json(repo_root, script_name, command)
@@ -119,10 +97,10 @@ def run_step(
         "warnings": parsed.get("warnings", []),
         "report_paths": parsed.get("report_paths", {}),
     }
-    if step in {"open", "planning", "context"}:
+    if step == "open":
         payload["reference_chapter"] = reference_chapter
         payload["target_chapter"] = target_chapter
-    elif step in {"runtime", "quality", "gate", "draft", "audit", "memory", "status", "foreshadow"}:
+    elif step in {"runtime", "quality", "status"}:
         payload["reference_chapter"] = reference_chapter
     payload["summary"] = {
         key: value
@@ -191,7 +169,7 @@ def build_normalized_step_fields(step: dict[str, object]) -> dict[str, object]:
         return normalized
 
     step_name = str(step.get("step", "")).strip()
-    if step_name in {"open", "planning", "context"}:
+    if step_name == "open":
         normalized.update(
             {
                 "target_chapter": summary.get("target_chapter"),
@@ -205,7 +183,7 @@ def build_normalized_step_fields(step: dict[str, object]) -> dict[str, object]:
                 "readiness_summary": str(summary.get("readiness_summary", "")).strip(),
             }
         )
-    elif step_name in {"quality", "gate", "draft", "audit", "batch"}:
+    elif step_name == "quality":
         normalized.update(
             {
                 "final_release": str(summary.get("final_release", "")).strip(),
@@ -231,7 +209,7 @@ def build_normalized_step_fields(step: dict[str, object]) -> dict[str, object]:
             )
         if isinstance(draft, dict):
             normalized["draft_status"] = str(draft.get("status", "")).strip()
-    elif step_name in {"status", "foreshadow", "arc", "timeline", "repeat", "dashboard"}:
+    elif step_name == "status":
         runtime_signals = summary.get("runtime_signals", {})
         if isinstance(runtime_signals, dict):
             normalized.update(
@@ -242,8 +220,6 @@ def build_normalized_step_fields(step: dict[str, object]) -> dict[str, object]:
                     "attention_queue": to_string_list(runtime_signals.get("attention_queue", [])),
                 }
             )
-    elif step_name == "memory":
-        normalized["recommended_apply_order"] = to_string_list(summary.get("recommended_apply_order", []))
     return {key: value for key, value in normalized.items() if has_meaningful_value(value)}
 
 
@@ -456,6 +432,10 @@ def main() -> int:
     payload["warning_count"] = len(payload["warnings"])
     payload["pipeline_summary"] = build_pipeline_summary(results)
     payload["final_release"] = str(payload["pipeline_summary"].get("final_release", "")).strip() or "pass"
+    if failed and payload["final_release"] == "pass":
+        payload["final_release"] = "revise"
+        if isinstance(payload["pipeline_summary"], dict):
+            payload["pipeline_summary"]["final_release"] = "revise"
     if not args.dry_run:
         report_dir.mkdir(parents=True, exist_ok=True)
         (report_dir / "pipeline_report.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

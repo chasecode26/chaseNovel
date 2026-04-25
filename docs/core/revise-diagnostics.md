@@ -108,6 +108,5 @@
 
 ## 相关旧资料
 - `docs/core/status-workflow.md`
-- `templates/review/midgame-diagnostics.md`
 - `templates/launch/chapter-outcome-kit.md`
-- `references/anti-repeat-rules.md`（兼容层，不再是默认主入口）
+- Anti-repeat rules are consolidated into `docs/core/revise-diagnostics.md` and `docs/core/write-workflow.md`.

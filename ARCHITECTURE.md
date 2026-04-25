@@ -15,20 +15,18 @@
 
 - `SKILL.md` 仍是主交互入口
 - 当前 shipped 聚合编排入口是 `scripts/workflow_runner.py`
-- `write / run / check` 都通过聚合层驱动
-- `write / run` 默认链路是 `doctor -> open -> runtime -> quality -> status`
+- `write / check` 都通过聚合层驱动
+- `write` 默认链路是 `doctor -> open -> runtime -> quality -> status`
 - `check` 默认链路是 `doctor -> open -> quality -> status`
 - `check` 保持 dry-run，只做预审、quality 与状态回看，不进入 runtime 正文生成
-- `open / planning / context` 负责下一章 planning/context 准备
-- `quality / runtime / memory / status` 负责当前 `reference_chapter` 的检查、生成、回写与观察
+- `open` 负责下一章 planning/context 准备
+- `quality / runtime / status` handle the current `reference_chapter` checks, generation, and observation.
 - `workflow_runner.py` 会同时输出 `pipeline_summary` 与顶层 `final_release`
-- `engine_runner` 没有成为当前运行时入口，只保留为未来可选重命名方向
 
 ## Design Baseline
 
-- Target architecture reference: `docs/archive/superpowers/specs/2026-04-14-leadwriter-runtime-design.md`
-- Historical implementation plan: `docs/archive/superpowers/plans/2026-04-14-leadwriter-runtime.md`
 - Current shipped alignment note: `docs/core/runtime-design-baseline.md`
+- Historical archive documents have been removed from the shipped tree; use shipped runtime behavior as the source of truth.
 
 ## Design Principles
 
@@ -45,17 +43,17 @@
 - 聚合层把它视为 `reference_chapter`
 
 ### Target chapter
-- `open / planning / context` 会基于 `reference_chapter` 默认推导 `target_chapter = n + 1`
+- `open` 会基于 `reference_chapter` 默认推导 `target_chapter = n + 1`
 - 如需直接指定规划目标，使用 `--target-chapter <m>`
 
 ### Routing
 - `doctor`：不消费章节号
-- `open / planning / context`：消费 `reference_chapter`，产出 `target_chapter`
-- `runtime / quality / memory / status`：消费 `reference_chapter`
+- `open`：消费 `reference_chapter`，产出 `target_chapter`
+- `runtime / quality / status`：消费 `reference_chapter`
 
 ## Aggregate Output Contract
 
-- `write / run / check` 聚合输出至少应稳定包含：
+- `write / check` 聚合输出至少应稳定包含：
 - `reference_chapter`
 - `target_chapter`
 - `status`
@@ -100,11 +98,12 @@
 - `docs/assets/`（默认先看 `genre-index` 与各题材 `*-reference-map.md`）
 - `assets/`
 - `templates/`
-- `references/`
+- `references/` keeps task contracts only.
 
 ## Command Surface
 
-### Primary commands
+The public CLI keeps only current product commands:
+
 - `bootstrap`
 - `doctor`
 - `open`
@@ -113,22 +112,7 @@
 - `status`
 - `check`
 
-### Compatibility commands
-- `planning`
-- `context`
-- `foreshadow`
-- `dashboard`
-- `arc`
-- `timeline`
-- `repeat`
-- `memory`
-- `gate`
-- `draft`
-- `batch`
-- `audit`
-- `run`
-
-兼容命令可以继续存在，但不再是默认产品心智入口。
+Old aliases have been removed from `bin/chase.js`; use these commands directly.
 
 ## Repository Layout
 
@@ -142,7 +126,7 @@ repo/
 │   ├── core/
 │   └── assets/
 ├── assets/
-├── references/
+- references/              # task contracts only
 ├── templates/
 ├── scripts/
 ├── runtime/

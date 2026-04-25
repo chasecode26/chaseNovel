@@ -26,18 +26,17 @@ chase check --project <dir> [--chapter <n> | --target-chapter <n>]
 ## 当前运行事实
 
 - `scripts/workflow_runner.py` 是现行 shipped 聚合编排入口。
-- `write / run / check` 都走聚合链。
+- `write / check` 都走聚合链。
 - `check` 当前默认链路是 `doctor,open,quality,status`，保持 dry-run，但会显式补做 quality 关卡。
-- `open / planning / context` 负责下一章准备。
-- `status / memory / runtime / quality` 负责当前参考章检查或回写。
-- `engine_runner` 只是未来可选重命名方向，不是当前主链入口。
+- `open` 负责下一章准备。
+- `status / runtime / quality` 负责当前参考章检查或回写。
 
 ## 章节语义
 
 - `--chapter <n>` 在聚合链中表示当前已经写完的 reference chapter。
-- `open / planning / context` 会把它视为“当前已写章节”，默认准备 `target_chapter = n + 1`。
+- `open` 会把它视为“当前已写章节”，默认准备 `target_chapter = n + 1`。
 - 需要跳章、补章、回头指定目标章时，显式传 `--target-chapter <m>`。
-- `status / runtime / memory / quality` 不会自动把 `--chapter` 加一。
+- `status / runtime / quality` 不会自动把 `--chapter` 加一。
 
 ## 核心文档
 
@@ -61,9 +60,8 @@ chase check --project <dir> [--chapter <n> | --target-chapter <n>]
 
 ## Design Baseline
 
-- Archived design spec: `docs/archive/superpowers/specs/2026-04-14-leadwriter-runtime-design.md`
-- Archived implementation plan: `docs/archive/superpowers/plans/2026-04-14-leadwriter-runtime.md`
 - Runtime alignment note: `docs/core/runtime-design-baseline.md`
+- Historical archive documents have been removed from the shipped tree; keep the current runtime behavior as the source of truth.
 
 ## 仓库校验
 
@@ -97,8 +95,7 @@ node ./scripts/change_analyzer.js --mode working --json
 仓库已进入聚合主链稳定维护阶段：
 - `docs/core/*` 是默认阅读面
 - 聚合层章节语义已统一为 `reference_chapter / target_chapter`
-- `references/` 主要承担兼容层与资料层职责
-- 根层只保留少量仍有兼容价值的 shim
+- `references/` keeps task contracts only.
 
 ## 仓库结构
 
@@ -117,7 +114,7 @@ repo/
 │  ├─ common/
 │  ├─ examples/
 │  └─ technique-kb/
-├─ references/
+- references/              # task contracts only
 ├─ templates/
 │  ├─ core/
 │  ├─ launch/

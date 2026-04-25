@@ -29,8 +29,8 @@
 - `status --chapter <n>` 里的 `n` 是 `reference_chapter`
 - 这个编号表示“已经存在、拿来做状态检查的章节号”
 - `status` 不会自动把 `--chapter` 推成下一章
-- 如果目标是准备下一章，请走 `open / planning / context`
-- `open / planning / context` 会把 `--chapter <n>` 解释为“当前已写章节”，默认规划 `target_chapter = n + 1`
+- 如果目标是准备下一章，请走 `open`
+- `open` 会把 `--chapter <n>` 解释为“当前已写章节”，默认规划 `target_chapter = n + 1`
 
 ## 什么时候用
 

@@ -4,41 +4,20 @@
 const path = require("path");
 const { spawnSync } = require("child_process");
 
-const PRIMARY_COMMAND_SPECS = {
+const COMMAND_SPECS = {
   open: { script: "open_book.py" },
   quality: { script: "quality_gate.py" },
   write: { script: "workflow_runner.py" },
   status: { script: "book_health.py" },
   bootstrap: { script: "project_bootstrap.py" },
   doctor: { script: "project_doctor.py" },
-  memory: { script: "memory_update.py" },
   check: {
     script: "workflow_runner.py",
     injectArgs: ["--dry-run", "--steps", "doctor,open,quality,status"],
   },
 };
 
-const LEGACY_ALIAS_SPECS = {
-  gate: { script: "quality_gate.py", injectArgs: ["--check", "chapter"] },
-  draft: { script: "quality_gate.py", injectArgs: ["--check", "draft"] },
-  planning: { script: "planning_context.py" },
-  batch: { script: "quality_gate.py", injectArgs: ["--check", "batch"] },
-  audit: { script: "quality_gate.py", injectArgs: ["--check", "language"] },
-  context: { script: "planning_context.py" },
-  foreshadow: { script: "book_health.py", injectArgs: ["--focus", "foreshadow"] },
-  dashboard: { script: "book_health.py", injectArgs: ["--focus", "dashboard"] },
-  arc: { script: "book_health.py", injectArgs: ["--focus", "arc"] },
-  timeline: { script: "book_health.py", injectArgs: ["--focus", "timeline"] },
-  repeat: { script: "book_health.py", injectArgs: ["--focus", "repeat"] },
-  run: { script: "workflow_runner.py" },
-};
-
-const COMMAND_SPECS = {
-  ...PRIMARY_COMMAND_SPECS,
-  ...LEGACY_ALIAS_SPECS,
-};
-
-const PRIMARY_HELP_LINES = [
+const HELP_LINES = [
   "chase bootstrap --project <dir> [--force]",
   "chase doctor --project <dir> [--json]",
   "chase open --project <dir> [--chapter <n> | --target-chapter <n>]",
@@ -48,33 +27,14 @@ const PRIMARY_HELP_LINES = [
   "chase check --project <dir> [--chapter <n> | --target-chapter <n>]",
 ];
 
-const LEGACY_HELP_LINES = [
-  "chase planning --project <dir> [--chapter <n> | --target-chapter <n>]",
-  "chase context --project <dir> [--chapter <n> | --target-chapter <n>]",
-  "chase gate --project <dir> [--chapter-no <n>]",
-  "chase draft --project <dir> [--chapter-no <n>]",
-  "chase audit --project <dir> [--chapter-no <n>]",
-  "chase batch --project <dir> [--from <n> --to <n>]",
-  "chase dashboard --project <dir>",
-  "chase foreshadow --project <dir> [--chapter <n>]",
-  "chase arc --project <dir>",
-  "chase timeline --project <dir>",
-  "chase repeat --project <dir>",
-  "chase memory --project <dir> [--chapter <n>]",
-  "chase run --project <dir> [--chapter <n> | --target-chapter <n>] [--steps <csv>]",
-];
-
 const NOTE_LINES = [
-  "open is the primary open-book / planning entry; without chapter args it runs launch readiness",
-  "open/context/planning use --chapter as the current drafted chapter and default to preparing the next chapter; use --target-chapter to override",
+  "open is the primary open-book and next-chapter planning entry",
+  "open uses --chapter as the current drafted reference chapter and defaults to target_chapter = reference + 1; use --target-chapter to override",
   "quality is the unified gate protocol: --check all|chapter|draft|language|batch",
   "status is the unified book-health protocol: --focus all|dashboard|foreshadow|arc|timeline|repeat",
-  "legacy commands are still available, but now route into the new aggregated layers",
-  "write/run/check now expose both reference chapter and target chapter semantics",
+  "write/check expose both reference chapter and target chapter semantics",
   "check is a dry-run health sweep over doctor + open + quality + status",
-  "default run steps: doctor,open,runtime,quality,status",
-  "run/write/check use --chapter as the current drafted reference chapter; open/planning/context default target to the next chapter",
-  "use --target-chapter when the planning target is not simply reference + 1",
+  "write default steps: doctor,open,runtime,quality,status",
   "project defaults to the current directory",
 ];
 
@@ -163,11 +123,8 @@ function printHelp(errorMessage) {
     console.error(errorMessage);
   }
   const sections = [
-    "Primary commands:",
-    ...PRIMARY_HELP_LINES.map((line) => `  ${line}`),
-    "",
-    "Legacy compatibility aliases:",
-    ...LEGACY_HELP_LINES.map((line) => `  ${line}`),
+    "Commands:",
+    ...HELP_LINES.map((line) => `  ${line}`),
     "",
     "Notes:",
     ...NOTE_LINES.map((line) => `  - ${line}`),

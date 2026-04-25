@@ -168,7 +168,7 @@
 - 黄金三章必须体现阶段性推进，不得只是换场景重复卖点
 - 若题材是历史权谋、玄幻修仙、都市系统、种田、末世、盗墓这类强设定题材，若“题材专项骨架补全”仍有关键空项，默认不建议直接进入正文
 - 若题材偏历史权谋、末世囤货、仙侠苟道，优先结合：
-  - `references/opening-sample-specialties.md`
+  - `docs/assets/genre-index.md`
 - 若用户只说“帮我开书”，默认先参考：
   - `templates/launch/opening-kit.md`
   - `templates/launch/volume-blueprint.md`

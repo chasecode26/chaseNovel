@@ -11,6 +11,8 @@ __pycache__/
 components.d.ts
 .omx/
 __MACOSX/
+.claude/
+tmpclaude-*-cwd
 tests/.tmp/
 .tmp-smoke/
 .tmp-npm-cache/

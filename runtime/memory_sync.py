@@ -454,7 +454,8 @@ class RuntimeMemorySync:
         }
         after["runtimeDecision"] = decision.decision
         after["runtimeBlockingDimensions"] = decision.blocking_dimensions
-        after["runtimeAdvisoryDimensions"] = decision.advisory_dimensions
+        # 运行时回写只持久化阻断维度；告警维度保留在当次 payload，不写入 state，避免历史噪音持续污染仪表盘。
+        after["runtimeAdvisoryDimensions"] = []
         after = self._normalize_state_payload(after, schema_dir)
         return MemoryPatch(schema_file=state_path.as_posix(), before=before, after=after)
 
