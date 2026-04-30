@@ -8,7 +8,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-
+# Shared shell infra: subprocess execution, aggregate payload shaping, and report writing.
+# Keep story-specific business rules in analyzer scripts and runtime modules.
 def configure_utf8_stdio() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")

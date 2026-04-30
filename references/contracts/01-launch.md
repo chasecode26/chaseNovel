@@ -1,4 +1,17 @@
-### `/一键开书`
+### `opening` / `/一键开书`
+
+这是 `opening` 子 skill 的核心合同。
+
+它负责：
+- 开书
+- 黄金三章
+- 卷纲 / 阶段目标
+- 开篇承诺
+- 平台与题材骨架补全
+- 初始化记忆文件建议
+
+它不负责正文生成；正文生成归 `writer`。
+
 输出：
 
 - Planner 结果
@@ -20,10 +33,14 @@
 - 平台策略覆盖点（如番茄向开篇抓手）
 - 初始化记忆文件建议
 
-#### `/一键开书` 固定输出模板
+#### `opening` 固定输出模板
 
 ```markdown
 # 开书方案
+
+## Skill owner
+- `opening`
+- 当前 shipped 入口：`chase open`
 
 ## Agent 编排
 - 默认顺序：`Planner -> Character -> Worldbuilder -> Reviewer`

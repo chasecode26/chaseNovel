@@ -1,4 +1,15 @@
-### `/修改`
+### `revise` / `/修改`
+
+这是 `revise` 子 skill 的核心合同。
+
+它负责：
+- 先诊断
+- 再选择修法
+- 再决定小修还是重写
+- 必要时回退给 `writer`
+- 必要时补记忆影响面
+
+它不是从零起稿合同，也不等于 `style` 的纯语言润色合同。
 
 输出：
 
@@ -13,10 +24,14 @@
 - `Reviewer` 复核
 - 需要更新的记忆点
 
-#### `/修改` 固定输出模板
+#### `revise` 固定输出模板
 
 ```markdown
 # 修章方案
+
+## Skill owner
+- `revise`
+- 当前 shipped 入口主要通过：`chase quality`、修订合同与相关诊断文档解释
 
 ## Agent 编排
 - 默认顺序：`Reviewer -> Planner -> HookEmotion -> Writer -> (LanguageReviewer || StyleDialogue || ContinuityReviewer || CausalityReviewer) -> Reviewer`

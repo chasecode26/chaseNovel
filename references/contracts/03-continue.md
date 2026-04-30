@@ -1,7 +1,30 @@
-### `/继续`
+### `continue` / `/继续`
 
-输出：
+这是 `continue` 子 skill 的核心合同。
 
+它负责：
+- 从断点恢复上下文
+- 接住上一章钩子或未完场面
+- 判断这次续写最该延续什么，而不是把上一章重写一遍
+- 在续写前钉住当前阶段、资源、知情边界、在场人物与未结线程
+
+它不是 `writer` 的别名，也不是简单的“再写一章”。
+它是正文主链里的专项模式，专门处理断点恢复与续写接钩子。
+
+## Skill owner
+- `continue`
+- 第一批里仍复用现有 `writer` 主链与 shipped CLI，不单独引入新路由
+
+## 默认读取顺序
+1. `docs/core/write-workflow.md`
+2. `templates/core/plan.md`
+3. `00_memory/state.md`
+4. `00_memory/summaries/recent.md`
+5. 必要时补 `findings.md`、`timeline.md`、`foreshadowing.md`
+
+若断点前存在强钩子，本轮必须先接钩子，再开新场景。
+
+## 输出
 - `Planner` 结果
 - `HookEmotion` 结果
 - 章节规划预审
@@ -141,10 +164,9 @@
 - 其他：
 ```
 
-补充约束：
-
-- `/继续` 默认先读 `plan.md`、`state.md`，必要时补 `findings.md` 与 `summaries/recent.md`
-- 若断点前存在强钩子，本章必须先接钩子，再开新场景
-- `HookEmotion` 先判断断点情绪和钩子是否续上，再交给 `Writer`
-- 若任一 reviewer `blocking=yes`，必须补齐回退四字段
-- 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `docs/core/write-workflow.md`
+## 补充约束
+- `/继续` 默认先读 `plan.md`、`state.md`，必要时补 `findings.md` 与 `summaries/recent.md`。
+- 若断点前存在强钩子，本章必须先接钩子，再开新场景。
+- `HookEmotion` 先判断断点情绪和钩子是否续上，再交给 `Writer`。
+- 若任一 reviewer `blocking=yes`，必须补齐回退四字段。
+- 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `docs/core/write-workflow.md`。

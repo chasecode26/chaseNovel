@@ -29,7 +29,8 @@ KNOWN_PATCH_TARGETS = (
 HEALTH_DIGEST_LIMIT = 3
 RUNTIME_DIGEST_LIMIT = 3
 
-
+# Canonical dashboard builder: this file owns dashboard/runtime summary construction.
+# book_health.py should treat this payload as the primary dashboard source, then route and aggregate around it.
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate a lightweight book-level dashboard snapshot for a chaseNovel project."

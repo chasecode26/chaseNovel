@@ -9,6 +9,7 @@ from collections import Counter
 from pathlib import Path
 
 from novel_utils import detect_existing_chapter_file, read_text
+from genre_vocabulary_check import analyze_genre_vocabulary
 AUTHORIAL_HARD_PATTERNS = (
     "宿命感",
     "压抑得让人",
@@ -424,6 +425,25 @@ SUMMARY_ABSTRACT_NOUNS = _append_unique_tuple(SUMMARY_ABSTRACT_NOUNS, CN_ABSTRAC
 DIALOGUE_INFO_MARKERS = _append_unique_tuple(DIALOGUE_INFO_MARKERS, CN_DIALOGUE_INFO_MARKERS)
 DIALOGUE_CONFLICT_MARKERS = _append_unique_tuple(DIALOGUE_CONFLICT_MARKERS, CN_DIALOGUE_CONFLICT_MARKERS)
 ACTION_MARKERS = _append_unique_tuple(ACTION_MARKERS, CN_ACTION_MARKERS)
+
+# Project-review hardening: concrete-language guardrails from serial writing feedback.
+PROJECT_REVIEW_ABSTRACT_WORDS = (
+    '局', '局势', '局面', '入局', '破局', '承局', '位置', '站位', '态度', '分寸', '体面', '名分', '绑定', '牵制', '拉进来', '站到身后', '太满', '太薄', '太冷', '太热', '空旨', '压住', '稳住', '看重', '弃子', '风口', '咬住', '挨刀', '棋子', '刀鞘',
+)
+PROJECT_REVIEW_OPAQUE_COMMANDS = (
+    '照这个方向射', '先射火', '先吊兵器', '他能说', '他们能说', '南门能撑',
+)
+PROJECT_REVIEW_RECORD_WORDS = (
+    '记下来', '记了什么', '记一笔', '写下来', '抄下来', '记录下来',
+)
+PROJECT_REVIEW_MODERN_BUREAUCRATIC = (
+    '账上还有', '情绪价值', '信息差', '压迫感', '拉扯', '博弈', '站队', '绑定',
+)
+SUMMARY_ABSTRACT_NOUNS = _append_unique_tuple(SUMMARY_ABSTRACT_NOUNS, PROJECT_REVIEW_ABSTRACT_WORDS)
+CN_ABSTRACT_WORDS = _append_unique_tuple(CN_ABSTRACT_WORDS, PROJECT_REVIEW_ABSTRACT_WORDS)
+OPAQUE_TACTICAL_TERMS = _append_unique_tuple(OPAQUE_TACTICAL_TERMS, PROJECT_REVIEW_OPAQUE_COMMANDS)
+AUTHORIAL_SUMMARY_BLACKLIST = _append_unique_tuple(AUTHORIAL_SUMMARY_BLACKLIST, PROJECT_REVIEW_MODERN_BUREAUCRATIC)
+VAGUE_EXPRESSIONS = _append_unique_tuple(VAGUE_EXPRESSIONS, PROJECT_REVIEW_RECORD_WORDS)
 LINE_VALUE_RE = re.compile(r"^- ([^：]+)：\s*(.*)$")
 STYLE_LIST_FIELD_MAP = {
     "禁止句式": "forbidden_phrases",
@@ -2375,6 +2395,14 @@ def analyze_text(text: str, style_profile: dict[str, object], style_path: Path |
     issues.extend(dialogue_voice_issues)
     dialogue_qa_issues, dialogue_qa_stats = detect_dialogue_question_answer_issues(text)
     issues.extend(dialogue_qa_issues)
+
+    # 题材语境词汇漂移检测（来自 genre_vocabulary_check）
+    detected_genre = str(effective_profile.get("genre", "")).strip() or "ancient"
+    genre_result = analyze_genre_vocabulary(text, genre=detected_genre, silence=True)
+    genre_issues = genre_result.get("issues", [])
+    if genre_issues:
+        issues.extend(genre_issues)
+
     gate_stats = build_gate_stats(issues)
 
     scores = build_scores(issues, style_consistency_issues, dialogue_voice_issues)

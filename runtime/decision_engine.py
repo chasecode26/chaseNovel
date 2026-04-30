@@ -8,12 +8,24 @@ CORE_PRIORITY = [
     "promise_payoff",
     "repeat",
     "pacing",
-    "style",
+    "naturalness",
+    "prose_concreteness",
+    "scene_density",
+    "story_logic",
+    "hook_integrity",
+    "continuity_guardrail",
+    "market_fit",
+    "pre_publish_checklist",
+    "expectation_integrity",
+    "opening_diagnostics",
+    "genre_framework_fit",
     "dialogue",
+    "style",
 ]
 
 EXTENDED_PRIORITY = [
     *CORE_PRIORITY,
+    "settings",
     "character",
     "foreshadow",
     "arc",
@@ -39,7 +51,7 @@ class DecisionEngine:
         )
         primary = blocking[0]
         rewrite_brief = RewriteBrief(
-            return_to="LeadWriter + WriterExecutor",
+            return_to="LeadWriter + RewriterAgent",
             blocking_reasons=[item.why_it_breaks for item in blocking],
             first_fix_priority=primary.dimension,
             rewrite_scope=primary.rewrite_scope,

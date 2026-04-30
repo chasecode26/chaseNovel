@@ -3,8 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from runtime.script_imports import ensure_scripts_on_path
+
+ensure_scripts_on_path()
+
+import re as _re
+
 from runtime.contracts import ChapterContextPacket
-from novel_utils import chapter_number_from_name, extract_line, extract_state_value, has_placeholder, read_text
+from novel_utils import chapter_number_from_name, extract_line, extract_state_value, has_placeholder, parse_plan_volumes, read_text
 
 
 class MemoryCompiler:
@@ -101,6 +107,81 @@ class MemoryCompiler:
         normalized = value.replace("；", "，").replace(";", "，").replace("/", "，")
         return [item.strip() for item in normalized.split("，") if item.strip()]
 
+    def _resolve_volume_info(self, project_dir: Path, chapter: int) -> dict[str, object]:
+        plan_text = read_text(project_dir / "00_memory" / "plan.md")
+        volumes = parse_plan_volumes(plan_text)
+        result: dict[str, object] = {
+            "is_volume_start": False,
+            "is_volume_end": False,
+            "volume_name": "",
+            "volume_promises": [],
+            "volume_handoff": [],
+        }
+        if not volumes:
+            return result
+
+        current_volume = None
+        for vol in volumes:
+            start = int(vol.get("chapterStart", 0))
+            end = int(vol.get("chapterEnd", 0))
+            if start <= chapter <= end:
+                current_volume = vol
+                break
+
+        if current_volume is None:
+            return result
+
+        result["volume_name"] = str(current_volume.get("name", ""))
+        result["is_volume_start"] = chapter == int(current_volume.get("chapterStart", 0))
+        result["is_volume_end"] = chapter == int(current_volume.get("chapterEnd", 0))
+
+        # 下一卷的第一章视同 volume_end 的 handoff 目标
+        next_volume = None
+        if not result["is_volume_end"]:
+            for vol in volumes:
+                if int(vol.get("chapterStart", 0)) == chapter + 1:
+                    next_volume = vol
+                    break
+            if next_volume is not None:
+                result["is_volume_end"] = True
+
+        # 当前章节是前一卷最后一章+1 → 卷开始
+        if not result["is_volume_start"] and chapter > 1:
+            for vol in volumes:
+                if int(vol.get("chapterEnd", 0)) == chapter - 1:
+                    result["is_volume_start"] = True
+                    break
+
+        vol_index = current_volume.get("index", 0)
+        blueprint_paths = [
+            project_dir / "00_memory" / "volumes" / f"volume-{int(vol_index):02d}-blueprint.md",
+            project_dir / "00_memory" / f"volume-{int(vol_index):02d}-blueprint.md",
+        ]
+        blueprint_path: Path | None = None
+        for bp in blueprint_paths:
+            if bp.exists():
+                blueprint_path = bp
+                break
+
+        if blueprint_path is not None:
+            blueprint_text = read_text(blueprint_path)
+            core_section = _re.search(r"核心任务[\s\S]*?(?=##|\Z)", blueprint_text)
+            if core_section:
+                result["volume_promises"] = [
+                    item.strip()
+                    for item in _re.findall(r"[-*]\s*(.+)", core_section.group(0))
+                    if item.strip()
+                ]
+            handoff_section = _re.search(r"跨卷交接[\s\S]*?(?=##|\Z)", blueprint_text)
+            if handoff_section:
+                result["volume_handoff"] = [
+                    item.strip()
+                    for item in _re.findall(r"[-*]\s*(.+)", handoff_section.group(0))
+                    if item.strip()
+                ]
+
+        return result
+
     def build(self, project_dir: Path, chapter: int) -> ChapterContextPacket:
         schema_dir = project_dir / "00_memory" / "schema"
         state = self._load_json(schema_dir / "state.json")
@@ -144,7 +225,7 @@ class MemoryCompiler:
         present_characters = self._split_list_field(chapter_card.get("present_characters", ""))
         voice_rules = [str(item) for item in voice.get("forbiddenCadence", []) if str(item).strip()]
 
-        return ChapterContextPacket(
+        packet = ChapterContextPacket(
             project=project_dir.as_posix(),
             chapter=chapter,
             active_volume=current_volume,
@@ -169,3 +250,6 @@ class MemoryCompiler:
             forbidden_inventions=forbidden,
             voice_rules=voice_rules,
         )
+
+        volume_info = self._resolve_volume_info(project_dir, chapter)
+        return ChapterContextPacket(**{**packet.to_dict(), **{k: v for k, v in volume_info.items() if v}})

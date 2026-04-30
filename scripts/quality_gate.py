@@ -5,6 +5,7 @@ import argparse
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -17,6 +18,7 @@ from aggregation_utils import (
     run_step_specs,
     write_aggregate_reports,
 )
+from chapter_gate import build_gate_analysis, write_outputs
 from evaluators.continuity import from_gate_payload
 from evaluators.contracts import build_verdict
 from evaluators.draft import from_draft_payload
@@ -990,6 +992,101 @@ def summarize_final_release(step_status: str, verdicts: list[dict[str, object]])
     return "pass"
 
 
+def detect_batch_chapters(project_dir: Path, chapter_from: int | None, chapter_to: int | None) -> list[tuple[int, Path]]:
+    chapters_dir = project_dir / "03_chapters"
+    items: list[tuple[int, Path]] = []
+    if not chapters_dir.exists():
+        return items
+
+    for path in chapters_dir.iterdir():
+        if not path.is_file():
+            continue
+        chapter_no = int(path.stem[-3:]) if path.stem[-3:].isdigit() else None
+        if chapter_no is None:
+            continue
+        if chapter_from is not None and chapter_no < chapter_from:
+            continue
+        if chapter_to is not None and chapter_no > chapter_to:
+            continue
+        items.append((chapter_no, path))
+    return sorted(items, key=lambda item: item[0])
+
+
+def summarize_batch_issue_text(messages: list[str]) -> str:
+    if not messages:
+        return "无"
+    return " | ".join(messages[:3])
+
+
+def build_batch_payload(project_dir: Path, chapter_from: int | None, chapter_to: int | None, dry_run: bool) -> dict[str, object]:
+    style_path = project_dir / "00_memory" / "style.md"
+    chapters = detect_batch_chapters(project_dir, chapter_from, chapter_to)
+    if not chapters:
+        return {
+            "project": project_dir.as_posix(),
+            "status": "fail",
+            "warning_count": 0,
+            "warnings": [],
+            "report_paths": {},
+            "chapters": [],
+            "stats": {
+                "chapter_count": 0,
+                "verdict_counter": {},
+                "continuity_counter": {},
+                "language_counter": {},
+                "issue_counter": {},
+            },
+            "chapter_range": "none",
+            "error": "未找到可处理的章节。",
+        }
+
+    verdict_counter: Counter[str] = Counter()
+    continuity_counter: Counter[str] = Counter()
+    language_counter: Counter[str] = Counter()
+    issue_counter: Counter[str] = Counter()
+    chapter_items: list[dict[str, object]] = []
+
+    for chapter_no, chapter_path in chapters:
+        analysis = build_gate_analysis(project_dir, chapter_no, chapter_path, style_path, False)
+        write_outputs(project_dir, analysis, dry_run, None)
+
+        verdict_counter[str(analysis["verdict"])] += 1
+        continuity_counter[str(analysis["continuity_verdict"])] += 1
+        language_counter[str(analysis["language_verdict"])] += 1
+
+        issues = list(analysis["blockers"]) + list(analysis["warnings"]) + list(analysis["language_blockers"]) + list(analysis["language_warnings"])
+        for issue in issues:
+            issue_counter[str(issue)] += 1
+
+        chapter_items.append(
+            {
+                "chapter_no": chapter_no,
+                "chapter_path": chapter_path.as_posix(),
+                "verdict": analysis["verdict"],
+                "continuity_verdict": analysis["continuity_verdict"],
+                "language_verdict": analysis["language_verdict"],
+                "top_issues": summarize_batch_issue_text(issues),
+            }
+        )
+
+    return {
+        "project": project_dir.as_posix(),
+        "status": "pass",
+        "warning_count": 0,
+        "warnings": [],
+        "report_paths": {},
+        "chapters": chapter_items,
+        "chapter_range": f"{chapters[0][0]:03d}-{chapters[-1][0]:03d}",
+        "stats": {
+            "chapter_count": len(chapter_items),
+            "verdict_counter": dict(sorted(verdict_counter.items())),
+            "continuity_counter": dict(sorted(continuity_counter.items())),
+            "language_counter": dict(sorted(language_counter.items())),
+            "issue_counter": dict(issue_counter.most_common(10)),
+        },
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run draft / chapter / language gates as one quality step.")
     parser.add_argument("--project", required=True, help="Path to the novel project root")
@@ -1016,34 +1113,39 @@ def main() -> int:
     if args.dry_run:
         shared.append("--dry-run")
 
+    project_dir = Path(args.project).resolve()
     if args.check == "batch" or args.chapter_from is not None or args.chapter_to is not None:
-        batch_args = shared[:]
-        if args.chapter_from is not None:
-            batch_args.extend(["--from", str(args.chapter_from)])
-        if args.chapter_to is not None:
-            batch_args.extend(["--to", str(args.chapter_to)])
-        step_specs = [("batch_gate.py", batch_args)]
-    else:
-        if args.chapter_no is None:
-            raise SystemExit("--chapter-no is required unless running batch mode")
-        chapter_args = [*shared, "--chapter-no", str(args.chapter_no)]
-        if args.check == "chapter":
-            step_specs = [("chapter_gate.py", chapter_args)]
-        elif args.check == "draft":
-            step_specs = [("draft_gate.py", chapter_args)]
-        elif args.check == "language":
-            step_specs = [("language_audit.py", chapter_args)]
+        payload = build_batch_payload(project_dir, args.chapter_from, args.chapter_to, args.dry_run)
+        payload["check"] = "batch"
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
         else:
-            step_specs = [
-                ("chapter_gate.py", chapter_args),
-                ("draft_gate.py", chapter_args),
-                ("language_audit.py", chapter_args),
-            ]
+            print(f"status={payload['status']}")
+            print("check=batch")
+            print(f"warning_count={payload['warning_count']}")
+            if payload.get("chapter_range"):
+                print(f"chapter_range={payload['chapter_range']}")
+        return 0 if payload["status"] != "fail" else 1
+
+    if args.chapter_no is None:
+        raise SystemExit("--chapter-no is required unless running batch mode")
+    chapter_args = [*shared, "--chapter-no", str(args.chapter_no)]
+    if args.check == "chapter":
+        step_specs = [("chapter_gate.py", chapter_args)]
+    elif args.check == "draft":
+        step_specs = [("draft_gate.py", chapter_args)]
+    elif args.check == "language":
+        step_specs = [("language_audit.py", chapter_args)]
+    else:
+        step_specs = [
+            ("chapter_gate.py", chapter_args),
+            ("draft_gate.py", chapter_args),
+            ("language_audit.py", chapter_args),
+        ]
 
     steps = run_step_specs(repo_root, step_specs)
     payload = build_aggregate_payload(project=args.project, steps=steps, extra_fields={"check": args.check})
 
-    project_dir = Path(args.project).resolve()
     verdicts = build_verdicts(steps)
     verdicts.extend(build_schema_verdicts(project_dir))
 

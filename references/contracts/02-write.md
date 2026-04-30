@@ -1,5 +1,31 @@
-### `/写`
-输出：
+### `writer` / `/写`
+
+这是 `writer` 子 skill 的核心合同。
+
+它负责：
+- 接收 chapter-ready 输入
+- 生成正文
+- 在 runtime blocking 时按统一 rewrite contract 回退重写
+- 在写后给出最小回写要求
+
+它不负责开书、风格 owner 治理、书级状态总治理，也不等于 `/继续` 的断点恢复模式。
+
+## Skill owner
+- `writer`
+- 当前 shipped 入口主要通过：`chase write`
+
+## 默认读取顺序
+1. `docs/core/write-workflow.md`
+2. `templates/core/chapter-dramatic-card.md`
+3. `templates/core/writer-director-prompt.md`
+4. `templates/core/character-voice-diff.md`
+5. `templates/core/voice.md`
+6. `templates/core/style.md`
+7. `00_memory/state.md` / `00_memory/timeline.md`
+
+若当前章仍未 `write_ready`，先回到 `opening`，不要直接推进正文生成。
+
+## 输出
 - Planner 结果
 - HookEmotion 结果
 - 章节规划预审
@@ -68,11 +94,6 @@
 
 ## 3. Writer 成稿
 [正文]
-
-写前补充硬要求：
-- 不准先写省力句、提炼句、抽象收口句占位
-- 不准靠“后面再修”放过第一轮正文质量
-- 默认先保质量，再保速度
 
 ## 4. StructureReviewer 结果
 - `chapter_function`：
@@ -176,14 +197,13 @@
 - 其他：
 ```
 
-补充约束：
-
-- `/写` 前若用户没有明确指定章尾钩子，先对照 `templates/launch/chapter-outcome-kit.md`
-- `章尾钩子类型` 必须落到以下之一：`结果未揭晓型 / 危机压顶型 / 选择逼近型 / 信息反转型 / 关系突变型 / 资源争夺型 / 欲望升级型`
-- `本章结果类型` 建议先对照 `templates/launch/chapter-outcome-kit.md`
-- `本章结果类型` 至少落到以下之一：`小胜型 / 翻盘型 / 被打断型 / 失手受损型 / 资源到手型 / 赢局面丢关系型 / 保命失机型`
-- `为什么这次不重复上一章结果` 必须回答：和近 1-3 章相比，本章换了什么反馈
-- `章尾钩子自动推荐依据` 至少写清 2 项：`本章功能 / 当前压力源 / 题材惯性`
-- `为什么这一钩子适合本章` 必须回答：它会如何改变下一章行动，不能只写“更抓人”
-- 若章尾钩子与本章功能无关，或近 3 章重复同类钩子，默认记为重复风险
-- 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `docs/core/write-workflow.md`
+## 补充约束
+- `/写` 前若用户没有明确指定章尾钩子，先对照 `templates/launch/chapter-outcome-kit.md`。
+- `章尾钩子类型` 必须落到以下之一：`结果未揭晓型 / 危机压顶型 / 选择逼近型 / 信息反转型 / 关系突变型 / 资源争夺型 / 欲望升级型`。
+- `本章结果类型` 建议先对照 `templates/launch/chapter-outcome-kit.md`。
+- `本章结果类型` 至少落到以下之一：`小胜型 / 翻盘型 / 被打断型 / 失手受损型 / 资源到手型 / 赢局面丢关系型 / 保命失机型`。
+- `为什么这次不重复上一章结果` 必须回答：和近 `1-3` 章相比，本章换了什么反馈。
+- `章尾钩子自动推荐依据` 至少写清 2 项：`本章功能 / 当前压力源 / 题材惯性`。
+- `为什么这一钩子适合本章` 必须回答：它会如何改变下一章行动，不能只写“更抓人”。
+- 若章尾钩子与本章功能无关，或近 `3` 章重复同类钩子，默认记为重复风险。
+- 通用 reviewer 分工、阻断条件、冲突裁决与串行回退，统一见 `docs/core/write-workflow.md`。

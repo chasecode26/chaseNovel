@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -41,6 +42,7 @@ SUBGENRE_HINTS = {
         "秩序治理": ("秩序治理", "规则", "治理", "准入", "分配", "组织"),
     },
 }
+HEALTH_DIGEST_LIMIT = 3
 
 
 def normalize_input_text(text: str) -> str:
@@ -51,6 +53,16 @@ def read_text(path: Path) -> str:
     if not path.exists():
         return ""
     return normalize_input_text(path.read_text(encoding="utf-8"))
+
+
+def load_json(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(read_text(path))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def extract_line(text: str, label: str) -> str:
@@ -134,11 +146,33 @@ def detect_current_chapter(state_text: str) -> int:
     return int(match.group(1)) if match else 0
 
 
+def detect_target_chapter(state_text: str, chapter: int | None, target_chapter: int | None) -> int:
+    if target_chapter is not None:
+        return max(target_chapter, 1)
+    if chapter is not None:
+        return max(chapter + 1, 1)
+    return max(detect_current_chapter(state_text) + 1, 1)
+
+
 def has_placeholder(text: str) -> bool:
     normalized = text.strip()
     if not normalized:
         return False
     return any(pattern.search(normalized) for pattern in PLACEHOLDER_PATTERNS)
+
+
+def extract_next_goal(state_text: str) -> str:
+    direct = extract_state_value(state_text, "下章预告")
+    if direct and not has_placeholder(direct):
+        return direct
+
+    section_match = re.search(r"##\s*下章预告\s*(.*?)(?:\n##\s+|\Z)", state_text, re.S)
+    if not section_match:
+        return ""
+
+    section_text = section_match.group(1)
+    result = extract_state_value(section_text, "计划内容") or extract_state_value(section_text, "章节目标")
+    return "" if has_placeholder(result) else result
 
 
 def chapter_number_from_name(name: str) -> int | None:
@@ -404,3 +438,127 @@ def detect_existing_chapter_file(
     if chapter_files:
         return chapter_files[-1]
     raise ValueError("未找到章节文件，请传入 --chapter 或在 03_chapters 下放入章节。")
+
+
+def load_health_digest(project_dir: Path) -> list[str]:
+    candidates = [
+        project_dir / "05_reports" / "pipeline_report.json",
+        project_dir / "00_memory" / "retrieval" / "health_digest.json",
+        project_dir / "00_memory" / "retrieval" / "dashboard_cache.json",
+    ]
+    for path in candidates:
+        payload = load_json(path)
+        digest = payload.get("health_digest", [])
+        if isinstance(digest, list) and digest:
+            return [str(item) for item in digest[:HEALTH_DIGEST_LIMIT]]
+    return []
+
+
+def parse_heading_value(text: str, labels: list[str]) -> str:
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line.startswith("-"):
+            continue
+        body = line[1:].strip()
+        for label in labels:
+            prefix_a = f"{label}:"
+            prefix_b = f"{label}："
+            if body.startswith(prefix_a):
+                value = body[len(prefix_a):].strip()
+            elif body.startswith(prefix_b):
+                value = body[len(prefix_b):].strip()
+            else:
+                continue
+            if value and not has_placeholder(value):
+                return value
+    return ""
+
+
+def find_chapter_card_path(project_dir: Path, target_chapter: int) -> Path | None:
+    candidate_dirs = [
+        project_dir / "01_outline",
+        project_dir / "01_outline" / "chapter_cards",
+        project_dir / "01_outline" / "chapters",
+        project_dir / "00_memory",
+        project_dir / "00_memory" / "chapter_cards",
+        project_dir / "00_memory" / "plans",
+        project_dir / "04_gate" / f"ch{target_chapter:03d}",
+    ]
+    candidate_names = {
+        f"第{target_chapter:03d}章.md",
+        f"第{target_chapter}章.md",
+        f"ch{target_chapter:03d}.md",
+        f"chapter-{target_chapter:03d}.md",
+        f"chapter_{target_chapter:03d}.md",
+        f"plan-{target_chapter:03d}.md",
+        f"plan_{target_chapter:03d}.md",
+    }
+    candidate_names_lower = {name.lower() for name in candidate_names}
+
+    for base_dir in candidate_dirs:
+        if not base_dir.exists():
+            continue
+        for path in base_dir.rglob("*.md"):
+            lowered = path.name.lower()
+            if path.name in candidate_names or lowered in candidate_names_lower:
+                return path
+            if any(token in lowered for token in ("章卡", "chapter", "plan")):
+                chapter_no = chapter_number_from_name(path.stem)
+                if chapter_no == target_chapter:
+                    return path
+    return None
+
+
+def parse_chapter_card(card_text: str) -> dict[str, str]:
+    return {
+        "chapter_tier": parse_heading_value(card_text, ["chapter_tier", "章节等级", "本章等级"]),
+        "target_word_count": parse_heading_value(card_text, ["target_word_count", "目标字数", "本章目标字数"]),
+        "time_anchor": parse_heading_value(card_text, ["time_anchor", "本章时间", "时间锚点"]),
+        "location_anchor": parse_heading_value(card_text, ["location_anchor", "本章地点", "地点锚点"]),
+        "present_characters": parse_heading_value(card_text, ["present_characters", "在场人物"]),
+        "knowledge_boundary": parse_heading_value(card_text, ["knowledge_boundary", "知情边界"]),
+        "message_flow": parse_heading_value(card_text, ["message_flow", "消息传播链", "消息传播"]),
+        "arrival_timing": parse_heading_value(card_text, ["arrival_timing", "最早送达时间", "消息送达时点"]),
+        "who_knows_now": parse_heading_value(card_text, ["who_knows_now", "谁现在能知道", "当前知情人"]),
+        "who_cannot_know_yet": parse_heading_value(card_text, ["who_cannot_know_yet", "谁按理还不能知道", "当前不应知情人"]),
+        "travel_time_floor": parse_heading_value(card_text, ["travel_time_floor", "路程至少多久", "最短路程时间"]),
+        "resource_state": parse_heading_value(card_text, ["resource_state", "资源状态"]),
+        "progress_floor": parse_heading_value(card_text, ["progress_floor", "本章至少推进到哪里", "本章推进下限"]),
+        "progress_ceiling": parse_heading_value(card_text, ["progress_ceiling", "本章最多只能推进到哪里", "本章推进上限"]),
+        "must_not_payoff_yet": parse_heading_value(card_text, ["must_not_payoff_yet", "本章不能提前兑现", "本章禁止提前兑现"]),
+        "allowed_change_scope": parse_heading_value(card_text, ["allowed_change_scope", "本章允许变化范围", "允许变化层级"]),
+        "open_threads": parse_heading_value(card_text, ["open_threads", "开放线索", "开放线程"]),
+        "forbidden_inventions": parse_heading_value(card_text, ["forbidden_inventions", "禁止发明"]),
+        "chapter_function": parse_heading_value(card_text, ["chapter_function", "本章功能"]),
+        "chapter_goal": parse_heading_value(card_text, ["chapter_goal", "本章目标"]),
+        "conflict_type": parse_heading_value(card_text, ["conflict_type", "本章冲突"]),
+        "result_change": parse_heading_value(card_text, ["result_change", "本章结果变化"]),
+        "result_type": parse_heading_value(card_text, ["result_type", "本章结果类型"]),
+        "emotion_point": parse_heading_value(card_text, ["emotion_point", "本章爽点 / 情绪点", "本章爽点/情绪点"]),
+        "relationship_shift": parse_heading_value(card_text, ["relationship_shift", "本章关系刷新点"]),
+        "promise_progress": parse_heading_value(
+            card_text,
+            ["promise_progress", "本章承诺推进 / 延后说明", "本章承诺推进/延后说明"],
+        ),
+        "hook_type": parse_heading_value(card_text, ["hook_type", "章尾钩子类型"]),
+        "hook_text": parse_heading_value(card_text, ["hook_text", "本章章尾钩子"]),
+        "opening_focus": parse_heading_value(card_text, ["opening_focus", "开头先落什么"]),
+        "mid_focus": parse_heading_value(card_text, ["mid_focus", "中段必须推进什么"]),
+        "ending_focus": parse_heading_value(card_text, ["ending_focus", "结尾必须留下什么"]),
+    }
+
+
+def load_previous_card_defaults(project_dir: Path, target_chapter: int) -> dict[str, str]:
+    if target_chapter <= 1:
+        return {}
+    previous_path = find_chapter_card_path(project_dir, target_chapter - 1)
+    if not previous_path:
+        return {}
+    previous_text = read_text(previous_path)
+    if not previous_text.strip():
+        return {}
+    previous_card = parse_chapter_card(previous_text)
+    return {
+        "chapter_tier": previous_card.get("chapter_tier", ""),
+        "target_word_count": previous_card.get("target_word_count", ""),
+    }

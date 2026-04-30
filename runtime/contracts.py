@@ -33,6 +33,11 @@ class ChapterContextPacket:
     forbidden_inventions: list[str]
     voice_rules: list[str]
     warnings: list[str] = field(default_factory=list)
+    is_volume_start: bool = False
+    is_volume_end: bool = False
+    volume_name: str = ""
+    volume_promises: list[str] = field(default_factory=list)
+    volume_handoff: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

@@ -26,12 +26,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "doctor:project": "node ./bin/chase.js doctor --project .",
-    "doctor": "node ./bin/chase.js doctor --project .",
     "check": "node ./bin/chase.js check --project .",
-    "verify:change": "node ./scripts/change_analyzer.js",
-    "smoke": "python ./scripts/smoke_check.py",
-    "test:language-gate": "python ./scripts/language_gate_selftest.py",
     "pack:dry-run": "npm pack --dry-run"
   },
   "keywords": [

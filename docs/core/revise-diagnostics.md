@@ -1,4 +1,14 @@
-# 改写与诊断
+# revise：改写与诊断
+
+`revise` 是 `chaseNovel` 第一批优先成形的子 skill 之一。
+
+它负责：
+- 诊断章节问题
+- 判断是小修、压缩、重排还是重写
+- 决定是否需要回退到 `writer` 再走一轮
+- 明确本章修订会影响哪些人物、承诺、时间线和后续章节
+
+它不是从零起稿入口，也不替 `style` 包办全部风格治理。
 
 ## 适用场景
 - 剧情跑偏
@@ -8,6 +18,13 @@
 - 重复推进
 - 伏笔拖欠
 - 进度提前
+- 写出来了，但明显“不对劲”
+
+## `revise` 负责什么
+1. 先诊断，不先直接重写
+2. 先看章节功能是否丢失，再看语言问题
+3. 先判断影响面，再决定只修本章还是要影响后续
+4. 若结构已伤，优先回退到修法与 handoff，而不是只改句子
 
 ## 六类高频问题
 1. **主线跑偏**：连续多章答不出“这章如何服务当前阶段目标”
@@ -51,21 +68,6 @@
 - 一章又一章都在收集信息
 - 一章又一章都在调情、嘴炮、试探
 
-## 重复诊断的快速排查法
-写完一章后，至少回看：
-- 本章冲突类型
-- 本章结果类型
-- 本章爽点 / 情绪点类型
-- 本章章尾钩子类型
-- 本章主要人物组合
-
-再和近 `3-5` 章对照：
-- 有没有两项以上完全重复
-- 有没有任何一项明确升级
-- 有没有新的关系、新的代价、新的资源结果
-
-若“两项以上重复且没有升级”，默认进入修章。
-
 ## 诊断顺序
 1. 先看本章功能有没有丢
 2. 再看变化有没有落到局面
@@ -106,7 +108,27 @@
 4. 若是“人物不对”，先修动机链，不先修文气
 5. 若是“重复感强”，优先换反馈路径，不只换说法
 
-## 相关旧资料
+## 与 `writer` / `style` / `memory` 的边界
+- `writer`：负责正文生成
+- `revise`：负责诊断与修法选择
+- `style`：负责文风、声口、低 AI 味校准
+- `memory`：负责状态、承诺、回写边界与书级健康观察
+
+如果问题已经伤到：
+- 人物状态
+- 时间线
+- 承诺兑现
+- 伏笔链
+- 后续章节
+
+则必须在 `revise` 中显式写出影响面，不允许只改本章表面表达。
+
+## 当前合同入口
+- 修订合同：`references/contracts/04-modify.md`
+- 状态 / 节奏参考：`references/contracts/05-state-and-rhythm.md`
+- 承诺 / 重复推进参考：`references/contracts/06-promises-and-repeat.md`
+
+## 相关资料
+- `docs/core/write-workflow.md`
 - `docs/core/status-workflow.md`
-- `templates/launch/chapter-outcome-kit.md`
-- Anti-repeat rules are consolidated into `docs/core/revise-diagnostics.md` and `docs/core/write-workflow.md`.
+- `templates/agents/rewriter-handoff.md`

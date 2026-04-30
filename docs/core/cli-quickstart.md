@@ -5,8 +5,6 @@
 The product command surface is intentionally small:
 
 ```bash
-chase bootstrap --project <dir> [--force]
-chase doctor --project <dir> [--json]
 chase open --project <dir> [--chapter <n> | --target-chapter <n>]
 chase quality --project <dir> [--chapter-no <n> | --from <n> --to <n>]
 chase write --project <dir> [--chapter <n> | --target-chapter <n>] [--steps <csv>]
@@ -17,10 +15,6 @@ chase check --project <dir> [--chapter <n> | --target-chapter <n>]
 ## Common flows
 
 ```bash
-# Initialize a book project
-chase bootstrap --project my-book
-chase doctor --project my-book
-
 # Prepare launch or next chapter context
 chase open --project my-book
 chase open --project my-book --chapter 12
@@ -40,19 +34,13 @@ chase check --project my-book --chapter 12
 
 ## Default chains
 
-- `write`: `doctor,open,runtime,quality,status`
-- `check`: `doctor,open,quality,status` and never enters runtime prose generation.
+- `write`: `open,runtime,quality,status`
+- `check`: `open,quality,status` and never enters runtime prose generation.
 
 ## Chapter semantics
 
 - `--chapter <n>` means the current drafted reference chapter.
-- `open` uses that reference chapter to prepare `target_chapter = n + 1` by default.
+- `open` uses that reference chapter to prepare `target_chapter = n + 1` by default, and now builds planning review plus next-context readiness in-process.
 - Use `--target-chapter <m>` when the planning target is not simply reference + 1.
 - `status`, `quality`, and `runtime` consume the reference chapter directly.
 
-## Minimal validation
-
-```bash
-npm run smoke
-node ./scripts/change_analyzer.js --mode working --summary-only
-```

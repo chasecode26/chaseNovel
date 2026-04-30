@@ -8,9 +8,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from chapter_planning_review import find_chapter_card_path, load_previous_card_defaults, parse_chapter_card
 from language_audit import analyze_text, parse_style_file
 from novel_utils import (
+    find_chapter_card_path,
+    load_previous_card_defaults,
+    parse_chapter_card,
     CHAPTER_PATTERN,
     detect_existing_chapter_file,
     detect_latest_chapter_file,

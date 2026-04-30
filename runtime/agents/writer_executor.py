@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from runtime.contracts import ChapterBrief, ChapterContextPacket, ChapterDirection, RuntimeDecision
+from runtime.agents.market_assets import compact_asset_lines, load_market_assets
 from scripts.novel_utils import read_text, useful_lines
 
 
@@ -16,6 +17,12 @@ class WriterExecutor:
     def _writer_director_prompt(self, project_dir: Path) -> str:
         prompt_text = self._load_memory_prompt_file(project_dir, "writer-director-prompt.md")
         return prompt_text.strip()
+
+    def _load_repo_agent_prompt(self, name: str) -> str:
+        path = Path(__file__).resolve().parents[2] / "templates" / "agents" / f"{name}.md"
+        if not path.exists():
+            return ""
+        return path.read_text(encoding="utf-8").strip()
 
     def _book_voice_context(self, project_dir: Path) -> list[str]:
         voice_lines = self._compact_memory_lines(self._load_memory_prompt_file(project_dir, "voice.md"), limit=10)
@@ -31,6 +38,17 @@ class WriterExecutor:
                 seen.add(normalized)
                 combined.append(normalized)
         return combined[:18]
+
+    def _market_asset_context(self, project_dir: Path) -> dict[str, list[str]]:
+        assets = load_market_assets(project_dir)
+        return {
+            "platform": compact_asset_lines(assets.get("platform_profile", ""), limit=18),
+            "examples": compact_asset_lines(assets.get("prose_examples", ""), limit=16),
+            "pre_publish": compact_asset_lines(assets.get("pre_publish_checklist", ""), limit=14),
+            "opening": compact_asset_lines(assets.get("opening_diagnostics", ""), limit=14),
+            "expectation": compact_asset_lines(assets.get("expectation_lines", ""), limit=18),
+            "genre": compact_asset_lines(assets.get("genre_framework", ""), limit=18),
+        }
 
     def _build_minimal_mission_context(
         self,
@@ -204,7 +222,9 @@ class WriterExecutor:
         boundaries: dict[str, object],
         cast_voice: dict[str, object],
         writer_rules: dict[str, object],
+        scene_beat_plan: dict[str, object] | None = None,
     ) -> str:
+        agent_prompt = self._load_repo_agent_prompt("writer-agent")
         director_prompt = self._writer_director_prompt(project_dir)
         mission_lines = [
             f"本章作用：{mission['chapter_function']}" if str(mission.get('chapter_function', '')).strip() else "",
@@ -220,11 +240,49 @@ class WriterExecutor:
         scene_plan = [str(item).strip() for item in mission.get("scene_plan", []) if str(item).strip()]
         success_criteria = [str(item).strip() for item in mission.get("success_criteria", []) if str(item).strip()]
         book_voice = self._book_voice_context(project_dir)
+        market_assets = self._market_asset_context(project_dir)
+        scene_beat_lines: list[str] = []
+        if scene_beat_plan:
+            for beat in scene_beat_plan.get("beats", []):
+                if not isinstance(beat, dict):
+                    continue
+                scene_beat_lines.append(
+                    " / ".join(
+                        str(beat.get(key, "")).strip()
+                        for key in (
+                            "scene_goal",
+                            "first_collision",
+                            "reversal",
+                            "cost",
+                            "next_pull",
+                            "short_expectation",
+                            "new_expectation",
+                            "genre_framework_hint",
+                        )
+                        if str(beat.get(key, "")).strip()
+                    )
+                )
+        scene_density_contract = (
+            "## Scene Density Contract\n"
+            "- 每个自然段至少落入两项：动作、物件、身体反应、对白压力、环境阻碍、局面变化\n"
+            "- 禁止用旁白替读者总结：少写“意识到/明白/本质上/这意味着/真正的问题是”\n"
+            "- 凡是判断句，优先改成角色当场做事、受阻、试探、付代价\n"
+            "- 对白必须争位置、压对方、遮掩、试探或自保；不能只解释信息"
+        )
         sections = [
+            agent_prompt,
+            scene_density_contract,
             director_prompt or "# Writer 导演单\n你现在不是在总结这一章，而是在直接写这一章正文。",
             self._render_section("本章任务", mission_lines),
+            self._render_section("SceneBeatPlan", scene_beat_lines),
             self._render_section("场面推进", scene_plan),
             self._render_section("成章标准", success_criteria),
+            self._render_section("番茄/七猫平台画像", market_assets["platform"]),
+            self._render_section("好写法/坏模式样例", market_assets["examples"]),
+            self._render_section("发稿前自检", market_assets["pre_publish"]),
+            self._render_section("黄金一章/阶段开篇诊断", market_assets["opening"]),
+            self._render_section("期待线管理", market_assets["expectation"]),
+            self._render_section("题材框架校准", market_assets["genre"]),
             self._render_section("硬边界", [str(item) for item in boundaries.get("lines", [])]),
             self._render_section("角色声口", [str(item) for item in cast_voice.get("lines", [])]),
             self._render_section("单书 voice/style", book_voice),
@@ -1533,6 +1591,11 @@ class WriterExecutor:
                 f"- must_not_payoff_yet: {'、'.join(packet.must_not_payoff_yet) if packet.must_not_payoff_yet else 'missing'}",
                 f"- allowed_change_scope: {'、'.join(packet.allowed_change_scope) if packet.allowed_change_scope else 'missing'}",
                 "",
+                "## Prose Concreteness Gate",
+                "- 每段至少两种场面信号：动作、物件、身体反应、对白压力、环境阻碍、局面变化",
+                "- 连续两段只讲判断、不落动作或物件，Reviewer 应判 blocking",
+                "- 抽象句必须改回现场：让角色做、被拦、受伤、试探或付代价",
+                "",
                 "## Review Checklist",
             ]
         )
@@ -1558,6 +1621,16 @@ class WriterExecutor:
         lines.extend(f"- {item}" for item in reasons)
         lines.extend(["", "## Must Change"])
         lines.extend(f"- {item}" for item in must_change or ["回到 scene beats 与段落层重写。"])
+        lines.extend(
+            [
+                "",
+                "## Rewriter Boundaries",
+                "- 只修 rewrite_scope 指定的段落、场面或对白，不重开章节目标",
+                "- 保留已经有效的动作、物件、身体反应、对白压力和章尾钩子",
+                "- 把抽象判断改成现场行为，不要把审查意见写进正文",
+                "- 修完后逐段自查：每段至少两种场面信号",
+            ]
+        )
         lines.extend(["", "## Recheck Order"])
         lines.extend(f"- {item}" for item in recheck_order or ["continuity", "pacing", "style"])
         lines.extend(["", "## Chapter Function", f"- {brief.chapter_function}", ""])
@@ -1787,6 +1860,7 @@ class WriterExecutor:
         *,
         direction: ChapterDirection | None = None,
         dry_run: bool = False,
+        scene_beat_plan: dict[str, object] | None = None,
     ) -> dict[str, object]:
         del dry_run
         draft_dir = self._draft_dir(project_dir, brief.chapter)
@@ -1824,6 +1898,7 @@ class WriterExecutor:
             boundaries=boundaries,
             cast_voice=cast_voice,
             writer_rules=writer_rules,
+            scene_beat_plan=scene_beat_plan,
         )
         manuscript_text = self._compose_manuscript_text(
             brief,

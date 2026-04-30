@@ -47,7 +47,7 @@
 
 ## 与 `check` 的边界
 - `status` 是状态观察入口，不负责补做 quality 关卡
-- `chase check` 当前默认链路是 `doctor,open,quality,status`
+- `chase check` 当前默认链路是 `open,quality,status`
 - `quality` 负责当前 `reference_chapter` 的质量放行判断
 - `status` 负责书级健康回看
 - `check` 保持 dry-run，不进入 `runtime`
@@ -73,3 +73,9 @@
 - `arc`：角色弧 / 关系推进停滞与错位
 - `timeline`：时间线先后关系与时距风险
 - `repeat`：近章重复推进、重复钩子、重复节奏
+
+## 当前 owner 关系
+- `book_health.py` 是公开的 `status` 路由与聚合输出壳
+- `dashboard_snapshot.py` 是 `dashboard` / `runtime_signals` 的主摘要构建器
+- `book_health.py` 会读取 `dashboard_snapshot.py` 的 payload，再统一拼成 `status` 输出
+- `dashboard_snapshot.py` 产出的 `runtime_signals`、`health_digest`、`report_paths` 应保持稳定

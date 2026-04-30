@@ -1,6 +1,8 @@
 # Writer 导演单
 
-> 这是正文生成前给 Writer 的最短导演单，不是审稿单。  
+> Primary owner: `writer`
+> Shared constraints from: `opening`, `style`, `memory`
+> 这是正文生成前给 Writer 的最短导演单，不是审稿单。
 > 只告诉 Writer 这章该怎么拍，不把 reviewer 腔提前塞进正文。
 
 ```markdown

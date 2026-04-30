@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from runtime.script_imports import ensure_scripts_on_path
+
+ensure_scripts_on_path()
+
 from novel_utils import derive_plan_target_words, extract_markdown_table_rows, parse_plan_volumes, read_text
 from runtime.contracts import ChapterBrief, ChapterContextPacket, EvaluatorVerdict, MemoryPatch, RuntimeDecision
 
@@ -117,6 +121,38 @@ class RuntimeMemorySync:
             )
         normalized["promises"] = normalized_promises
         return normalized
+
+    def _normalize_expectation_tracking_payload(self, payload: dict[str, object]) -> dict[str, object]:
+        chapters = payload.get("chapters", [])
+        if not isinstance(chapters, list):
+            chapters = []
+        normalized_chapters: list[dict[str, object]] = []
+        seen: set[int] = set()
+        for item in chapters:
+            if not isinstance(item, dict):
+                continue
+            chapter = max(0, int(item.get("chapter", 0) or 0))
+            if chapter in seen:
+                continue
+            seen.add(chapter)
+            normalized_chapters.append(
+                {
+                    "chapter": chapter,
+                    "shortExpectations": self._dedupe_strings(list(item.get("shortExpectations", []))),
+                    "longExpectations": self._dedupe_strings(list(item.get("longExpectations", []))),
+                    "expectationPayoffs": self._dedupe_strings(list(item.get("expectationPayoffs", []))),
+                    "newExpectations": self._dedupe_strings(list(item.get("newExpectations", []))),
+                    "expectationGapRisks": self._dedupe_strings(list(item.get("expectationGapRisks", []))),
+                    "genreFrameworkHints": self._dedupe_strings(list(item.get("genreFrameworkHints", []))),
+                    "readerHook": str(item.get("readerHook", "")).strip(),
+                    "chapterResult": str(item.get("chapterResult", "")).strip(),
+                    "releaseDecision": str(item.get("releaseDecision", "")).strip(),
+                    "blockingDimensions": self._dedupe_strings(list(item.get("blockingDimensions", []))),
+                    "advisoryDimensions": self._dedupe_strings(list(item.get("advisoryDimensions", []))),
+                }
+            )
+        normalized_chapters.sort(key=lambda item: int(item.get("chapter", 0) or 0))
+        return {"chapters": normalized_chapters[-80:]}
 
     def _normalize_plan_payload(self, payload: dict[str, object], schema_dir: Path) -> dict[str, object]:
         defaults = self._schema_defaults("plan.schema.json", schema_dir)
@@ -475,6 +511,47 @@ class RuntimeMemorySync:
         after = self._normalize_timeline_payload(after, schema_dir)
         return MemoryPatch(schema_file=timeline_path.as_posix(), before=before, after=after)
 
+    def _handle_volume_transition(
+        self,
+        project_dir: Path,
+        packet: ChapterContextPacket,
+        retrieval_dir: Path,
+    ) -> None:
+        if not packet.is_volume_start and not packet.is_volume_end:
+            return
+
+        transitions_dir = project_dir / "00_memory" / "volume_transitions"
+        transitions_dir.mkdir(parents=True, exist_ok=True)
+
+        if packet.is_volume_start and packet.chapter > 1:
+            lines = [
+                "# Volume Transition Event",
+                "",
+                f"- chapter: {packet.chapter}",
+                f"- event: volume_start",
+                f"- volume: {packet.volume_name}",
+                f"- note: 进入新卷，优先从 plan.md 卷纲和 volume-blueprint.md 拉取卷级承诺。",
+            ]
+            if packet.volume_promises:
+                lines.append("- promises_to_fulfill:")
+                lines.extend(f"  - {p}" for p in packet.volume_promises)
+            event_path = transitions_dir / f"ch{packet.chapter:03d}_volume_start.md"
+            event_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        if packet.is_volume_end:
+            lines = [
+                "# Volume Transition Event",
+                "",
+                f"- chapter: {packet.chapter}",
+                f"- event: volume_end",
+                f"- volume: {packet.volume_name}",
+                f"- note: 本卷结束，确保卷级承诺已兑现或显式延期。下卷交接清单：",
+            ]
+            if packet.volume_handoff:
+                lines.extend(f"- handoff: {h}" for h in packet.volume_handoff)
+            event_path = transitions_dir / f"ch{packet.chapter:03d}_volume_end.md"
+            event_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
     def _build_payoff_patch(self, schema_dir: Path, brief: ChapterBrief) -> MemoryPatch:
         payoff_path = schema_dir / "payoff_board.json"
         before = self._load_json(payoff_path)
@@ -523,6 +600,138 @@ class RuntimeMemorySync:
         after["promises"] = promises
         after = self._normalize_payoff_payload(after, schema_dir)
         return MemoryPatch(schema_file=payoff_path.as_posix(), before=before, after=after)
+
+    def _expectation_entry_from_runtime(
+        self,
+        packet: ChapterContextPacket,
+        brief: ChapterBrief,
+        decision: RuntimeDecision,
+        verdicts: list[EvaluatorVerdict],
+        draft_payload: dict[str, object] | None,
+    ) -> dict[str, object]:
+        scene_beat_plan = draft_payload.get("scene_beat_plan", {}) if isinstance(draft_payload, dict) else {}
+        beats = scene_beat_plan.get("beats", []) if isinstance(scene_beat_plan, dict) else []
+        outcome_signature = draft_payload.get("outcome_signature", {}) if isinstance(draft_payload, dict) else {}
+        outcome_signature = outcome_signature if isinstance(outcome_signature, dict) else {}
+
+        short_expectations: list[object] = []
+        long_expectations: list[object] = []
+        expectation_payoffs: list[object] = []
+        new_expectations: list[object] = []
+        gap_risks: list[object] = []
+        genre_hints: list[object] = []
+        for beat in beats:
+            if not isinstance(beat, dict):
+                continue
+            short_expectations.append(beat.get("short_expectation", ""))
+            long_expectations.append(beat.get("long_expectation", ""))
+            expectation_payoffs.append(beat.get("expectation_payoff", ""))
+            new_expectations.append(beat.get("new_expectation", ""))
+            gap_risks.append(beat.get("expectation_gap_risk", ""))
+            genre_hints.append(beat.get("genre_framework_hint", ""))
+
+        if not short_expectations:
+            short_expectations.extend([brief.core_conflict, brief.hook_goal])
+        if not long_expectations:
+            long_expectations.extend([*brief.allowed_threads, *packet.open_threads, *packet.pending_promises])
+        if not new_expectations:
+            new_expectations.extend([brief.closing_hook, brief.hook_goal, str(outcome_signature.get("next_pull", ""))])
+        if not expectation_payoffs:
+            expectation_payoffs.extend([brief.result_change, str(outcome_signature.get("chapter_result", ""))])
+
+        tracked_dimensions = {
+            "expectation_integrity",
+            "opening_diagnostics",
+            "genre_framework_fit",
+            "hook_integrity",
+            "market_fit",
+            "pre_publish_checklist",
+            "prose_concreteness",
+        }
+        blocking_dimensions = [
+            item.dimension for item in verdicts if item.blocking and item.dimension in tracked_dimensions
+        ]
+        advisory_dimensions = [
+            item.dimension for item in verdicts if item.status == "warn" and item.dimension in tracked_dimensions
+        ]
+        for verdict in verdicts:
+            if verdict.dimension in {"expectation_integrity", "opening_diagnostics", "genre_framework_fit", "hook_integrity"}:
+                gap_risks.extend(verdict.evidence)
+
+        return {
+            "chapter": packet.chapter,
+            "shortExpectations": self._dedupe_strings(short_expectations),
+            "longExpectations": self._dedupe_strings(long_expectations),
+            "expectationPayoffs": self._dedupe_strings(expectation_payoffs),
+            "newExpectations": self._dedupe_strings(new_expectations),
+            "expectationGapRisks": self._dedupe_strings(gap_risks),
+            "genreFrameworkHints": self._dedupe_strings(genre_hints),
+            "readerHook": str(outcome_signature.get("next_pull", "") or brief.closing_hook or brief.hook_goal).strip(),
+            "chapterResult": str(outcome_signature.get("chapter_result", "") or brief.result_change).strip(),
+            "releaseDecision": decision.decision,
+            "blockingDimensions": self._dedupe_strings(blocking_dimensions),
+            "advisoryDimensions": self._dedupe_strings(advisory_dimensions),
+        }
+
+    def _build_expectation_tracking_patch(
+        self,
+        schema_dir: Path,
+        packet: ChapterContextPacket,
+        brief: ChapterBrief,
+        decision: RuntimeDecision,
+        verdicts: list[EvaluatorVerdict],
+        draft_payload: dict[str, object] | None,
+    ) -> MemoryPatch:
+        tracking_path = schema_dir / "expectation_tracking.json"
+        before = self._load_json(tracking_path)
+        after = dict(before)
+        chapters = after.get("chapters", [])
+        if not isinstance(chapters, list):
+            chapters = []
+        entry = self._expectation_entry_from_runtime(packet, brief, decision, verdicts, draft_payload)
+        chapters = [item for item in chapters if not (isinstance(item, dict) and int(item.get("chapter", -1) or -1) == packet.chapter)]
+        chapters.append(entry)
+        after["chapters"] = chapters
+        after = self._normalize_expectation_tracking_payload(after)
+        return MemoryPatch(schema_file=tracking_path.as_posix(), before=before, after=after)
+
+    def _write_expectation_tracking_report(self, retrieval_dir: Path, expectation_patch: MemoryPatch) -> dict[str, str]:
+        md_path = retrieval_dir / "expectation_tracking.md"
+        json_path = retrieval_dir / "expectation_tracking.latest.json"
+        latest = {}
+        chapters = expectation_patch.after.get("chapters", [])
+        if isinstance(chapters, list) and chapters:
+            latest = chapters[-1] if isinstance(chapters[-1], dict) else {}
+        json_path.write_text(json.dumps(latest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        lines = [
+            "# Expectation Tracking",
+            "",
+            f"- chapter: {latest.get('chapter', 'missing')}",
+            f"- release_decision: {latest.get('releaseDecision', 'missing')}",
+            f"- chapter_result: {latest.get('chapterResult', '') or 'missing'}",
+            f"- reader_hook: {latest.get('readerHook', '') or 'missing'}",
+            "",
+            "## Short Expectations",
+        ]
+        lines.extend(f"- {item}" for item in latest.get("shortExpectations", []) or ["none"])
+        lines.extend(["", "## Long Expectations"])
+        lines.extend(f"- {item}" for item in latest.get("longExpectations", []) or ["none"])
+        lines.extend(["", "## Payoffs"])
+        lines.extend(f"- {item}" for item in latest.get("expectationPayoffs", []) or ["none"])
+        lines.extend(["", "## New Expectations"])
+        lines.extend(f"- {item}" for item in latest.get("newExpectations", []) or ["none"])
+        lines.extend(["", "## Gap Risks"])
+        lines.extend(f"- {item}" for item in latest.get("expectationGapRisks", []) or ["none"])
+        lines.extend(["", "## Genre Framework Hints"])
+        lines.extend(f"- {item}" for item in latest.get("genreFrameworkHints", []) or ["none"])
+        lines.extend(["", "## Watch Dimensions"])
+        lines.append(f"- blocking: {', '.join(latest.get('blockingDimensions', []) or []) or 'none'}")
+        lines.append(f"- advisory: {', '.join(latest.get('advisoryDimensions', []) or []) or 'none'}")
+        md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return {
+            "expectation_tracking_markdown": md_path.as_posix(),
+            "expectation_tracking_latest_json": json_path.as_posix(),
+        }
 
     def _changed_keys(self, patch: MemoryPatch) -> list[str]:
         return sorted(
@@ -607,6 +816,14 @@ class RuntimeMemorySync:
         summary_path = retrieval_dir / "leadwriter_runtime_summary.md"
         schema_dir = project_dir / "00_memory" / "schema"
 
+        expectation_patch = self._build_expectation_tracking_patch(
+            schema_dir,
+            packet,
+            brief,
+            decision,
+            verdicts,
+            draft_payload,
+        )
         patches = [
             self._build_plan_patch(project_dir, schema_dir),
             self._build_state_patch(schema_dir, packet, brief, decision),
@@ -615,10 +832,13 @@ class RuntimeMemorySync:
             self._build_character_arcs_patch(project_dir, schema_dir, draft_payload=draft_payload),
             self._build_foreshadow_patch(project_dir, schema_dir, packet.chapter),
             self._build_payoff_patch(schema_dir, brief),
+            expectation_patch,
         ]
+        self._handle_volume_transition(project_dir, packet, retrieval_dir)
         patch_paths = self._write_patch_files(retrieval_dir, patches)
         apply_results = self._apply_patches(patches, apply_changes=apply_changes)
         apply_paths = self._write_apply_report(retrieval_dir, apply_results)
+        expectation_paths = self._write_expectation_tracking_report(retrieval_dir, expectation_patch)
 
         lines = [
             "# LeadWriter Runtime Summary",
@@ -643,6 +863,10 @@ class RuntimeMemorySync:
             lines.append("- none")
         lines.extend(
             [
+                "",
+                "## Expectation Tracking",
+                f"- expectation_tracking_markdown: {expectation_paths['expectation_tracking_markdown']}",
+                f"- expectation_tracking_latest_json: {expectation_paths['expectation_tracking_latest_json']}",
                 "",
                 "## Success Criteria",
             ]
@@ -681,4 +905,5 @@ class RuntimeMemorySync:
             "memory_patch_json": patch_paths["json"],
             "memory_apply_markdown": apply_paths["markdown"],
             "memory_apply_json": apply_paths["json"],
+            **expectation_paths,
         }

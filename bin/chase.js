@@ -9,17 +9,13 @@ const COMMAND_SPECS = {
   quality: { script: "quality_gate.py" },
   write: { script: "workflow_runner.py" },
   status: { script: "book_health.py" },
-  bootstrap: { script: "project_bootstrap.py" },
-  doctor: { script: "project_doctor.py" },
   check: {
     script: "workflow_runner.py",
-    injectArgs: ["--dry-run", "--steps", "doctor,open,quality,status"],
+    injectArgs: ["--dry-run", "--steps", "open,quality,status"],
   },
 };
 
 const HELP_LINES = [
-  "chase bootstrap --project <dir> [--force]",
-  "chase doctor --project <dir> [--json]",
   "chase open --project <dir> [--chapter <n> | --target-chapter <n>]",
   "chase quality --project <dir> [--chapter-no <n> | --from <n> --to <n>]",
   "chase write --project <dir> [--chapter <n> | --target-chapter <n>] [--steps <csv>]",
@@ -28,13 +24,13 @@ const HELP_LINES = [
 ];
 
 const NOTE_LINES = [
-  "open is the primary open-book and next-chapter planning entry",
-  "open uses --chapter as the current drafted reference chapter and defaults to target_chapter = reference + 1; use --target-chapter to override",
-  "quality is the unified gate protocol: --check all|chapter|draft|language|batch",
-  "status is the unified book-health protocol: --focus all|dashboard|foreshadow|arc|timeline|repeat",
-  "write/check expose both reference chapter and target chapter semantics",
-  "check is a dry-run health sweep over doctor + open + quality + status",
-  "write default steps: doctor,open,runtime,quality,status",
+  "chaseNovel remains the main entry; opening, writer, continue, revise, style, and memory are documentation and contract surfaces",
+  "open is the shipped book-opening and next-chapter readiness entry",
+  "open treats --chapter as the current reference chapter and defaults target_chapter to reference + 1",
+  "write remains the shipped agent writing chain: open,runtime,quality,status",
+  "check remains a dry-run sweep: open,quality,status",
+  "quality and status stay as shipped governance surfaces",
+  "write and check expose both reference chapter and target chapter semantics",
   "project defaults to the current directory",
 ];
 

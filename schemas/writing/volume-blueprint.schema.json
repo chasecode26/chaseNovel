@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Volume Blueprint Schema",
+  "description": "卷纲蓝图 JSON Schema，对应 templates/launch/volume-blueprint.md",
+  "type": "object",
+  "required": ["volumeName", "chapterRange", "coreTask", "coreCrisis"],
+  "properties": {
+    "volumeName": {
+      "type": "string",
+      "description": "本卷名称"
+    },
+    "chapterRange": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 1, "description": "本卷起始章节" },
+        "end": { "type": "integer", "minimum": 1, "description": "本卷结束章节" }
+      }
+    },
+    "estimatedWords": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "本卷预计字数"
+    },
+    "mainMap": {
+      "type": "string",
+      "description": "本卷主要地图/场景"
+    },
+    "coreTask": {
+      "type": "object",
+      "required": ["protagonistGoal", "coreObstacle"],
+      "properties": {
+        "protagonistGoal": {
+          "type": "string",
+          "description": "主角在本卷最想干成什么事"
+        },
+        "coreObstacle": {
+          "type": "string",
+          "description": "谁/什么力量在妨碍他"
+        },
+        "infoAsymmetry": {
+          "type": "string",
+          "description": "主角和反派各自掌握什么对方不知道的情报"
+        }
+      }
+    },
+    "coreCrisis": {
+      "type": "object",
+      "required": ["volumeBoss"],
+      "properties": {
+        "volumeBoss": {
+          "type": "string",
+          "description": "本卷最大的压力源（非最终BOSS）"
+        },
+        "bossPressureDisplay": {
+          "type": "string",
+          "description": "BOSS 做了什么让人绝望的事"
+        },
+        "requiredCost": {
+          "type": "string",
+          "description": "主角必须牺牲什么或放弃什么才能赢"
+        }
+      }
+    },
+    "keyNodes": {
+      "type": "object",
+      "properties": {
+        "breakingPoint": { "type": "string", "description": "破局点 (15%)" },
+        "midpoint": { "type": "string", "description": "中点假高潮/大挫败 (50%)" },
+        "darkNight": { "type": "string", "description": "灵魂黑夜 (75%)" },
+        "finalClimax": { "type": "string", "description": "终极高潮 (90%)" }
+      }
+    },
+    "crossVolumeHandoff": {
+      "type": "object",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "带入下一卷的资产（战利品、新能力、核心盟友）"
+        },
+        "risks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "带入下一卷的隐患（BOSS诅咒、未解谜团）"
+        }
+      }
+    }
+  }
+}

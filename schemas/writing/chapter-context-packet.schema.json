@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Writing Chapter Context Packet",
+  "type": "object",
+  "required": ["project", "referenceChapter", "targetChapter", "chapterReadyPath", "requiredMemoryFiles"],
+  "properties": {
+    "project": { "type": "string" },
+    "referenceChapter": { "type": "integer", "minimum": 0 },
+    "targetChapter": { "type": "integer", "minimum": 1 },
+    "chapterReadyPath": { "type": "string" },
+    "previousChapterPath": { "type": "string" },
+    "requiredMemoryFiles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "openThreads": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

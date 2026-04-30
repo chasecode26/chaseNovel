@@ -14,12 +14,16 @@ if str(REPO_ROOT) not in sys.path:
 from aggregation_utils import configure_utf8_stdio, run_script_json
 from runtime.runtime_orchestrator import LeadWriterRuntime
 
+# Shell role: orchestrates shipped workflow steps and normalizes aggregate output.
+# Keep domain verdict rules in runtime/ and analyzer scripts, not in this entry layer.
 STEP_MAP = {
-    "doctor": "project_doctor.py",
-    "open": "planning_context.py",
+    "open": "open_book.py",
     "runtime": None,
     "quality": "quality_gate.py",
     "status": "book_health.py",
+    "settings": "settings_consistency.py",
+    "knowledge": "knowledge_boundary_check.py",
+    "resources": "resource_tracker.py",
 }
 
 
@@ -36,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target-chapter", type=int, help="Explicit target chapter number for open steps")
     parser.add_argument(
         "--steps",
-        default="doctor,open,runtime,quality,status",
+        default="open,runtime,quality,status",
         help="Comma-separated workflow steps",
     )
     parser.add_argument("--json", action="store_true", help="Print JSON result")
@@ -85,6 +89,9 @@ def run_step(
         command.extend(["--chapter-no", str(reference_chapter)])
     elif step == "status" and reference_chapter is not None:
         command.extend(["--chapter", str(reference_chapter)])
+    elif step in {"settings", "knowledge", "resources"}:
+        if reference_chapter is not None:
+            command.extend(["--from-chapter", "1", "--to-chapter", str(reference_chapter)])
     if dry_run:
         command.append("--dry-run")
     parsed = run_script_json(repo_root, script_name, command)
@@ -100,7 +107,7 @@ def run_step(
     if step == "open":
         payload["reference_chapter"] = reference_chapter
         payload["target_chapter"] = target_chapter
-    elif step in {"runtime", "quality", "status"}:
+    elif step in {"runtime", "quality", "status", "settings", "knowledge", "resources"}:
         payload["reference_chapter"] = reference_chapter
     payload["summary"] = {
         key: value
@@ -220,6 +227,30 @@ def build_normalized_step_fields(step: dict[str, object]) -> dict[str, object]:
                     "attention_queue": to_string_list(runtime_signals.get("attention_queue", [])),
                 }
             )
+    elif step_name == "settings":
+        normalized.update(
+            {
+                "settings_verdict": str(summary.get("verdict", "")).strip(),
+                "settings_issue_count": int(summary.get("issue_count", 0)),
+                "settings_chapters_scanned": int(summary.get("chapters_scanned", 0)),
+            }
+        )
+    elif step_name == "knowledge":
+        normalized.update(
+            {
+                "knowledge_verdict": str(summary.get("verdict", "")).strip(),
+                "knowledge_issue_count": int(summary.get("issue_count", 0)),
+                "knowledge_chapters_scanned": int(summary.get("chapters_scanned", 0)),
+            }
+        )
+    elif step_name == "resources":
+        normalized.update(
+            {
+                "resources_verdict": str(summary.get("verdict", "")).strip(),
+                "resources_issue_count": int(summary.get("issue_count", 0)),
+                "resources_chapters_scanned": int(summary.get("chapters_scanned", 0)),
+            }
+        )
     return {key: value for key, value in normalized.items() if has_meaningful_value(value)}
 
 
@@ -237,6 +268,9 @@ def build_pipeline_summary(results: list[dict[str, object]]) -> dict[str, object
     quality_step = find_step(results, "quality")
     runtime_step = find_step(results, "runtime")
     status_step = find_step(results, "status")
+    settings_step = find_step(results, "settings")
+    knowledge_step = find_step(results, "knowledge")
+    resources_step = find_step(results, "resources")
 
     summary: dict[str, object] = {
         "write_ready": str(open_step.get("write_ready", "")).strip(),
@@ -252,6 +286,12 @@ def build_pipeline_summary(results: list[dict[str, object]]) -> dict[str, object
         "draft_status": str(runtime_step.get("draft_status", "")).strip(),
         "status_runtime_decision": str(status_step.get("runtime_decision", "")).strip(),
         "attention_queue": to_string_list(status_step.get("attention_queue", [])),
+        "settings_verdict": str(settings_step.get("settings_verdict", "")).strip(),
+        "settings_issue_count": settings_step.get("settings_issue_count", 0),
+        "knowledge_verdict": str(knowledge_step.get("knowledge_verdict", "")).strip(),
+        "knowledge_issue_count": knowledge_step.get("knowledge_issue_count", 0),
+        "resources_verdict": str(resources_step.get("resources_verdict", "")).strip(),
+        "resources_issue_count": resources_step.get("resources_issue_count", 0),
     }
 
     blocking_dimensions: list[str] = []
@@ -288,6 +328,9 @@ def derive_pipeline_final_release(summary: dict[str, object]) -> str:
     runtime_decision = str(summary.get("runtime_decision", "")).strip().lower()
     quality_final_release = str(summary.get("quality_final_release", "")).strip().lower()
     status_runtime_decision = str(summary.get("status_runtime_decision", "")).strip().lower()
+    settings_verdict = str(summary.get("settings_verdict", "")).strip().lower()
+    knowledge_verdict = str(summary.get("knowledge_verdict", "")).strip().lower()
+    resources_verdict = str(summary.get("resources_verdict", "")).strip().lower()
     blocking_dimensions = to_string_list(summary.get("blocking_dimensions", []))
 
     if open_blocking == "yes":
@@ -300,6 +343,9 @@ def derive_pipeline_final_release(summary: dict[str, object]) -> str:
         return "revise"
     if status_runtime_decision in {"fail", "revise"}:
         return "revise"
+    for v in [settings_verdict, knowledge_verdict, resources_verdict]:
+        if v == "rewrite":
+            return "revise"
     if blocking_dimensions:
         return "revise"
     return "pass"
@@ -345,6 +391,12 @@ def render_markdown(payload: dict[str, object]) -> str:
             lines.append(f"- status_runtime_decision=`{pipeline_summary['status_runtime_decision']}`")
         if str(pipeline_summary.get("draft_status", "")).strip():
             lines.append(f"- draft_status=`{pipeline_summary['draft_status']}`")
+        if str(pipeline_summary.get("settings_verdict", "")).strip():
+            lines.append(f"- settings_verdict=`{pipeline_summary['settings_verdict']}` (issues={pipeline_summary.get('settings_issue_count', 0)})")
+        if str(pipeline_summary.get("knowledge_verdict", "")).strip():
+            lines.append(f"- knowledge_verdict=`{pipeline_summary['knowledge_verdict']}` (issues={pipeline_summary.get('knowledge_issue_count', 0)})")
+        if str(pipeline_summary.get("resources_verdict", "")).strip():
+            lines.append(f"- resources_verdict=`{pipeline_summary['resources_verdict']}` (issues={pipeline_summary.get('resources_issue_count', 0)})")
 
         blocking_dimensions = to_string_list(pipeline_summary.get("blocking_dimensions", []))
         advisory_dimensions = to_string_list(pipeline_summary.get("advisory_dimensions", []))

@@ -8,8 +8,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from chapter_planning_review import find_chapter_card_path, load_previous_card_defaults, parse_chapter_card
-from novel_utils import detect_existing_chapter_file, read_text
+from novel_utils import (
+    detect_existing_chapter_file,
+    find_chapter_card_path,
+    load_previous_card_defaults,
+    parse_chapter_card,
+    read_text,
+)
 
 
 def parse_args() -> argparse.Namespace:

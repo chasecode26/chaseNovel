@@ -10,6 +10,6 @@
 
 - Core workflow: `docs/core/`
 - Genre assets: `docs/assets/` and `assets/genres/`
-- Templates: `templates/core/`, `templates/launch/`, `templates/review/`
+- Templates: `templates/core/`, `templates/launch/`, `templates/agents/`
 
 Put new reusable material under `assets/` or `docs/assets/`; do not grow root `references/` into a second asset library.

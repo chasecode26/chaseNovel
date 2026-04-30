@@ -15,7 +15,8 @@ from aggregation_utils import (
     write_aggregate_reports,
 )
 
-
+# Shell role: routes book-health focuses and assembles one status payload.
+# Keep foreshadow, arc, timeline, repeat, and dashboard judgments in their analyzer scripts.
 SCRIPT_BY_FOCUS = {
     "dashboard": "dashboard_snapshot.py",
     "foreshadow": "foreshadow_scheduler.py",
@@ -26,6 +27,8 @@ SCRIPT_BY_FOCUS = {
 
 
 def build_runtime_signals(steps: list[dict[str, object]], focus: str) -> dict[str, object]:
+    # Status shell rule: dashboard_snapshot.py remains the canonical dashboard/runtime summary builder.
+    # book_health.py reads that payload, then routes focus views and emits the unified status surface.
     dashboard_step = get_step_by_script(steps, "dashboard_snapshot.py")
     dashboard_runtime = dashboard_step.get("runtime_signals", {}) if isinstance(dashboard_step, dict) else {}
     blocking_dimensions = dashboard_runtime.get("blocking_dimensions", [])

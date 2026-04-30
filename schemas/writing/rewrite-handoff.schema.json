@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rewrite Handoff",
+  "type": "object",
+  "required": ["returnTo", "blockingReasons", "rewriteScope"],
+  "properties": {
+    "returnTo": { "type": "string" },
+    "blockingReasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rewriteScope": { "type": "string" },
+    "mustPreserve": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "mustChange": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

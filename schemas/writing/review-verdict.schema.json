@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review Verdict",
+  "type": "object",
+  "required": ["dimension", "status", "blocking"],
+  "properties": {
+    "dimension": { "type": "string" },
+    "status": { "type": "string", "enum": ["pass", "warn", "fail"] },
+    "blocking": { "type": "boolean" },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rewriteScope": { "type": "string" }
+  },
+  "additionalProperties": true
+}

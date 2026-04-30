@@ -1,17 +1,88 @@
 # chaseNovel
 
-`chaseNovel` 是一套面向中文网文长篇连载的本地写作引擎仓库。
-它关注的不是“随手写一章”，而是让项目在几十章、几百章后仍能稳住节奏、设定、人物、伏笔、章尾钩子与书级状态。
+## Platform Assets
 
-## 主入口
+默认平台口味面向番茄和七猫。正文生成、审稿和放行门会共同读取：
 
-默认只看四条主链：
-1. 开书：`docs/core/open-book.md`
-2. 写作：`docs/core/write-workflow.md`
-3. 质量：`docs/core/revise-diagnostics.md` / `docs/core/task-contracts.md`
-4. 状态：`docs/core/status-workflow.md`
+- `templates/core/platform-profile.md`
+- `templates/core/prose-examples.md`
+- `templates/core/pre-publish-checklist.md`
+- `templates/core/opening-diagnostics.md`
+- `templates/core/expectation-lines.md`
+- `templates/core/genre-framework.md`
 
-CLI 主入口：
+如果某本书需要更具体的平台策略，把同名文件复制到项目 `00_memory/` 下即可覆盖默认模板。
+
+`chaseNovel` 是面向中文网文长篇连载的本地写作引擎，当前定位为 **Claude Code 原生智能写作 agent 工作台**。
+
+它不追求单次生成一章就结束，而是围绕长篇连载的稳定推进建立闭环：
+
+- 章节目标、阶段节奏与追读钩子
+- 设定连续性、时间线、知情边界与资源状态
+- 人物弧光、关系推进与声口差分
+- 伏笔、承诺、兑现与防重复
+- 正文场面密度、去总结腔、去抽象腔、低 AI 味
+- 写作、复核、返工、放行、记忆回写
+
+## 当前写作架构
+
+外层命令仍然是稳定 workflow：
+
+```text
+open -> runtime -> quality -> status
+```
+
+`runtime` 内部已经升级为 agent 写作闭环：
+
+```text
+LeadWriterAgent
+-> DirectorAgent
+-> SceneBeatAgent
+-> WriterAgent
+-> ReviewerAgent
+-> DecisionEngine
+-> RewriterAgent
+-> ReleasePolicy
+-> Agent Replay Report
+-> RuntimeMemorySync
+```
+
+说明：
+
+- `LeadWriterAgent` 负责章节目标、核心冲突、结果变化、章尾钩子和边界。
+- `DirectorAgent` 负责节奏、开场画面、中段反转、对白压力和章尾落点。
+- `SceneBeatAgent` 在正文前生成场面拍点，锁定人话表达、设定边界、时间线、伏笔与市场追读牵引。
+- `WriterAgent` 读取 prompt / handoff / SceneBeatPlan 写正文。
+- `ReviewerAgent` 只审查，不改文，输出结构化 verdict。
+- `DecisionEngine` 统一决定 `pass / revise / fail`。
+- `RewriterAgent` 按 `RewriteBrief` 做局部返工，不重开章节。
+- `ReleasePolicy` 输出最终放行门禁。
+
+## Claude Code Handoff 模式
+
+项目不内置外部 LLM provider。Claude Code 本身就是智能执行者；本地 runtime 负责生成任务卡、上下文、审查报告和质量门。
+
+每章主要产物位于：
+
+```text
+04_gate/chXXX/
+```
+
+关键文件：
+
+- `agent_prompts/*.md`：每个 agent 实际使用的 prompt 快照。
+- `handoffs/writer_handoff.md`：给 Claude Code / WriterAgent 的写作交接卡。
+- `handoffs/reviewer_handoff.md`：审查交接卡。
+- `handoffs/rewriter_handoff.md`：返工交接卡。
+- `scene_beat_plan.md/json`：章卡到正文之间的场面拍点。
+- `lead_writer_agent_report.md/json`：章节目标、冲突、结果、钩子和边界检查。
+- `director_agent_report.md/json`：节奏、情绪曲线、对白压力和落点检查。
+- `scene_beat_agent_report.md/json`：场面拍点、人话规则、设定/时间线/伏笔边界检查。
+- `reviewer_agent_report.md/json`：多维审查报告。
+- `release_gate_report.md/json`：最终放行门禁。
+- `agent_replay_report.md/json`：每轮 agent 执行复盘。
+
+## 命令
 
 ```bash
 chase open --project <dir> [--chapter <n> | --target-chapter <n>]
@@ -21,106 +92,24 @@ chase status --project <dir> [--chapter <n>] [--focus <all|dashboard|foreshadow|
 chase check --project <dir> [--chapter <n> | --target-chapter <n>]
 ```
 
-兼容命令仍可用，但不再作为默认心智入口。
+默认：
 
-## 当前运行事实
-
-- `scripts/workflow_runner.py` 是现行 shipped 聚合编排入口。
-- `write / check` 都走聚合链。
-- `check` 当前默认链路是 `doctor,open,quality,status`，保持 dry-run，但会显式补做 quality 关卡。
-- `open` 负责下一章准备。
-- `status / runtime / quality` 负责当前参考章检查或回写。
+- `chase write`：`open,runtime,quality,status`
+- `chase check`：`open,quality,status`，dry-run，不进入正文生成
 
 ## 章节语义
 
-- `--chapter <n>` 在聚合链中表示当前已经写完的 reference chapter。
-- `open` 会把它视为“当前已写章节”，默认准备 `target_chapter = n + 1`。
-- 需要跳章、补章、回头指定目标章时，显式传 `--target-chapter <m>`。
-- `status / runtime / quality` 不会自动把 `--chapter` 加一。
+- `--chapter <n>` 表示已经存在的参考章节，即 `reference_chapter`。
+- `open` 默认准备 `target_chapter = reference_chapter + 1`。
+- `runtime / quality / status` 继续消费 `reference_chapter`。
+- 跳章、补章、回头重做目标章节时，显式传 `--target-chapter <m>`。
 
-## 核心文档
+## 入口文档
 
-- `SKILL.md`
-- `docs/core/cli-quickstart.md`
-- `docs/core/runtime-design-baseline.md`
-- `docs/core/open-book.md`
-- `docs/core/write-workflow.md`
-- `docs/core/revise-diagnostics.md`
-- `docs/core/style-governance.md`
-- `docs/core/status-workflow.md`
-- `docs/core/task-contracts.md`
-- `docs/assets/genre-index.md`
-- `docs/assets/xuanhuan-xiuxian-reference-map.md`
-- `docs/assets/dushi-system-reference-map.md`
-- `docs/assets/goudao-xianxia-reference-map.md`
-- `docs/assets/historical-power-reference-map.md`
-- `docs/assets/apocalypse-reference-map.md`
-- `docs/assets/farming-reference-map.md`
-- `docs/assets/daomu-republic-reference-map.md`
+- 路由入口：[SKILL.md](SKILL.md)
+- 架构说明：[ARCHITECTURE.md](ARCHITECTURE.md)
+- 写作主链：[docs/core/write-workflow.md](docs/core/write-workflow.md)
+- runtime 事实基线：[docs/core/runtime-design-baseline.md](docs/core/runtime-design-baseline.md)
+- 合同索引：[docs/core/task-contracts.md](docs/core/task-contracts.md)
 
-## Design Baseline
-
-- Runtime alignment note: `docs/core/runtime-design-baseline.md`
-- Historical archive documents have been removed from the shipped tree; keep the current runtime behavior as the source of truth.
-
-## 仓库校验
-
-```bash
-npm run smoke
-node ./scripts/change_analyzer.js --mode working --json
-```
-
-当前会做：
-- 检查 `chase --help`
-- 编译全部 Python 脚本语法
-- 跑一轮 fixture 主链
-- 执行 `npm pack --dry-run`
-
-`change_analyzer` 用于提交前验更，支持：
-- `--mode working`：检查当前工作区全部变更
-- `--mode staged`：只检查暂存区
-- `--mode committed`：只检查最近一次提交
-- `--json`：输出机器可消费的分类、模块、告警与建议
-- `--summary-only`：只保留摘要、模块、告警，不回传逐文件列表
-- `--max-files <n>`：在保留摘要的同时，只返回前 `n` 个文件明细，并显式标记省略数量
-- `--category <code|docs|tests|config|other>`：只看单一类别变更，适合重构期快速切到代码视角或文档视角
-- `--module <name>`：只看单一模块桶，例如 `scripts`、`references`、`docs/core`
-- `--module-prefix <prefix>`：只看一整组模块家族，例如 `docs`、`references`，但仍保留细分模块统计
-- `--top-modules <n>`：模块很多时只保留前 `n` 个模块摘要，便于先抓主战场
-- 当使用 `--category` / `--module` / `--module-prefix` 时，输出仍会保留 `global_warnings` 与 `global_recommendations`，避免局部筛选掩盖全局风险
-- 如果本轮存在删除文件，输出会附带 `deleted_reference_hits` / `global_deleted_reference_hits`，把仍在引用旧路径的位置直接列出来
-
-## 当前状态
-
-仓库已进入聚合主链稳定维护阶段：
-- `docs/core/*` 是默认阅读面
-- 聚合层章节语义已统一为 `reference_chapter / target_chapter`
-- `references/` keeps task contracts only.
-
-## 仓库结构
-
-```text
-repo/
-├─ SKILL.md
-├─ README.md
-├─ ARCHITECTURE.md
-├─ bin/
-├─ docs/
-│  ├─ core/
-│  └─ assets/
-├─ assets/
-│  ├─ genres/
-│  ├─ substyles/
-│  ├─ common/
-│  ├─ examples/
-│  └─ technique-kb/
-- references/              # task contracts only
-├─ templates/
-│  ├─ core/
-│  ├─ launch/
-│  └─ review/
-├─ scripts/
-├─ runtime/
-├─ evaluators/
-└─ schemas/
-```
+当文档与 shipped runtime 行为冲突时，以 `docs/core/runtime-design-baseline.md` 和当前 `runtime/` 代码为准。

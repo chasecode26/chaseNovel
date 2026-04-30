@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Expectation Tracking",
+  "type": "object",
+  "properties": {
+    "chapters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "chapter": { "type": "integer", "minimum": 0 },
+          "shortExpectations": { "type": "array", "items": { "type": "string" } },
+          "longExpectations": { "type": "array", "items": { "type": "string" } },
+          "expectationPayoffs": { "type": "array", "items": { "type": "string" } },
+          "newExpectations": { "type": "array", "items": { "type": "string" } },
+          "expectationGapRisks": { "type": "array", "items": { "type": "string" } },
+          "genreFrameworkHints": { "type": "array", "items": { "type": "string" } },
+          "readerHook": { "type": "string" },
+          "chapterResult": { "type": "string" },
+          "releaseDecision": { "type": "string" },
+          "blockingDimensions": { "type": "array", "items": { "type": "string" } },
+          "advisoryDimensions": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["chapter"]
+      }
+    }
+  }
+}

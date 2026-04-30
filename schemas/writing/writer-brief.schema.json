@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Writer Brief",
+  "type": "object",
+  "required": ["targetChapter", "chapterFunction", "chapterGoal", "chapterConflict", "resultChange", "hookText"],
+  "properties": {
+    "targetChapter": { "type": "integer", "minimum": 1 },
+    "chapterFunction": { "type": "string" },
+    "chapterGoal": { "type": "string" },
+    "chapterConflict": { "type": "string" },
+    "resultChange": { "type": "string" },
+    "hookText": { "type": "string" },
+    "voiceRules": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

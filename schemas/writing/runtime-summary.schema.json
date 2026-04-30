@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Writing Runtime Summary",
+  "type": "object",
+  "required": ["targetChapter", "decision", "draftStatus", "verdicts"],
+  "properties": {
+    "targetChapter": { "type": "integer", "minimum": 1 },
+    "decision": { "type": "string", "enum": ["pass", "revise", "fail"] },
+    "draftStatus": { "type": "string" },
+    "blockingDimensions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "advisoryDimensions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verdicts": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "additionalProperties": true
+}
